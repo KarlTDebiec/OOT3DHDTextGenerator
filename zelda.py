@@ -15,24 +15,31 @@ def main():
 
         # Load character cache
         #   HDF5 file with three tables:
-        #       chars/assignment (N str)
-        #       chars/confirmation (N bool)
-        #       chars/image (Nx256 uint8)
+        #       characters/character (N str)
+        #       characters/confirmation (N bool)
+        #       characters/image (Nx16x16 uint8)
         #   Reconstruct data structures
-        #       char_assignments (dict)
-        #           Keys are char images (ndarray -> bytes)
+        #       characters (dict)
+        #           Keys are char images (bytes)
         #           Values are tuple of (assignment (str), confirmation (bool))
 
-        # Load image cache
-        #   HDF5 file with three tables:
-        #       images/assignment (N str)
-        #       images/confirmation (N bool)
-        #       images/filename (Nx36 str)
-        #       images/image (Nx65536 uint8 ndarray)
+        # Load confirmed image cache
+        #   HDF5 file with two tables:
+        #       images/confirmed/filename (Nx36 str)
+        #       images/confirmed/text (N str)
         #   Reconstruct data structures
         #       confirmed_images (dict):
-        #           Keys are filenames
-        #
+        #           Keys are filenames (str)
+        #           Values are text (str)
+
+        # Load unconfirmed image cache
+        #   HDF5 file with three tables:
+        #       images/unconfirmed/filename (Nx36 str)
+        #       images/unconfirmed/image (Nx256x256 uint8)
+        #   Reconstruct data structures
+        #       unconfirmed_images (dict):
+        #           Keys are filenames (str)
+        #           Values are list of character images in bytes
 
         # Review all existing images
         for i, image in enumerate(listdir(dump_dir)):
