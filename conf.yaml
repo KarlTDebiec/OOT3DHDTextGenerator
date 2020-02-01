@@ -1,8 +1,5 @@
-Ocarina of Time CN:
-  Dump directory: /Users/kdebiec/Documents/Zelda/1x_text/
-  Load directory: /Users/kdebiec/Documents/Zelda/4x_text/
-  Font Path: /path/to/font
-  Language: chinese
-  Character Table: /path/to/character/table/
-  Classifier Model: /path/to/classifier/model/
-  Image Table: /path/to/image/table/
+Dump: /Users/kdebiec/Documents/Zelda/1x_text_en/
+Load: /Users/kdebiec/Documents/Zelda/4x_text/
+Font: /path/to/font
+Language: english
+Cache: /Users/kdebiec/Documents/Zelda/data.h5
