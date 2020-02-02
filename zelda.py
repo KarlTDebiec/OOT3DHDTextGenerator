@@ -11,8 +11,12 @@
 from collections import OrderedDict
 from itertools import product
 from os import R_OK, W_OK, access, listdir
-from os.path import dirname, expandvars, isdir, isfile
+from os.path import dirname, expandvars, isdir, isfile, basename
 from typing import Union
+
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
+from time import sleep
 
 import h5py
 import numpy as np
@@ -22,11 +26,17 @@ from PIL import Image, ImageDraw, ImageFont, UnidentifiedImageError
 
 
 ################################### CLASSES ###################################
-class ZeldaOOT3DHDTextGenerator(object):
-
+class OOT3DHDTextGenerator(object):
     # TODO: Document
     # TODO: Decide how to monitor chars for changes and wipe cached properties
-    # TODO: Overwrite flag
+
+    class FileCreatedEventHandler(FileSystemEventHandler):
+        def __init__(self, host):
+            self.host = host
+
+        def on_created(self, event):
+            filename = basename(event.key[1])
+            self.host.process_file(filename, True)
 
     # region Builtins
 
@@ -56,35 +66,8 @@ class ZeldaOOT3DHDTextGenerator(object):
         # Review all existing images
         if self.verbosity >= 1:
             print(f"Loading images from  '{self.dump_directory}'")
-        for i, filename in enumerate(listdir(self.dump_directory)):
-
-            # If filename is known, check if confirmed or unconfirmed
-            if filename in self.confirmed_texts:
-                if self.verbosity >= 2:
-                    print(f"{self.load_directory}/{filename}: "
-                          f"previously confirmed")
-                continue
-            elif filename in self.unconfirmed_texts:
-                if self.verbosity >= 2:
-                    print(f"{self.load_directory}/{filename}: "
-                          f"previously unconfirmed")
-                if self.is_text_confirmable(filename):
-                    self.confirm_text(filename)
-                else:
-                    continue
-
-            # If file is not a text image, skip
-            if not self.is_file_text_image(filename):
-                if self.verbosity >= 2:
-                    print(f"{self.load_directory}/{filename}: "
-                          f"not a text image")
-                continue
-
-            # Otherwise, add new text
-            if self.verbosity >= 2:
-                print(f"{self.load_directory}/{filename}: "
-                      f"new text image")
-            self.add_text(filename)
+        for filename in listdir(self.dump_directory):
+            self.process_file(filename)
 
         # Assign unassigned characters
         self.manually_assign_chars()
@@ -99,6 +82,25 @@ class ZeldaOOT3DHDTextGenerator(object):
             print(f"Saving images to '{self.load_directory}'")
         for filename in self.confirmed_texts:
             self.save_text(filename)
+
+        # Watch for additional images and process as they appear
+        if self.verbosity >= 1:
+            print(f"Watching for new images in  '{self.dump_directory}'")
+        event_handler = self.FileCreatedEventHandler(self)
+        observer = self.observer
+        observer.schedule(event_handler, self.dump_directory)
+        observer.start()
+        try:
+            while True:
+                sleep(1)
+        except KeyboardInterrupt:
+            observer.stop()
+        observer.join()
+
+        # Save cache after watching
+        if self.verbosity >= 1:
+            print(f"Saving cache to '{self.cache_file}'")
+        self.save_cache()
 
     # endregion
 
@@ -211,6 +213,12 @@ class ZeldaOOT3DHDTextGenerator(object):
     @fontsize.setter
     def fontsize(self, value: int):
         self._fontsize = value
+
+    @property
+    def observer(self) -> Observer:
+        if not hasattr(self, "_observer"):
+            self._observer = Observer()
+        return self._observer
 
     @property
     def overwrite(self) -> bool:
@@ -394,6 +402,40 @@ class ZeldaOOT3DHDTextGenerator(object):
                 for f, t in zip(filenames, texts):
                     self.confirmed_texts[f] = t
 
+    def process_file(self, filename: str, save: bool = False) -> None:
+        # If file is already confirmed, skip
+        if filename in self.confirmed_texts:
+            if self.verbosity >= 2:
+                print(f"{self.dump_directory}/{filename}: "
+                      f"previously confirmed")
+            return
+
+        # If file is known and unconfirmed, try confirming
+        if filename in self.unconfirmed_texts:
+            if self.verbosity >= 2:
+                print(f"{self.dump_directory}/{filename}: "
+                      f"previously unconfirmed")
+            if self.is_text_confirmable(filename):
+                self.confirm_text(filename)
+            return
+
+        # If file is not a text image, skip
+        if not self.is_file_text_image(filename):
+            if self.verbosity >= 2:
+                print(f"{self.dump_directory}/{filename}: "
+                      f"not a text image")
+            return
+
+        # If file is a new text image, add
+        if self.verbosity >= 2:
+            print(f"{self.dump_directory}/{filename}: "
+                  f"new text image")
+        self.add_text(filename)
+
+        # Optionally save file immediately
+        if save and filename in self.confirmed_texts:
+            self.save_text(filename)
+
     def save_cache(self) -> None:
 
         with h5py.File(self.cache_file) as cache:
@@ -532,7 +574,7 @@ class ZeldaOOT3DHDTextGenerator(object):
 
     # endregion
 
-    # Static Methods
+    # region Static Methods
 
     @staticmethod
     def show_image(image: Image.Image) -> None:
@@ -548,4 +590,4 @@ class ZeldaOOT3DHDTextGenerator(object):
 
 #################################### MAIN #####################################
 if __name__ == "__main__":
-    ZeldaOOT3DHDTextGenerator()()
+    OOT3DHDTextGenerator()()

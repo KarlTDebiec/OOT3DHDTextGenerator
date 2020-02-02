@@ -5,5 +5,5 @@ font: /System/Library/Fonts/Helvetica.ttc
 fontsize: 50
 language: english
 cache: $HOME/Documents/Zelda/cache.h5
-verbosity: 1
-overwrite: True
+verbosity: 2
+overwrite: False
