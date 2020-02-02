@@ -1,5 +1,8 @@
-Dump: /Users/kdebiec/Documents/Zelda/1x_text_en/
-Load: /Users/kdebiec/Documents/Zelda/4x_text/
-Font: /path/to/font
-Language: english
-Cache: /Users/kdebiec/Documents/Zelda/cache.h5
+dump: /Users/kdebiec/Documents/Zelda/1x_text_en/
+load: /Users/kdebiec/Documents/Zelda/4x_text/
+scale: 4
+font: /System/Library/Fonts/STHeiti Light.ttc
+fontsize: 56
+language: english
+cache: /Users/kdebiec/Documents/Zelda/cache.h5
+verbosity: 2

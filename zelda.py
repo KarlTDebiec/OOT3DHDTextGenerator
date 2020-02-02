@@ -1,18 +1,31 @@
 #!/usr/bin/python
-
-from os import R_OK, access, listdir, W_OK
-from os.path import expandvars, isdir, isfile, basename, dirname
-
-import numpy as np
-import yaml
-from PIL import Image, UnidentifiedImageError
-from IPython import embed
+# -*- coding: utf-8 -*-
+#   zelda.py
+#
+#   Copyright (C) 2020 Karl T Debiec
+#   All rights reserved.
+#
+#   This software may be modified and distributed under the terms of the
+#   BSD license.
+################################### MODULES ###################################
 from collections import OrderedDict
+from os import R_OK, W_OK, access, listdir
+from os.path import dirname, expandvars, isdir, isfile
+from typing import Union
 
 import h5py
+import numpy as np
+import yaml
+from IPython import embed
+from PIL import Image, ImageDraw, ImageFont, UnidentifiedImageError
 
 
+################################### CLASSES ###################################
 class ZeldaOOT3DHDTextGenerator(object):
+
+    # TODO: Document
+    # TODO: Decide how to monitor chars for changes and wipe cached properties
+    # TODO: Overwrite flag
 
     # region Builtins
 
@@ -23,8 +36,12 @@ class ZeldaOOT3DHDTextGenerator(object):
             raise ValueError()
         with open(conf_file, "r") as f:
             conf = yaml.load(f, Loader=yaml.SafeLoader)
-        self.dump_directory = conf["Dump"]
-        self.cache_file = conf["Cache"]
+        self.dump_directory = conf["dump"]
+        self.cache_file = conf["cache"]
+        self.scale = conf["scale"]
+        self.verbosity = conf["verbosity"]
+        self.font = conf["font"]
+        self.fontsize = conf["fontsize"]
 
     def __call__(self):
 
@@ -36,31 +53,47 @@ class ZeldaOOT3DHDTextGenerator(object):
 
             # If filename is known, check if confirmed or unconfirmed
             if filename in self.confirmed_texts:
+                if self.verbosity >= 2:
+                    print(f"{filename}: previously confirmed")
                 continue
             elif filename in self.unconfirmed_texts:
+                if self.verbosity >= 2:
+                    print(f"{filename}: previously unconfirmed")
                 if self.is_text_confirmable(filename):
                     self.confirm_text(filename)
-                continue
+                else:
+                    continue
 
             # If file is not a text image, skip
             if not self.is_file_text_image(filename):
+                if self.verbosity >= 2:
+                    print(f"{filename}: not a text image")
                 continue
 
             # Otherwise, add new text
+            if self.verbosity >= 2:
+                print(f"{filename}: new text image")
             self.add_text(filename)
 
         # Assign unassigned characters
-        self.assign_chars()
+        self.manually_assign_chars()
 
         # Save cache
         self.save_cache()
+
+        print(self.scaled_chars)
+
+        # Generate scaled text images
+        for filename, text in self.confirmed_texts.items():
+            if isfile(f"{self.load_directory}/{filename}"):
+                continue
 
     # endregion
 
     # region Properties
 
     @property
-    def cache_file(self) -> str:
+    def cache_file(self) -> Union[str, None]:
         if not hasattr(self, "_cache_file"):
             self._cache_file = None
         return self._cache_file
@@ -134,6 +167,65 @@ class ZeldaOOT3DHDTextGenerator(object):
         self._dump_directory = value
 
     @property
+    def load_directory(self):
+        if not hasattr(self, "_load_directory"):
+            raise ValueError()
+        return self._load_directory
+
+    @load_directory.setter
+    def load_directory(self, value):
+        value = expandvars(value)
+        if not (isdir(value) and access(value, W_OK)):
+            raise ValueError()
+        self._load_directory = value
+
+    @property
+    def font(self) -> str:
+        if not hasattr(self, "_font"):
+            raise ValueError()
+        return self._font
+
+    @font.setter
+    def font(self, value: str):
+        self._font = value
+
+    @property
+    def fontsize(self) -> int:
+        if not hasattr(self, "_fontsize"):
+            raise ValueError()
+        return self._fontsize
+
+    @fontsize.setter
+    def fontsize(self, value: int):
+        self._fontsize = value
+
+    @property
+    def scale(self) -> int:
+        if not hasattr(self, "_scale"):
+            self._scale = 4
+        return self._scale
+
+    @scale.setter
+    def scale(self, value: int):
+        if not isinstance(value, int):
+            raise ValueError()
+        if value <= 1:
+            raise ValueError()
+        self._scale = value
+
+    @property
+    def scaled_chars(self) -> dict:
+        if not hasattr(self, "_scaled_chars"):
+            self._draw_scaled_chars()
+        return self._scaled_chars
+
+    @scaled_chars.setter
+    def scaled_chars(self, value: dict):
+        if not isinstance(value, dict):
+            raise ValueError()
+        self.scaled_chars = value
+
+    @property
     def unconfirmed_texts(self) -> dict:
         if not hasattr(self, "_unconfirmed_texts"):
             self._unconfirmed_texts = {}
@@ -160,7 +252,7 @@ class ZeldaOOT3DHDTextGenerator(object):
 
     # endregion
 
-    # region Methods
+    # region Public Methods
 
     def add_text(self, filename: str) -> None:
         if filename in self.confirmed_texts:
@@ -181,19 +273,30 @@ class ZeldaOOT3DHDTextGenerator(object):
         if self.is_text_confirmable(filename):
             self.confirm_text(filename)
 
-    def assign_chars(self) -> None:
+    def manually_assign_chars(self) -> None:
+        size = 16 * self.scale
+
+        # Loop over characters and assign
         for char, (assignment, confirmed) in self.chars.items():
-            if not confirmed:
-                data = np.frombuffer(char, dtype=np.uint8).reshape(16, 16)
-                print(data)
-                image = Image.fromarray(data).resize((160, 160), Image.NEAREST)
-                self.show_image(image)
-                try:
-                    assignment = input("Assignment:")
-                    if assignment != "":
-                        self.chars[char] = (assignment, True)
-                except KeyboardInterrupt:
-                    break
+            if confirmed:
+                continue
+            data = np.frombuffer(char, dtype=np.uint8).reshape(16, 16)
+            image = Image.fromarray(data).resize((size, size), Image.NEAREST)
+            print(data)
+            self.show_image(image)
+            try:
+                assignment = input("Assign image as character:")
+                if assignment != "":
+                    if self.verbosity >= 2:
+                        print(f"Confirmed assignment as '{assignment}'")
+                    self.chars[char] = (assignment, True)
+            except KeyboardInterrupt:
+                break
+
+        # Reassess unconfirmed texts
+        for filename in list(self.unconfirmed_texts.keys()):
+            if self.is_text_confirmable(filename):
+                self.confirm_text(filename)
 
     def confirm_text(self, filename: str) -> None:
         if filename in self.confirmed_texts:
@@ -201,6 +304,8 @@ class ZeldaOOT3DHDTextGenerator(object):
         elif filename not in self.unconfirmed_texts:
             raise ValueError()
 
+        if self.verbosity >= 2:
+            print(f"{filename}: confirmed")
         self.confirmed_texts[filename] = self.get_text(filename)
         del self.unconfirmed_texts[filename]
 
@@ -323,6 +428,37 @@ class ZeldaOOT3DHDTextGenerator(object):
                                      chunks=True,
                                      compression="gzip")
 
+    # endregion
+
+    # region Private Methods
+
+    def _draw_scaled_chars(self) -> None:
+        scaled_chars = {}
+        for char, (assignment, confirmed) in self.chars.items():
+            if not confirmed:
+                continue
+            size = 16 * self.scale
+
+            # data = np.frombuffer(char, dtype=np.uint8).reshape(16, 16)
+            # image = Image.fromarray(data).resize((size, size), Image.NEAREST)
+            # print(data)
+            # self.show_image(image)
+
+            image = Image.new("L", (size, size), 0)
+            draw = ImageDraw.Draw(image)
+            font = ImageFont.truetype(self.font, self.fontsize)
+            width, height = draw.textsize(assignment, font=font)
+            draw.text(((size - width) / 2, (size - height) / 2),
+                      assignment, font=font, fill=255)
+            # self.show_image(image)
+
+            # input(f"Assigned to '{assignment}'")
+            scaled_chars[assignment] = np.array(image)
+
+        self._scaled_chars = scaled_chars
+
+    # endregion
+
     # Static Methods
 
     @staticmethod
@@ -337,5 +473,6 @@ class ZeldaOOT3DHDTextGenerator(object):
     # endregion
 
 
+#################################### MAIN #####################################
 if __name__ == "__main__":
     ZeldaOOT3DHDTextGenerator()()
