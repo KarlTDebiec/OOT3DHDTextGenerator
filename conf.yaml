@@ -2,4 +2,4 @@ Dump: /Users/kdebiec/Documents/Zelda/1x_text_en/
 Load: /Users/kdebiec/Documents/Zelda/4x_text/
 Font: /path/to/font
 Language: english
-Cache: /Users/kdebiec/Documents/Zelda/data.h5
+Cache: /Users/kdebiec/Documents/Zelda/cache.h5
