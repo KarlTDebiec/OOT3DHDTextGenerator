@@ -1,8 +1,9 @@
-dump: /Users/kdebiec/Documents/Zelda/1x_text_en/
-load: /Users/kdebiec/Documents/Zelda/4x_text/
+dump: $HOME/.local/share/citra-emu/dump/textures/0004000000033600
+load: $HOME/.local/share/citra-emu/load/textures/0004000000033600
 scale: 4
-font: /System/Library/Fonts/STHeiti Light.ttc
-fontsize: 56
+font: /System/Library/Fonts/Helvetica.ttc
+fontsize: 50
 language: english
-cache: /Users/kdebiec/Documents/Zelda/cache.h5
-verbosity: 2
+cache: $HOME/Documents/Zelda/cache.h5
+verbosity: 1
+overwrite: True

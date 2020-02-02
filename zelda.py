@@ -9,6 +9,7 @@
 #   BSD license.
 ################################### MODULES ###################################
 from collections import OrderedDict
+from itertools import product
 from os import R_OK, W_OK, access, listdir
 from os.path import dirname, expandvars, isdir, isfile
 from typing import Union
@@ -37,28 +38,36 @@ class ZeldaOOT3DHDTextGenerator(object):
         with open(conf_file, "r") as f:
             conf = yaml.load(f, Loader=yaml.SafeLoader)
         self.dump_directory = conf["dump"]
+        self.load_directory = conf["load"]
         self.cache_file = conf["cache"]
         self.scale = conf["scale"]
         self.verbosity = conf["verbosity"]
         self.font = conf["font"]
         self.fontsize = conf["fontsize"]
+        self.overwrite = conf["overwrite"]
 
     def __call__(self):
 
         # Load cache
+        if self.verbosity >= 1:
+            print(f"Loading cache from '{self.cache_file}'")
         self.load_cache()
 
         # Review all existing images
+        if self.verbosity >= 1:
+            print(f"Loading images from  '{self.dump_directory}'")
         for i, filename in enumerate(listdir(self.dump_directory)):
 
             # If filename is known, check if confirmed or unconfirmed
             if filename in self.confirmed_texts:
                 if self.verbosity >= 2:
-                    print(f"{filename}: previously confirmed")
+                    print(f"{self.load_directory}/{filename}: "
+                          f"previously confirmed")
                 continue
             elif filename in self.unconfirmed_texts:
                 if self.verbosity >= 2:
-                    print(f"{filename}: previously unconfirmed")
+                    print(f"{self.load_directory}/{filename}: "
+                          f"previously unconfirmed")
                 if self.is_text_confirmable(filename):
                     self.confirm_text(filename)
                 else:
@@ -67,26 +76,29 @@ class ZeldaOOT3DHDTextGenerator(object):
             # If file is not a text image, skip
             if not self.is_file_text_image(filename):
                 if self.verbosity >= 2:
-                    print(f"{filename}: not a text image")
+                    print(f"{self.load_directory}/{filename}: "
+                          f"not a text image")
                 continue
 
             # Otherwise, add new text
             if self.verbosity >= 2:
-                print(f"{filename}: new text image")
+                print(f"{self.load_directory}/{filename}: "
+                      f"new text image")
             self.add_text(filename)
 
         # Assign unassigned characters
         self.manually_assign_chars()
 
         # Save cache
+        if self.verbosity >= 1:
+            print(f"Saving cache to '{self.cache_file}'")
         self.save_cache()
 
-        print(self.scaled_chars)
-
         # Generate scaled text images
-        for filename, text in self.confirmed_texts.items():
-            if isfile(f"{self.load_directory}/{filename}"):
-                continue
+        if self.verbosity >= 1:
+            print(f"Saving images to '{self.load_directory}'")
+        for filename in self.confirmed_texts:
+            self.save_text(filename)
 
     # endregion
 
@@ -175,6 +187,7 @@ class ZeldaOOT3DHDTextGenerator(object):
     @load_directory.setter
     def load_directory(self, value):
         value = expandvars(value)
+        # TODO: Create if possible
         if not (isdir(value) and access(value, W_OK)):
             raise ValueError()
         self._load_directory = value
@@ -198,6 +211,18 @@ class ZeldaOOT3DHDTextGenerator(object):
     @fontsize.setter
     def fontsize(self, value: int):
         self._fontsize = value
+
+    @property
+    def overwrite(self) -> bool:
+        if not hasattr(self, "_overwrite"):
+            self._overwrite = False
+        return self._overwrite
+
+    @overwrite.setter
+    def overwrite(self, value: bool):
+        if not isinstance(value, bool):
+            raise ValueError()
+        self._overwrite = value
 
     @property
     def scale(self) -> int:
@@ -428,33 +453,81 @@ class ZeldaOOT3DHDTextGenerator(object):
                                      chunks=True,
                                      compression="gzip")
 
+    def save_text(self, filename: str) -> None:
+        if isfile(f"{self.load_directory}/{filename}") and not self.overwrite:
+            return
+
+        s = 16 * self.scale
+        text_data = np.zeros((256 * self.scale, 256 * self.scale, 4),
+                             np.uint8)
+        x = y = 0
+
+        for i, char in enumerate(self.confirmed_texts[filename]):
+            char_data = self.scaled_chars[char]
+            x = i % 16
+            y = i // 16
+            text_data[y * s:(y + 1) * s, x * s:(x + 1) * s, 3] = char_data
+        image = Image.fromarray(text_data)
+        image.save(f"{self.load_directory}/{filename}")
+        if self.verbosity >= 1:
+            print(f"{self.load_directory}/{filename} saved")
+
     # endregion
 
     # region Private Methods
 
     def _draw_scaled_chars(self) -> None:
         scaled_chars = {}
+
+        total_diff = 0
         for char, (assignment, confirmed) in self.chars.items():
             if not confirmed:
                 continue
             size = 16 * self.scale
 
-            # data = np.frombuffer(char, dtype=np.uint8).reshape(16, 16)
-            # image = Image.fromarray(data).resize((size, size), Image.NEAREST)
-            # print(data)
-            # self.show_image(image)
+            # Load original character image for alignment
+            orig_data = np.frombuffer(char, dtype=np.uint8).reshape(16, 16)
+            orig_image = Image.fromarray(orig_data).resize((size, size),
+                                                           Image.BICUBIC)
+            orig_data = np.array(orig_image)
+            # print(orig_data)
+            # self.show_image(orig_image)
 
-            image = Image.new("L", (size, size), 0)
-            draw = ImageDraw.Draw(image)
+            # Draw scaled character image
+            scaled_image = Image.new("L", (size, size), 0)
+            draw = ImageDraw.Draw(scaled_image)
             font = ImageFont.truetype(self.font, self.fontsize)
             width, height = draw.textsize(assignment, font=font)
-            draw.text(((size - width) / 2, (size - height) / 2),
-                      assignment, font=font, fill=255)
-            # self.show_image(image)
+            xy = ((size - width) / 2, (size - height) / 2)
+            draw.text(xy, assignment, font=font, fill=255)
+            scaled_data = np.array(scaled_image)
+            # self.show_image(scaled_image)
 
-            # input(f"Assigned to '{assignment}'")
-            scaled_chars[assignment] = np.array(image)
+            # Align
+            max_offset = 8
+            offsets = range(-1 * max_offset, max_offset + 1)
+            best_diff = size * size * 255
+            best_offset = None
+            for offset in product(offsets, offsets):
+                diff = orig_data.astype(np.int16) \
+                       - np.roll(scaled_data, offset, (0, 1)).astype(np.int16)
+                diff = np.abs(diff).sum()
+                if diff < best_diff:
+                    best_diff = diff
+                    best_offset = offset
+            scaled_data = np.roll(scaled_data, best_offset, (0, 1))
+            total_diff += best_diff
 
+            # print(f"Best offset for {assignment} is {best_offset}, "
+            #       f"yielding {best_diff}")
+            # diff = orig_data.astype(np.int16) - scaled_data.astype(np.int16)
+            # diff = np.abs(diff).astype(np.uint8)
+            # self.show_image(Image.fromarray(diff))
+            # self.show_image(Image.fromarray(scaled_data))
+
+            scaled_chars[assignment] = scaled_data
+
+        print(f"Total diff between new images and scaled old: {total_diff}")
         self._scaled_chars = scaled_chars
 
     # endregion
