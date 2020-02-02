@@ -7,3 +7,4 @@ language: english
 cache: $HOME/Documents/Zelda/cache.h5
 verbosity: 2
 overwrite: False
+watch: False

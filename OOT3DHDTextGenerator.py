@@ -1,6 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-#   zelda.py
+#   OOT3DHDTextGenerator.py
 #
 #   Copyright (C) 2020 Karl T Debiec
 #   All rights reserved.
@@ -28,7 +28,7 @@ from PIL import Image, ImageDraw, ImageFont, UnidentifiedImageError
 ################################### CLASSES ###################################
 class OOT3DHDTextGenerator(object):
     # TODO: Document
-    # TODO: Decide how to monitor chars for changes and wipe cached properties
+    # TODO: Better monitor chars for changes and wipe cached properties
 
     class FileCreatedEventHandler(FileSystemEventHandler):
         def __init__(self, host):
@@ -51,10 +51,12 @@ class OOT3DHDTextGenerator(object):
         self.load_directory = conf["load"]
         self.cache_file = conf["cache"]
         self.scale = conf["scale"]
+        self.language = conf["language"]
         self.verbosity = conf["verbosity"]
         self.font = conf["font"]
         self.fontsize = conf["fontsize"]
         self.overwrite = conf["overwrite"]
+        self.watch = conf["watch"]
 
     def __call__(self):
 
@@ -77,30 +79,28 @@ class OOT3DHDTextGenerator(object):
             print(f"Saving cache to '{self.cache_file}'")
         self.save_cache()
 
-        # Generate scaled text images
+        # Save text images
         if self.verbosity >= 1:
             print(f"Saving images to '{self.load_directory}'")
         for filename in self.confirmed_texts:
             self.save_text(filename)
 
         # Watch for additional images and process as they appear
-        if self.verbosity >= 1:
-            print(f"Watching for new images in  '{self.dump_directory}'")
-        event_handler = self.FileCreatedEventHandler(self)
-        observer = self.observer
-        observer.schedule(event_handler, self.dump_directory)
-        observer.start()
-        try:
-            while True:
-                sleep(1)
-        except KeyboardInterrupt:
-            observer.stop()
-        observer.join()
+        if self.watch:
+            if self.verbosity >= 1:
+                print(f"Watching for new images in  '{self.dump_directory}'")
+            self.observer.start()
+            try:
+                while True:
+                    sleep(1)
+            except KeyboardInterrupt:
+                self.observer.stop()
+            self.observer.join()
 
-        # Save cache after watching
-        if self.verbosity >= 1:
-            print(f"Saving cache to '{self.cache_file}'")
-        self.save_cache()
+            # Resave cache after watching
+            if self.verbosity >= 1:
+                print(f"Saving cache to '{self.cache_file}'")
+            self.save_cache()
 
     # endregion
 
@@ -168,6 +168,14 @@ class OOT3DHDTextGenerator(object):
         self._confirmed_texts = value
 
     @property
+    def confirmed_texts_languages(self):
+        return [t[0] for t in self.confirmed_texts.values()]
+
+    @property
+    def confirmed_texts_texts(self):
+        return [t[1] for t in self.confirmed_texts.values()]
+
+    @property
     def dump_directory(self) -> str:
         if not hasattr(self, "_dump_directory"):
             raise ValueError()
@@ -181,18 +189,10 @@ class OOT3DHDTextGenerator(object):
         self._dump_directory = value
 
     @property
-    def load_directory(self):
-        if not hasattr(self, "_load_directory"):
-            raise ValueError()
-        return self._load_directory
-
-    @load_directory.setter
-    def load_directory(self, value):
-        value = expandvars(value)
-        # TODO: Create if possible
-        if not (isdir(value) and access(value, W_OK)):
-            raise ValueError()
-        self._load_directory = value
+    def event_handler(self):
+        if not hasattr(self, "_event_handler"):
+            self._event_handler = self.FileCreatedEventHandler(self)
+        return self._event_handler
 
     @property
     def font(self) -> str:
@@ -215,9 +215,37 @@ class OOT3DHDTextGenerator(object):
         self._fontsize = value
 
     @property
+    def language(self) -> str:
+        if not hasattr(self, "_language"):
+            self._language = "english"
+        return self._language
+
+    @language.setter
+    def language(self, value: str):
+        if not isinstance(value, str):
+            raise ValueError()
+        value = value.lower()
+        self._language = value
+
+    @property
+    def load_directory(self):
+        if not hasattr(self, "_load_directory"):
+            raise ValueError()
+        return self._load_directory
+
+    @load_directory.setter
+    def load_directory(self, value):
+        value = expandvars(value)
+        # TODO: Create if possible
+        if not (isdir(value) and access(value, W_OK)):
+            raise ValueError()
+        self._load_directory = value
+
+    @property
     def observer(self) -> Observer:
         if not hasattr(self, "_observer"):
             self._observer = Observer()
+            self._observer.schedule(self.event_handler, self.dump_directory)
         return self._observer
 
     @property
@@ -283,6 +311,18 @@ class OOT3DHDTextGenerator(object):
             raise ValueError()
         self._verbosity = value
 
+    @property
+    def watch(self) -> bool:
+        if not hasattr(self, "_watch"):
+            self._watch = False
+        return self._watch
+
+    @watch.setter
+    def watch(self, value: bool):
+        if not isinstance(value, bool):
+            raise ValueError()
+        self._watch = value
+
     # endregion
 
     # region Public Methods
@@ -339,7 +379,8 @@ class OOT3DHDTextGenerator(object):
 
         if self.verbosity >= 2:
             print(f"{filename}: confirmed")
-        self.confirmed_texts[filename] = self.get_text(filename)
+        self.confirmed_texts[filename] = (self.language,
+                                          self.get_text(filename))
         del self.unconfirmed_texts[filename]
 
     def get_text(self, filename: str) -> str:
@@ -397,10 +438,12 @@ class OOT3DHDTextGenerator(object):
             if "texts/confirmed" in cache:
                 filenames = [f.decode("UTF8") for f in
                              np.array(cache["texts/confirmed/filenames"])]
-                texts = [f.decode("UTF8") for f in
-                         np.array(cache["texts/confirmed/text"])]
-                for f, t in zip(filenames, texts):
-                    self.confirmed_texts[f] = t
+                texts = [t.decode("UTF8") for t in
+                         np.array(cache["texts/confirmed/texts"])]
+                languages = [l.decode("UTF8") for l in
+                             np.array(cache["texts/confirmed/languages"])]
+                for f, l, t in zip(filenames, languages, texts):
+                    self.confirmed_texts[f] = (l, t)
 
     def process_file(self, filename: str, save: bool = False) -> None:
         # If file is already confirmed, skip
@@ -471,9 +514,8 @@ class OOT3DHDTextGenerator(object):
                                      chunks=True,
                                      compression="gzip")
                 cache.create_dataset("texts/unconfirmed/indexes",
-                                     data=np.stack(
-                                         list(
-                                             self.unconfirmed_texts.values())),
+                                     data=np.stack(list(
+                                         self.unconfirmed_texts.values())),
                                      dtype=np.uint32,
                                      chunks=True,
                                      compression="gzip")
@@ -488,9 +530,15 @@ class OOT3DHDTextGenerator(object):
                                      dtype="S48",
                                      chunks=True,
                                      compression="gzip")
-                cache.create_dataset("texts/confirmed/text",
+                cache.create_dataset("texts/confirmed/languages",
+                                     data=[l.encode("UTF8") for l in
+                                           self.confirmed_texts_languages],
+                                     dtype="S24",
+                                     chunks=True,
+                                     compression="gzip")
+                cache.create_dataset("texts/confirmed/texts",
                                      data=[t.encode("UTF8") for t in
-                                           self.confirmed_texts.values()],
+                                           self.confirmed_texts_texts],
                                      dtype="S1024",
                                      chunks=True,
                                      compression="gzip")
@@ -504,7 +552,7 @@ class OOT3DHDTextGenerator(object):
                              np.uint8)
         x = y = 0
 
-        for i, char in enumerate(self.confirmed_texts[filename]):
+        for i, char in enumerate(self.confirmed_texts[filename][1]):
             char_data = self.scaled_chars[char]
             x = i % 16
             y = i // 16
