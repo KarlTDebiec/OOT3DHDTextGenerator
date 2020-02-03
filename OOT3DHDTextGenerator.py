@@ -30,7 +30,10 @@ class OOT3DHDTextGenerator(object):
     # TODO: Document
     # TODO: Better monitor chars for changes and wipe cached properties
 
+    # region Classes
+
     class FileCreatedEventHandler(FileSystemEventHandler):
+
         def __init__(self, host):
             self.host = host
 
@@ -38,9 +41,11 @@ class OOT3DHDTextGenerator(object):
             filename = basename(event.key[1])
             self.host.process_file(filename, True)
 
+    # endregion
+
     # region Builtins
 
-    def __init__(self, conf_file: str = "conf.yaml"):
+    def __init__(self, conf_file: str = "conf_cn.yaml"):
 
         # Read configuration
         if not (isfile(conf_file) and access(conf_file, R_OK)):
@@ -83,7 +88,8 @@ class OOT3DHDTextGenerator(object):
         if self.verbosity >= 1:
             print(f"Saving images to '{self.load_directory}'")
         for filename in self.confirmed_texts:
-            self.save_text(filename)
+            if self.confirmed_texts[filename][0] == self.language:
+                self.save_text(filename)
 
         # Watch for additional images and process as they appear
         if self.watch:
@@ -299,6 +305,14 @@ class OOT3DHDTextGenerator(object):
         self._unconfirmed_texts = value
 
     @property
+    def unconfirmed_texts_languages(self):
+        return [t[0] for t in self.unconfirmed_texts.values()]
+
+    @property
+    def unconfirmed_texts_indexes(self):
+        return [t[1] for t in self.unconfirmed_texts.values()]
+
+    @property
     def verbosity(self) -> int:
         """int: Level of output to provide"""
         if not hasattr(self, "_verbosity"):
@@ -342,7 +356,8 @@ class OOT3DHDTextGenerator(object):
                 if char_bytes not in self.chars:
                     self.chars[char_bytes] = ("", False)
                 indexes.append(self.char_bytes.index(char_bytes))
-        self.unconfirmed_texts[filename] = np.array(indexes, np.uint32)
+        self.unconfirmed_texts[filename] = (self.language,
+                                            np.array(indexes, np.uint32))
         if self.is_text_confirmable(filename):
             self.confirm_text(filename)
 
@@ -387,7 +402,7 @@ class OOT3DHDTextGenerator(object):
         if filename not in self.unconfirmed_texts:
             raise ValueError()
 
-        indexes = self.unconfirmed_texts[filename]
+        indexes = self.unconfirmed_texts[filename][1]
         assignments = [self.char_assignments[i] for i in indexes]
         return "".join(assignments).rstrip()
 
@@ -406,7 +421,7 @@ class OOT3DHDTextGenerator(object):
         if filename not in self.unconfirmed_texts:
             raise ValueError()
 
-        indexes = self.unconfirmed_texts[filename]
+        indexes = self.unconfirmed_texts[filename][1]
         confirmations = [self.char_confirmations[i] for i in indexes]
         if np.all(confirmations):
             return True
@@ -430,18 +445,20 @@ class OOT3DHDTextGenerator(object):
             if "texts/unconfirmed" in cache:
                 filenames = [f.decode("UTF8") for f in
                              np.array(cache["texts/unconfirmed/filenames"])]
+                languages = [l.decode("UTF8") for l in
+                             np.array(cache["texts/unconfirmed/languages"])]
                 indexes = np.array(cache["texts/unconfirmed/indexes"])
-                for cache, i in zip(filenames, indexes):
-                    self.unconfirmed_texts[cache] = i
+                for f, l, i in zip(filenames, languages, indexes):
+                    self.unconfirmed_texts[f] = (l, i)
 
             # Load confirmed texts
             if "texts/confirmed" in cache:
                 filenames = [f.decode("UTF8") for f in
                              np.array(cache["texts/confirmed/filenames"])]
-                texts = [t.decode("UTF8") for t in
-                         np.array(cache["texts/confirmed/texts"])]
                 languages = [l.decode("UTF8") for l in
                              np.array(cache["texts/confirmed/languages"])]
+                texts = [t.decode("UTF8") for t in
+                         np.array(cache["texts/confirmed/texts"])]
                 for f, l, t in zip(filenames, languages, texts):
                     self.confirmed_texts[f] = (l, t)
 
@@ -464,7 +481,7 @@ class OOT3DHDTextGenerator(object):
 
         # If file is not a text image, skip
         if not self.is_file_text_image(filename):
-            if self.verbosity >= 2:
+            if self.verbosity >= 3:
                 print(f"{self.dump_directory}/{filename}: "
                       f"not a text image")
             return
@@ -513,9 +530,15 @@ class OOT3DHDTextGenerator(object):
                                      dtype="S48",
                                      chunks=True,
                                      compression="gzip")
+                cache.create_dataset("texts/unconfirmed/languages",
+                                     data=[l.encode("UTF8") for l in
+                                           self.unconfirmed_texts_languages],
+                                     dtype="S24",
+                                     chunks=True,
+                                     compression="gzip")
                 cache.create_dataset("texts/unconfirmed/indexes",
-                                     data=np.stack(list(
-                                         self.unconfirmed_texts.values())),
+                                     data=np.stack(
+                                         self.unconfirmed_texts_indexes),
                                      dtype=np.uint32,
                                      chunks=True,
                                      compression="gzip")
