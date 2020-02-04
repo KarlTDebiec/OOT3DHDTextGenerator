@@ -2,7 +2,7 @@ dump: $HOME/.local/share/citra-emu/dump/textures/000400000008F900
 load: $HOME/.local/share/citra-emu/load/textures/000400000008F900
 scale: 4
 font: /System/Library/Fonts/STHeiti Medium.ttc
-fontsize: 50
+fontsize: 60
 language: simplified chinese
 cache: $HOME/Documents/Zelda/cache.h5
 verbosity: 2

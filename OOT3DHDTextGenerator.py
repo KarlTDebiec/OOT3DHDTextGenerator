@@ -26,7 +26,7 @@ from PIL import Image, ImageDraw, ImageFont, UnidentifiedImageError
 
 
 ################################### CLASSES ###################################
-class OOT3DHDTextGenerator(object):
+class OOT3DHDTextGenerator():
     # TODO: Document
     # TODO: Better monitor chars for changes and wipe cached properties
 
@@ -71,18 +71,20 @@ class OOT3DHDTextGenerator(object):
         self.load_cache()
 
         # Review all existing images
-        if self.verbosity >= 1:
-            print(f"Loading images from  '{self.dump_directory}'")
-        for filename in listdir(self.dump_directory):
-            self.process_file(filename)
+        # if self.verbosity >= 1:
+        #     print(f"Loading images from  '{self.dump_directory}'")
+        # for filename in listdir(self.dump_directory):
+        #     self.process_file(filename)
 
         # Assign unassigned characters
-        self.manually_assign_chars()
+        # self.manually_assign_chars()
 
         # Save cache
-        if self.verbosity >= 1:
-            print(f"Saving cache to '{self.cache_file}'")
-        self.save_cache()
+        # if self.verbosity >= 1:
+        #     print(f"Saving cache to '{self.cache_file}'")
+        # self.save_cache()
+
+        self.scaled_chars
 
         # Save text images
         if self.verbosity >= 1:
@@ -592,19 +594,28 @@ class OOT3DHDTextGenerator(object):
     def _draw_scaled_chars(self) -> None:
         scaled_chars = {}
 
+        western_chars = np.array(list(
+            "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"))
+        numeric_chars = np.array(list("0123456789"))
+
         total_diff = 0
         for char, (assignment, confirmed) in self.chars.items():
             if not confirmed:
                 continue
             size = 16 * self.scale
+            debug = False
+            if assignment not in western_chars:
+                if assignment not in numeric_chars:
+                    debug = True
 
             # Load original character image for alignment
             orig_data = np.frombuffer(char, dtype=np.uint8).reshape(16, 16)
             orig_image = Image.fromarray(orig_data).resize((size, size),
                                                            Image.BICUBIC)
             orig_data = np.array(orig_image)
-            # print(orig_data)
-            # self.show_image(orig_image)
+            if debug:
+                print(orig_data)
+                self.show_image(orig_image)
 
             # Draw scaled character image
             scaled_image = Image.new("L", (size, size), 0)
@@ -614,7 +625,8 @@ class OOT3DHDTextGenerator(object):
             xy = ((size - width) / 2, (size - height) / 2)
             draw.text(xy, assignment, font=font, fill=255)
             scaled_data = np.array(scaled_image)
-            # self.show_image(scaled_image)
+            if debug:
+                self.show_image(scaled_image)
 
             # Align
             max_offset = 8
@@ -631,12 +643,15 @@ class OOT3DHDTextGenerator(object):
             scaled_data = np.roll(scaled_data, best_offset, (0, 1))
             total_diff += best_diff
 
-            # print(f"Best offset for {assignment} is {best_offset}, "
-            #       f"yielding {best_diff}")
-            # diff = orig_data.astype(np.int16) - scaled_data.astype(np.int16)
-            # diff = np.abs(diff).astype(np.uint8)
-            # self.show_image(Image.fromarray(diff))
-            # self.show_image(Image.fromarray(scaled_data))
+            if debug:
+                print(f"Best offset for {assignment} is {best_offset}, "
+                      f"yielding {best_diff}")
+                diff = orig_data.astype(np.int16) - scaled_data.astype(
+                    np.int16)
+                diff = np.abs(diff).astype(np.uint8)
+                self.show_image(Image.fromarray(diff))
+                self.show_image(Image.fromarray(scaled_data))
+                input("Enter to continue")
 
             scaled_chars[assignment] = scaled_data
 
