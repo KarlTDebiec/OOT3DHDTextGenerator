@@ -66,6 +66,7 @@ class OOT3DHDTextGenerator():
     def __call__(self):
 
         # Load cache
+        # TODO: If cache file does not exist, don't try to open it
         if self.verbosity >= 1:
             print(f"Loading cache from '{self.cache_file}'")
         self.load_cache()

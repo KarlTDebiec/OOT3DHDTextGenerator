@@ -1,1 +1,2 @@
 verbosity: 2
+cache: $HOME/Documents/Zelda/train.h5
