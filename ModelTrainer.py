@@ -27,6 +27,7 @@ hanzi_frequency = pd.read_csv(f"{package_root}/data/characters.txt",
                               sep="\t", names=["character", "frequency",
                                                "cumulative frequency"])
 hanzi_chars = np.array(hanzi_frequency["character"], np.str)
+n_chars = 100
 
 
 ################################### CLASSES ###################################
@@ -47,28 +48,48 @@ class ModelTrainer():
         pass
 
         # Load cache
-        if isfile(self.cache_file):
-            if not access(self.cache_file, R_OK):
-                raise ValueError()
-            if self.verbosity >= 1:
-                print(f"Loading cache from '{self.cache_file}'")
-            self.load_cache()
-        else:
-            # Generate images
-            self.draw_images()
+        # if isfile(self.cache_file):
+        #     if not access(self.cache_file, R_OK):
+        #         raise ValueError()
+        #     if self.verbosity >= 1:
+        #         print(f"Loading cache from '{self.cache_file}'")
+        #     self.load_cache()
+        # else:
+        #     # Generate images
+        #     self.draw_images()
+        self.draw_images()
 
         # Train
         self.select_trn_tst_val_images()
 
-        batch_size = 100
-
-        # trn_img, trn_lbl, val_img, val_lbl = trn_ds.get_data_for_tensorflow(0.0)
-        # tst_img, tst_lbl = tst_ds.get_data_for_tensorflow()
-        # trn_img = np.expand_dims(trn_img, axis=3)
-        # tst_img = np.expand_dims(tst_img, axis=3)
+        epochs = 100
+        batch_size = n_chars
+        sorter = np.argsort(hanzi_chars)
+        trn_images = np.expand_dims(
+            self.trn_images.astype(np.float16) / 255.0, axis=3)
+        trn_labels = np.array(sorter[np.searchsorted(
+            hanzi_chars, self.trn_labels, sorter=sorter)])
+        tst_images = np.expand_dims(
+            self.tst_images.astype(np.float16) / 255.0, axis=3)
+        tst_labels = np.array(sorter[np.searchsorted(
+            hanzi_chars, self.tst_labels, sorter=sorter)])
+        val_images = np.expand_dims(
+            self.val_images.astype(np.float16) / 255.0, axis=3)
+        val_labels = np.array(sorter[np.searchsorted(
+            hanzi_chars, self.val_labels, sorter=sorter)])
 
         model = self.get_model()
         print(model.summary())
+        model.fit(trn_images, trn_labels, epochs=epochs, batch_size=batch_size,
+                  validation_data=(val_images, val_labels),
+                  callbacks=[
+                      keras.callbacks.EarlyStopping(
+                          monitor="val_loss", min_delta=0.01, patience=3,
+                          verbose=1),
+                      keras.callbacks.ModelCheckpoint(
+                          f"{dirname(self.cache_file)}/{n_chars:05d}_"
+                          "{epoch:03d}_{val_accuracy:6.4f}.h5",
+                          monitor="val_accuracy", verbose=1)])
 
         # Evaluate
 
@@ -188,33 +209,36 @@ class ModelTrainer():
     # region Methods
 
     def draw_images(self) -> None:
-        n_chars = 100
+
         fonts = ["/System/Library/Fonts/STHeiti Light.ttc",
                  "/System/Library/Fonts/STHeiti Medium.ttc",
                  "/Library/Fonts/Songti.ttc"]
         sizes = [11, 12, 13]
         offsets = [-1, 0, 1]
-        rotations = [-7, 0, 7]
+        fills = [205, 215, 225, 235, 245, 255]
+        rotations = [0]
         n_images = len(hanzi_chars[:n_chars]) * len(fonts) * len(sizes) \
-                   * len(offsets) * len(offsets) * len(rotations)
+                   * len(fills) * len(offsets) * len(offsets) \
+                   * len(rotations)
         self.all_images = np.zeros((n_images, 16, 16), np.uint8)
         self.all_labels = np.zeros(n_images, str)
         i = 0
         for char in hanzi_chars[:n_chars]:
             for font in fonts:
                 for size in sizes:
-                    for offset in product(offsets, offsets):
-                        for rotation in rotations:
-                            data = self.draw_image(char, font=font,
-                                                   size=size,
-                                                   offset=offset,
-                                                   rotation=rotation)
-                            print(f"{i:06d}", char, font, size, offset,
-                                  rotation)
-                            print(data)
-                            self.all_images[i] = data
-                            self.all_labels[i] = char
-                            i += 1
+                    for fill in fills:
+                        for offset in product(offsets, offsets):
+                            for rotation in rotations:
+                                data = self.draw_image(
+                                    char, font=font, size=size,
+                                    fill=fill, offset=offset,
+                                    rotation=rotation)
+                                print(f"{i:06d}", char, font, size,
+                                      fill, offset, rotation)
+                                print(data)
+                                self.all_images[i] = data
+                                self.all_labels[i] = char
+                                i += 1
 
     def get_model(self):
         model = keras.Sequential([
@@ -231,36 +255,12 @@ class ModelTrainer():
             keras.layers.MaxPooling2D(pool_size=2),
             keras.layers.Dropout(0.5),
             keras.layers.Flatten(),
-            keras.layers.Dense(100, activation="softmax")
+            keras.layers.Dense(n_chars, activation="softmax")
         ])
         model.compile(optimizer="adam",
                       loss="sparse_categorical_crossentropy",
                       metrics=["accuracy"])
         return model
-
-    def select_trn_tst_val_images(self, tst_portion: float = 0.1,
-                                  val_portion: float = 0.1) -> None:
-        from random import sample
-
-        # Select indexes
-        trn_indexes = set(range(self.all_labels.size))
-        tst_indexes = set(sample(
-            trn_indexes, int(np.floor(self.all_labels.size * tst_portion))))
-        trn_indexes -= tst_indexes
-        val_indexes = set(sample(
-            trn_indexes, int(np.floor(self.all_labels.size * val_portion))))
-        trn_indexes -= val_indexes
-        trn_indexes = sorted(trn_indexes)
-        tst_indexes = sorted(tst_indexes)
-        val_indexes = sorted(val_indexes)
-
-        # Store
-        self.trn_images = self.all_images[trn_indexes]
-        self.trn_labels = self.all_labels[trn_indexes]
-        self.tst_images = self.all_images[tst_indexes]
-        self.tst_labels = self.all_labels[tst_indexes]
-        self.val_images = self.all_images[val_indexes]
-        self.val_labels = self.all_labels[val_indexes]
 
     def load_cache(self) -> None:
 
@@ -290,6 +290,30 @@ class ModelTrainer():
                                  chunks=True,
                                  compression="gzip")
 
+    def select_trn_tst_val_images(self, tst_portion: float = 0.1,
+                                  val_portion: float = 0.1) -> None:
+        from random import sample
+
+        # Select indexes
+        trn_indexes = set(range(self.all_labels.size))
+        tst_indexes = set(sample(
+            trn_indexes, int(np.floor(self.all_labels.size * tst_portion))))
+        trn_indexes -= tst_indexes
+        val_indexes = set(sample(
+            trn_indexes, int(np.floor(self.all_labels.size * val_portion))))
+        trn_indexes -= val_indexes
+        trn_indexes = list(trn_indexes)
+        tst_indexes = list(tst_indexes)
+        val_indexes = list(val_indexes)
+
+        # Store
+        self.trn_images = self.all_images[trn_indexes]
+        self.trn_labels = self.all_labels[trn_indexes]
+        self.tst_images = self.all_images[tst_indexes]
+        self.tst_labels = self.all_labels[tst_indexes]
+        self.val_images = self.all_images[val_indexes]
+        self.val_labels = self.all_labels[val_indexes]
+
     # endregion
 
     # region Static Methods
@@ -297,14 +321,16 @@ class ModelTrainer():
     @staticmethod
     def draw_image(char: str,
                    font: str = "/System/Library/Fonts/STHeiti Light.ttc",
-                   size: int = 12, offset: tuple = (0, 0),
+                   size: int = 12,
+                   fill: int = 0,
+                   offset: tuple = (0, 0),
                    rotation: int = 0):
         image = Image.new("L", (16, 16), 0)
         draw = ImageDraw.Draw(image)
         font = ImageFont.truetype(font, size)
         width, height = draw.textsize(char, font=font)
         xy = ((16 - width) / 2, (16 - height) / 2)
-        draw.text(xy, char, font=font, fill=255)
+        draw.text(xy, char, font=font, fill=fill)
         image = image.rotate(rotation)
         data = np.array(image)
         data = np.roll(data, offset, (0, 1))
