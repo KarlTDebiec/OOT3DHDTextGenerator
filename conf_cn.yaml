@@ -6,5 +6,5 @@ fontsize: 60
 language: simplified chinese
 cache: $HOME/Documents/Zelda/cache.h5
 verbosity: 2
-overwrite: False
+overwrite: True
 watch: True

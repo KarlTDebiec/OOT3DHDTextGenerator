@@ -72,20 +72,18 @@ class OOT3DHDTextGenerator():
         self.load_cache()
 
         # Review all existing images
-        # if self.verbosity >= 1:
-        #     print(f"Loading images from  '{self.dump_directory}'")
-        # for filename in listdir(self.dump_directory):
-        #     self.process_file(filename)
+        if self.verbosity >= 1:
+            print(f"Loading images from  '{self.dump_directory}'")
+        for filename in listdir(self.dump_directory):
+            self.process_file(filename)
 
         # Assign unassigned characters
-        # self.manually_assign_chars()
+        self.manually_assign_chars()
 
         # Save cache
-        # if self.verbosity >= 1:
-        #     print(f"Saving cache to '{self.cache_file}'")
-        # self.save_cache()
-
-        self.scaled_chars
+        if self.verbosity >= 1:
+            print(f"Saving cache to '{self.cache_file}'")
+        self.save_cache()
 
         # Save text images
         if self.verbosity >= 1:
@@ -381,6 +379,9 @@ class OOT3DHDTextGenerator():
                     if self.verbosity >= 2:
                         print(f"Confirmed assignment as '{assignment}'")
                     self.chars[char] = (assignment, True)
+            except UnicodeDecodeError as e:
+                print(e)
+                break
             except KeyboardInterrupt:
                 break
 
