@@ -630,29 +630,29 @@ class OOT3DHDTextGenerator():
                 self.show_image(scaled_image)
 
             # Align
-            max_offset = 8
-            offsets = range(-1 * max_offset, max_offset + 1)
-            best_diff = size * size * 255
-            best_offset = None
-            for offset in product(offsets, offsets):
-                diff = orig_data.astype(np.int16) \
-                       - np.roll(scaled_data, offset, (0, 1)).astype(np.int16)
-                diff = np.abs(diff).sum()
-                if diff < best_diff:
-                    best_diff = diff
-                    best_offset = offset
-            scaled_data = np.roll(scaled_data, best_offset, (0, 1))
-            total_diff += best_diff
-
-            if debug:
-                print(f"Best offset for {assignment} is {best_offset}, "
-                      f"yielding {best_diff}")
-                diff = orig_data.astype(np.int16) - scaled_data.astype(
-                    np.int16)
-                diff = np.abs(diff).astype(np.uint8)
-                self.show_image(Image.fromarray(diff))
-                self.show_image(Image.fromarray(scaled_data))
-                input("Enter to continue")
+            #
+            # offsets = range(-1 * max_offset, max_offset + 1)
+            # best_diff = size * size * 255
+            # best_offset = None
+            # for offset in product(offsets, offsets):
+            #     diff = orig_data.astype(np.int16) \
+            #            - np.roll(scaled_data, offset, (0, 1)).astype(np.int16)
+            #     diff = np.abs(diff).sum()
+            #     if diff < best_diff:
+            #         best_diff = diff
+            #         best_offset = offset
+            # scaled_data = np.roll(scaled_data, best_offset, (0, 1))
+            # total_diff += best_diff
+            #
+            # if debug:
+            #     print(f"Best offset for {assignment} is {best_offset}, "
+            #           f"yielding {best_diff}")
+            #     diff = orig_data.astype(np.int16) - scaled_data.astype(
+            #         np.int16)
+            #     diff = np.abs(diff).astype(np.uint8)
+            #     self.show_image(Image.fromarray(diff))
+            #     self.show_image(Image.fromarray(scaled_data))
+            #     input("Enter to continue")
 
             scaled_chars[assignment] = scaled_data
 

@@ -27,7 +27,7 @@ hanzi_frequency = pd.read_csv(f"{package_root}/data/characters.txt",
                               sep="\t", names=["character", "frequency",
                                                "cumulative frequency"])
 hanzi_chars = np.array(hanzi_frequency["character"], np.str)
-n_chars = 100
+n_chars = 9933
 
 
 ################################### CLASSES ###################################
@@ -224,6 +224,7 @@ class ModelTrainer():
         self.all_labels = np.zeros(n_images, str)
         i = 0
         for char in hanzi_chars[:n_chars]:
+            print(char)
             for font in fonts:
                 for size in sizes:
                     for fill in fills:
@@ -233,24 +234,24 @@ class ModelTrainer():
                                     char, font=font, size=size,
                                     fill=fill, offset=offset,
                                     rotation=rotation)
-                                print(f"{i:06d}", char, font, size,
-                                      fill, offset, rotation)
-                                print(data)
+                                # print(f"{i:06d}", char, font, size,
+                                #       fill, offset, rotation)
+                                # print(data)
                                 self.all_images[i] = data
                                 self.all_labels[i] = char
                                 i += 1
 
     def get_model(self):
         model = keras.Sequential([
-            keras.layers.Conv2D(filters=16, kernel_size=2, padding="same",
+            keras.layers.Conv2D(filters=64, kernel_size=2, padding="same",
                                 activation="relu", input_shape=(16, 16, 1)),
             keras.layers.MaxPooling2D(pool_size=2),
             keras.layers.Dropout(0.5),
-            keras.layers.Conv2D(filters=32, kernel_size=2, padding="same",
+            keras.layers.Conv2D(filters=128, kernel_size=2, padding="same",
                                 activation="relu"),
             keras.layers.MaxPooling2D(pool_size=2),
             keras.layers.Dropout(0.5),
-            keras.layers.Conv2D(filters=64, kernel_size=2, padding="same",
+            keras.layers.Conv2D(filters=256, kernel_size=2, padding="same",
                                 activation="relu"),
             keras.layers.MaxPooling2D(pool_size=2),
             keras.layers.Dropout(0.5),
