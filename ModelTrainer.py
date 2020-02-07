@@ -8,26 +8,26 @@
 #   This software may be modified and distributed under the terms of the
 #   BSD license.
 ################################### MODULES ###################################
+from pathlib import Path
+from itertools import product
+from os import R_OK, W_OK, access
+from os.path import dirname, expandvars, isdir, isfile
+from typing import Union
+
+import h5py
 import numpy as np
 import pandas as pd
-from PIL import Image, ImageDraw, ImageFont, UnidentifiedImageError
-from os import R_OK, W_OK, access, listdir
-from os.path import dirname, expandvars, isdir, isfile, basename
-import h5py
-from itertools import product
 import yaml
-from IPython import embed
-import pathlib
-from typing import Union
+from PIL import Image, ImageDraw, ImageFont
 from tensorflow import keras
 
 ################################## VARIABLES ##################################
-package_root = str(pathlib.Path(__file__).parent.absolute())
-hanzi_frequency = pd.read_csv(f"{package_root}/data/characters.txt",
-                              sep="\t", names=["character", "frequency",
-                                               "cumulative frequency"])
+package_root = str(Path(__file__).parent.absolute())
+hanzi_frequency = pd.read_csv(
+    f"{package_root}/data/characters.txt",
+    sep="\t", names=["character", "frequency", "cumulative frequency"])
 hanzi_chars = np.array(hanzi_frequency["character"], np.str)
-n_chars = 9933
+n_chars = 1000
 
 
 ################################### CLASSES ###################################
@@ -213,9 +213,9 @@ class ModelTrainer():
         fonts = ["/System/Library/Fonts/STHeiti Light.ttc",
                  "/System/Library/Fonts/STHeiti Medium.ttc",
                  "/Library/Fonts/Songti.ttc"]
-        sizes = [11, 12, 13]
+        sizes = [13, 14, 15]
         offsets = [-1, 0, 1]
-        fills = [205, 215, 225, 235, 245, 255]
+        fills = [225, 235, 245, 255]
         rotations = [0]
         n_images = len(hanzi_chars[:n_chars]) * len(fonts) * len(sizes) \
                    * len(fills) * len(offsets) * len(offsets) \
@@ -234,9 +234,9 @@ class ModelTrainer():
                                     char, font=font, size=size,
                                     fill=fill, offset=offset,
                                     rotation=rotation)
-                                # print(f"{i:06d}", char, font, size,
-                                #       fill, offset, rotation)
-                                # print(data)
+                                print(f"{i:06d}", char, font, size,
+                                      fill, offset, rotation)
+                                print(data)
                                 self.all_images[i] = data
                                 self.all_labels[i] = char
                                 i += 1

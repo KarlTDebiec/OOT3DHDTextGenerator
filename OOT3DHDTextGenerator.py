@@ -9,20 +9,29 @@
 #   BSD license.
 ################################### MODULES ###################################
 from collections import OrderedDict
-from itertools import product
 from os import R_OK, W_OK, access, listdir
-from os.path import dirname, expandvars, isdir, isfile, basename
-from typing import Union
-
-from watchdog.observers import Observer
-from watchdog.events import FileSystemEventHandler
+from os.path import basename, dirname, expandvars, isdir, isfile
+from pathlib import Path
 from time import sleep
+from typing import Union
 
 import h5py
 import numpy as np
+import pandas as pd
 import yaml
 from IPython import embed
 from PIL import Image, ImageDraw, ImageFont, UnidentifiedImageError
+from tensorflow import keras
+from watchdog.events import FileSystemEventHandler
+from watchdog.observers import Observer
+
+################################## VARIABLES ##################################
+package_root = str(Path(__file__).parent.absolute())
+hanzi_frequency = pd.read_csv(
+    f"{package_root}/data/characters.txt",
+    sep="\t", names=["character", "frequency", "cumulative frequency"])
+hanzi_chars = np.array(hanzi_frequency["character"], np.str)
+n_chars = 9933
 
 
 ################################### CLASSES ###################################
@@ -52,15 +61,16 @@ class OOT3DHDTextGenerator():
             raise ValueError()
         with open(conf_file, "r") as f:
             conf = yaml.load(f, Loader=yaml.SafeLoader)
-        self.dump_directory = conf["dump"]
-        self.load_directory = conf["load"]
         self.cache_file = conf["cache"]
-        self.scale = conf["scale"]
-        self.language = conf["language"]
-        self.verbosity = conf["verbosity"]
+        self.dump_directory = conf["dump"]
         self.font = conf["font"]
         self.fontsize = conf["fontsize"]
+        self.language = conf["language"]
+        self.load_directory = conf["load"]
+        self.model_file = conf["model"]
         self.overwrite = conf["overwrite"]
+        self.scale = conf["scale"]
+        self.verbosity = conf["verbosity"]
         self.watch = conf["watch"]
 
     def __call__(self):
@@ -249,6 +259,26 @@ class OOT3DHDTextGenerator():
         self._load_directory = value
 
     @property
+    def model_file(self) -> Union[str, None]:
+        if not hasattr(self, "_model_file"):
+            self._model_file = None
+        return self._model_file
+
+    @model_file.setter
+    def model_file(self, value: str):
+        value = expandvars(value)
+        if isfile(value):
+            if not (access(value, R_OK) and access(value, W_OK)):
+                raise ValueError()
+        elif isdir(dirname(value)):
+            if not (access(dirname(value), R_OK)
+                    and access(dirname(value), W_OK)):
+                raise ValueError()
+        else:
+            raise ValueError
+        self._model_file = value
+
+    @property
     def observer(self) -> Observer:
         if not hasattr(self, "_observer"):
             self._observer = Observer()
@@ -284,7 +314,7 @@ class OOT3DHDTextGenerator():
     @property
     def scaled_chars(self) -> dict:
         if not hasattr(self, "_scaled_chars"):
-            self._draw_scaled_chars()
+            self.draw_scaled_chars()
         return self._scaled_chars
 
     @scaled_chars.setter
@@ -362,34 +392,6 @@ class OOT3DHDTextGenerator():
         if self.is_text_confirmable(filename):
             self.confirm_text(filename)
 
-    def manually_assign_chars(self) -> None:
-        size = 16 * self.scale
-
-        # Loop over characters and assign
-        for char, (assignment, confirmed) in self.chars.items():
-            if confirmed:
-                continue
-            data = np.frombuffer(char, dtype=np.uint8).reshape(16, 16)
-            image = Image.fromarray(data).resize((size, size), Image.NEAREST)
-            print(data)
-            self.show_image(image)
-            try:
-                assignment = input("Assign image as character:")
-                if assignment != "":
-                    if self.verbosity >= 2:
-                        print(f"Confirmed assignment as '{assignment}'")
-                    self.chars[char] = (assignment, True)
-            except UnicodeDecodeError as e:
-                print(e)
-                break
-            except KeyboardInterrupt:
-                break
-
-        # Reassess unconfirmed texts
-        for filename in list(self.unconfirmed_texts.keys()):
-            if self.is_text_confirmable(filename):
-                self.confirm_text(filename)
-
     def confirm_text(self, filename: str) -> None:
         if filename in self.confirmed_texts:
             raise ValueError()
@@ -401,6 +403,73 @@ class OOT3DHDTextGenerator():
         self.confirmed_texts[filename] = (self.language,
                                           self.get_text(filename))
         del self.unconfirmed_texts[filename]
+
+    def draw_scaled_chars(self) -> None:
+        scaled_chars = {}
+
+        western_chars = np.array(list(
+            "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"))
+        numeric_chars = np.array(list("0123456789"))
+
+        total_diff = 0
+        for char, (assignment, confirmed) in self.chars.items():
+            if not confirmed:
+                continue
+            size = 16 * self.scale
+            debug = False
+            if assignment not in western_chars:
+                if assignment not in numeric_chars:
+                    debug = True
+
+            # Load original character image for alignment
+            orig_data = np.frombuffer(char, dtype=np.uint8).reshape(16, 16)
+            orig_image = Image.fromarray(orig_data).resize((size, size),
+                                                           Image.BICUBIC)
+            orig_data = np.array(orig_image)
+            if debug:
+                print(orig_data)
+                self.show_image(orig_image)
+
+            # Draw scaled character image
+            scaled_image = Image.new("L", (size, size), 0)
+            draw = ImageDraw.Draw(scaled_image)
+            font = ImageFont.truetype(self.font, self.fontsize)
+            width, height = draw.textsize(assignment, font=font)
+            xy = ((size - width) / 2, (size - height) / 2)
+            draw.text(xy, assignment, font=font, fill=255)
+            scaled_data = np.array(scaled_image)
+            if debug:
+                self.show_image(scaled_image)
+
+            # Align
+            #
+            # offsets = range(-1 * max_offset, max_offset + 1)
+            # best_diff = size * size * 255
+            # best_offset = None
+            # for offset in product(offsets, offsets):
+            #     diff = orig_data.astype(np.int16) \
+            #            - np.roll(scaled_data, offset, (0, 1)).astype(np.int16)
+            #     diff = np.abs(diff).sum()
+            #     if diff < best_diff:
+            #         best_diff = diff
+            #         best_offset = offset
+            # scaled_data = np.roll(scaled_data, best_offset, (0, 1))
+            # total_diff += best_diff
+            #
+            # if debug:
+            #     print(f"Best offset for {assignment} is {best_offset}, "
+            #           f"yielding {best_diff}")
+            #     diff = orig_data.astype(np.int16) - scaled_data.astype(
+            #         np.int16)
+            #     diff = np.abs(diff).astype(np.uint8)
+            #     self.show_image(Image.fromarray(diff))
+            #     self.show_image(Image.fromarray(scaled_data))
+            #     input("Enter to continue")
+
+            scaled_chars[assignment] = scaled_data
+
+        # print(f"Total diff between new images and scaled old: {total_diff}")
+        self._scaled_chars = scaled_chars
 
     def get_text(self, filename: str) -> str:
         if filename not in self.unconfirmed_texts:
@@ -443,28 +512,77 @@ class OOT3DHDTextGenerator():
                 confirmations = np.array(cache["characters/confirmations"])
                 images = np.array(cache["characters/images"])
                 for i, a, c in zip(images, assignments, confirmations):
+                    # if a == "心":
+                    #     a = ""
+                    #     c = False
                     self.chars[i.tobytes()] = (a, c)
 
+            embed()
             # Load unconfirmed texts
-            if "texts/unconfirmed" in cache:
-                filenames = [f.decode("UTF8") for f in
-                             np.array(cache["texts/unconfirmed/filenames"])]
-                languages = [l.decode("UTF8") for l in
-                             np.array(cache["texts/unconfirmed/languages"])]
-                indexes = np.array(cache["texts/unconfirmed/indexes"])
-                for f, l, i in zip(filenames, languages, indexes):
-                    self.unconfirmed_texts[f] = (l, i)
+            # if "texts/unconfirmed" in cache:
+            #     filenames = [f.decode("UTF8") for f in
+            #                  np.array(cache["texts/unconfirmed/filenames"])]
+            #     languages = [l.decode("UTF8") for l in
+            #                  np.array(cache["texts/unconfirmed/languages"])]
+            #     indexes = np.array(cache["texts/unconfirmed/indexes"])
+            #     for f, l, i in zip(filenames, languages, indexes):
+            #         self.unconfirmed_texts[f] = (l, i)
 
             # Load confirmed texts
-            if "texts/confirmed" in cache:
-                filenames = [f.decode("UTF8") for f in
-                             np.array(cache["texts/confirmed/filenames"])]
-                languages = [l.decode("UTF8") for l in
-                             np.array(cache["texts/confirmed/languages"])]
-                texts = [t.decode("UTF8") for t in
-                         np.array(cache["texts/confirmed/texts"])]
-                for f, l, t in zip(filenames, languages, texts):
-                    self.confirmed_texts[f] = (l, t)
+            # if "texts/confirmed" in cache:
+            #     filenames = [f.decode("UTF8") for f in
+            #                  np.array(cache["texts/confirmed/filenames"])]
+            #     languages = [l.decode("UTF8") for l in
+            #                  np.array(cache["texts/confirmed/languages"])]
+            #     texts = [t.decode("UTF8") for t in
+            #              np.array(cache["texts/confirmed/texts"])]
+            #     for f, l, t in zip(filenames, languages, texts):
+            #         self.confirmed_texts[f] = (l, t)
+
+    def manually_assign_chars(self) -> None:
+        size = 16 * self.scale
+
+        # Load model
+        if self.model_file is not None:
+            model = keras.models.load_model(self.model_file)
+        else:
+            model = None
+
+        # Loop over characters and assign
+        for char, (assignment, confirmed) in self.chars.items():
+            if confirmed:
+                continue
+            data = np.frombuffer(char, dtype=np.uint8).reshape(16, 16)
+            image = Image.fromarray(data).resize((size, size), Image.NEAREST)
+            print(data)
+            self.show_image(image)
+            try:
+                if model is not None:
+                    # embed()
+                    data = np.expand_dims(np.expand_dims(
+                        data.astype(np.float16) / 255.0, axis=0), axis=3)
+                    label_pred = model.predict(data)
+                    char_pred = hanzi_chars[
+                        np.array(np.argsort(label_pred, axis=1)[:, -1])]
+                    print(char_pred[0])
+                    assignment = self.input_prefill(
+                        "Assign image as character:", char_pred[0])
+                else:
+                    assignment = input("Assign image as character:")
+                if assignment != "":
+                    if self.verbosity >= 2:
+                        print(f"Confirmed assignment as '{assignment}'")
+                    self.chars[char] = (assignment, True)
+            except UnicodeDecodeError as e:
+                print(e)
+                break
+            except KeyboardInterrupt:
+                break
+
+        # Reassess unconfirmed texts
+        for filename in list(self.unconfirmed_texts.keys()):
+            if self.is_text_confirmable(filename):
+                self.confirm_text(filename)
 
     def process_file(self, filename: str, save: bool = False) -> None:
         # If file is already confirmed, skip
@@ -591,78 +709,35 @@ class OOT3DHDTextGenerator():
 
     # endregion
 
-    # region Private Methods
-
-    def _draw_scaled_chars(self) -> None:
-        scaled_chars = {}
-
-        western_chars = np.array(list(
-            "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"))
-        numeric_chars = np.array(list("0123456789"))
-
-        total_diff = 0
-        for char, (assignment, confirmed) in self.chars.items():
-            if not confirmed:
-                continue
-            size = 16 * self.scale
-            debug = False
-            if assignment not in western_chars:
-                if assignment not in numeric_chars:
-                    debug = True
-
-            # Load original character image for alignment
-            orig_data = np.frombuffer(char, dtype=np.uint8).reshape(16, 16)
-            orig_image = Image.fromarray(orig_data).resize((size, size),
-                                                           Image.BICUBIC)
-            orig_data = np.array(orig_image)
-            if debug:
-                print(orig_data)
-                self.show_image(orig_image)
-
-            # Draw scaled character image
-            scaled_image = Image.new("L", (size, size), 0)
-            draw = ImageDraw.Draw(scaled_image)
-            font = ImageFont.truetype(self.font, self.fontsize)
-            width, height = draw.textsize(assignment, font=font)
-            xy = ((size - width) / 2, (size - height) / 2)
-            draw.text(xy, assignment, font=font, fill=255)
-            scaled_data = np.array(scaled_image)
-            if debug:
-                self.show_image(scaled_image)
-
-            # Align
-            #
-            # offsets = range(-1 * max_offset, max_offset + 1)
-            # best_diff = size * size * 255
-            # best_offset = None
-            # for offset in product(offsets, offsets):
-            #     diff = orig_data.astype(np.int16) \
-            #            - np.roll(scaled_data, offset, (0, 1)).astype(np.int16)
-            #     diff = np.abs(diff).sum()
-            #     if diff < best_diff:
-            #         best_diff = diff
-            #         best_offset = offset
-            # scaled_data = np.roll(scaled_data, best_offset, (0, 1))
-            # total_diff += best_diff
-            #
-            # if debug:
-            #     print(f"Best offset for {assignment} is {best_offset}, "
-            #           f"yielding {best_diff}")
-            #     diff = orig_data.astype(np.int16) - scaled_data.astype(
-            #         np.int16)
-            #     diff = np.abs(diff).astype(np.uint8)
-            #     self.show_image(Image.fromarray(diff))
-            #     self.show_image(Image.fromarray(scaled_data))
-            #     input("Enter to continue")
-
-            scaled_chars[assignment] = scaled_data
-
-        print(f"Total diff between new images and scaled old: {total_diff}")
-        self._scaled_chars = scaled_chars
-
-    # endregion
-
     # region Static Methods
+
+    @staticmethod
+    def input_prefill(prompt, prefill):
+        """
+        Prompts user for input with pre-filled text
+
+        Does not handle colored prompt correctly
+
+        TODO: Does this block CTRL-D?
+
+        Args:
+            prompt (str): Prompt to present to user
+            prefill (str): Text to prefill for user
+
+        Returns:
+            str: Text inputted by user
+        """
+        from readline import insert_text, redisplay, set_pre_input_hook
+
+        def pre_input_hook():
+            insert_text(prefill)
+            redisplay()
+
+        set_pre_input_hook(pre_input_hook)
+        result = input(prompt)
+        set_pre_input_hook()
+
+        return result
 
     @staticmethod
     def show_image(image: Image.Image) -> None:
