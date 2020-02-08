@@ -9,18 +9,18 @@
 #   BSD license.
 ################################### MODULES ###################################
 from collections import OrderedDict
-from shutil import copyfile
 from os import R_OK, W_OK, access, listdir
 from os.path import basename, dirname, expandvars, isdir, isfile
 from pathlib import Path
+from readline import insert_text, redisplay, set_pre_input_hook
+from shutil import copyfile
 from time import sleep
-from typing import Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import h5py
 import numpy as np
 import pandas as pd
 import yaml
-from IPython import embed
 from PIL import Image, ImageDraw, ImageFont, UnidentifiedImageError
 from tensorflow import keras
 from watchdog.events import FileSystemEventHandler
@@ -38,16 +38,15 @@ n_chars = 9933
 ################################### CLASSES ###################################
 class OOT3DHDTextGenerator():
     # TODO: Document
-    # TODO: Better monitor chars for changes and wipe cached properties
 
     # region Classes
 
-    class FileCreatedEventHandler(FileSystemEventHandler):
+    class FileCreatedEventHandler(FileSystemEventHandler):  # type: ignore
 
-        def __init__(self, host):
+        def __init__(self, host) -> None:  # type: ignore
             self.host = host
 
-        def on_created(self, event):
+        def on_created(self, event):  # type: ignore
             filename = basename(event.key[1])
             self.host.process_file(filename, True)
 
@@ -75,7 +74,7 @@ class OOT3DHDTextGenerator():
         self.verbosity = conf["verbosity"]
         self.watch = conf["watch"]
 
-    def __call__(self):
+    def __call__(self) -> None:
 
         # Load cache
         # TODO: If cache file does not exist, don't try to open it
@@ -126,61 +125,63 @@ class OOT3DHDTextGenerator():
     # region Properties
 
     @property
-    def backup_directory(self):
+    def backup_directory(self) -> Optional[str]:
         if not hasattr(self, "_backup_directory"):
-            raise ValueError()
+            self._backup_directory: Optional[str] = None
         return self._backup_directory
 
     @backup_directory.setter
-    def backup_directory(self, value):
-        value = expandvars(value)
-        # TODO: Create if possible
-        if not (isdir(value) and access(value, W_OK)):
-            raise ValueError()
+    def backup_directory(self, value: Optional[str]) -> None:
+        if value is not None:
+            value = expandvars(value)
+            # TODO: Create if possible
+            if not (isdir(value) and access(value, W_OK)):
+                raise ValueError()
         self._backup_directory = value
 
     @property
-    def cache_file(self) -> Union[str, None]:
+    def cache_file(self) -> Optional[str]:
         if not hasattr(self, "_cache_file"):
-            self._cache_file = None
+            self._cache_file: Optional[str] = None
         return self._cache_file
 
     @cache_file.setter
-    def cache_file(self, value: str):
-        value = expandvars(value)
-        if isfile(value):
-            if not (access(value, R_OK) and access(value, W_OK)):
-                raise ValueError()
-        elif isdir(dirname(value)):
-            if not (access(dirname(value), R_OK)
-                    and access(dirname(value), W_OK)):
-                raise ValueError()
-        else:
-            raise ValueError
+    def cache_file(self, value: Optional[str]) -> None:
+        if value is not None:
+            value = expandvars(value)
+            if isfile(value):
+                if not (access(value, R_OK) and access(value, W_OK)):
+                    raise ValueError()
+            elif isdir(dirname(value)):
+                if not (access(dirname(value), R_OK)
+                        and access(dirname(value), W_OK)):
+                    raise ValueError()
+            else:
+                raise ValueError
         self._cache_file = value
 
     @property
-    def chars(self) -> OrderedDict:
+    def chars(self) -> OrderedDict[bytes, Tuple[str, bool]]:
         if not hasattr(self, "_chars"):
-            self._chars = OrderedDict()
+            self._chars: OrderedDict[bytes, Tuple[str, bool]] = OrderedDict()
         return self._chars
 
     @chars.setter
-    def chars(self, value: OrderedDict):
+    def chars(self, value: OrderedDict[bytes, Tuple[str, bool]]) -> None:
         if not (isinstance(value, OrderedDict)):
             raise ValueError()
         self._chars = value
 
     @property
-    def char_bytes(self) -> list:
+    def char_bytes(self) -> List[bytes]:
         return list(self.chars.keys())
 
     @property
-    def char_confirmations(self) -> list:
+    def char_confirmations(self) -> List[bool]:
         return [c[1] for c in self.chars.values()]
 
     @property
-    def char_assignments(self) -> list:
+    def char_assignments(self) -> List[str]:
         return [c[0] for c in self.chars.values()]
 
     @property
@@ -189,40 +190,41 @@ class OOT3DHDTextGenerator():
                          for k in self.char_bytes]).reshape((-1, 16, 16))
 
     @property
-    def confirmed_texts(self) -> dict:
+    def confirmed_texts(self) -> Dict[str, Tuple[str, str]]:
         if not hasattr(self, "_confirmed_texts"):
-            self._confirmed_texts = {}
+            self._confirmed_texts: Dict[str, Tuple[str, str]] = {}
         return self._confirmed_texts
 
     @confirmed_texts.setter
-    def confirmed_texts(self, value: dict):
+    def confirmed_texts(self, value: Dict[str, Tuple[str, str]]) -> None:
         if not (isinstance(value, dict)):
             raise ValueError()
         self._confirmed_texts = value
 
     @property
-    def confirmed_texts_languages(self):
+    def confirmed_texts_languages(self) -> List[str]:
         return [t[0] for t in self.confirmed_texts.values()]
 
     @property
-    def confirmed_texts_texts(self):
+    def confirmed_texts_texts(self) -> List[str]:
         return [t[1] for t in self.confirmed_texts.values()]
 
     @property
-    def dump_directory(self) -> str:
+    def dump_directory(self) -> Optional[str]:
         if not hasattr(self, "_dump_directory"):
-            raise ValueError()
+            self._dump_directory: Optional[str] = None
         return self._dump_directory
 
     @dump_directory.setter
-    def dump_directory(self, value: str):
-        value = expandvars(value)
-        if not (isdir(value) and access(value, R_OK)):
-            raise ValueError()
+    def dump_directory(self, value: Optional[str]) -> None:
+        if value is not None:
+            value = expandvars(value)
+            if not (isdir(value) and access(value, R_OK)):
+                raise ValueError()
         self._dump_directory = value
 
     @property
-    def event_handler(self):
+    def event_handler(self) -> FileCreatedEventHandler:
         if not hasattr(self, "_event_handler"):
             self._event_handler = self.FileCreatedEventHandler(self)
         return self._event_handler
@@ -234,7 +236,7 @@ class OOT3DHDTextGenerator():
         return self._font
 
     @font.setter
-    def font(self, value: str):
+    def font(self, value: str) -> None:
         self._font = value
 
     @property
@@ -244,7 +246,7 @@ class OOT3DHDTextGenerator():
         return self._fontsize
 
     @fontsize.setter
-    def fontsize(self, value: int):
+    def fontsize(self, value: int) -> None:
         self._fontsize = value
 
     @property
@@ -254,44 +256,46 @@ class OOT3DHDTextGenerator():
         return self._language
 
     @language.setter
-    def language(self, value: str):
+    def language(self, value: str) -> None:
         if not isinstance(value, str):
             raise ValueError()
         value = value.lower()
         self._language = value
 
     @property
-    def load_directory(self):
+    def load_directory(self) -> Optional[str]:
         if not hasattr(self, "_load_directory"):
-            raise ValueError()
+            self._load_directory: Optional[str] = None
         return self._load_directory
 
     @load_directory.setter
-    def load_directory(self, value):
-        value = expandvars(value)
-        # TODO: Create if possible
-        if not (isdir(value) and access(value, W_OK)):
-            raise ValueError()
+    def load_directory(self, value: Optional[str]) -> None:
+        if value is not None:
+            value = expandvars(value)
+            # TODO: Create if possible
+            if not (isdir(value) and access(value, W_OK)):
+                raise ValueError()
         self._load_directory = value
 
     @property
     def model_file(self) -> Union[str, None]:
         if not hasattr(self, "_model_file"):
-            self._model_file = None
+            self._model_file: Union[str, None] = None
         return self._model_file
 
     @model_file.setter
-    def model_file(self, value: str):
-        value = expandvars(value)
-        if isfile(value):
-            if not (access(value, R_OK) and access(value, W_OK)):
-                raise ValueError()
-        elif isdir(dirname(value)):
-            if not (access(dirname(value), R_OK)
-                    and access(dirname(value), W_OK)):
-                raise ValueError()
-        else:
-            raise ValueError
+    def model_file(self, value: str) -> None:
+        if value is not None:
+            value = expandvars(value)
+            if isfile(value):
+                if not (access(value, R_OK) and access(value, W_OK)):
+                    raise ValueError()
+            elif isdir(dirname(value)):
+                if not (access(dirname(value), R_OK)
+                        and access(dirname(value), W_OK)):
+                    raise ValueError()
+            else:
+                raise ValueError
         self._model_file = value
 
     @property
@@ -308,7 +312,7 @@ class OOT3DHDTextGenerator():
         return self._overwrite
 
     @overwrite.setter
-    def overwrite(self, value: bool):
+    def overwrite(self, value: bool) -> None:
         if not isinstance(value, bool):
             raise ValueError()
         self._overwrite = value
@@ -320,7 +324,7 @@ class OOT3DHDTextGenerator():
         return self._scale
 
     @scale.setter
-    def scale(self, value: int):
+    def scale(self, value: int) -> None:
         if not isinstance(value, int):
             raise ValueError()
         if value <= 1:
@@ -328,35 +332,36 @@ class OOT3DHDTextGenerator():
         self._scale = value
 
     @property
-    def scaled_chars(self) -> dict:
+    def scaled_chars(self) -> Dict[str, np.ndarray]:
         if not hasattr(self, "_scaled_chars"):
             self.draw_scaled_chars()
         return self._scaled_chars
 
     @scaled_chars.setter
-    def scaled_chars(self, value: dict):
+    def scaled_chars(self, value: Dict[str, np.ndarray]) -> None:
         if not isinstance(value, dict):
             raise ValueError()
         self.scaled_chars = value
 
     @property
-    def unconfirmed_texts(self) -> dict:
+    def unconfirmed_texts(self) -> Dict[str, Tuple[str, np.ndarray]]:
         if not hasattr(self, "_unconfirmed_texts"):
-            self._unconfirmed_texts = {}
+            self._unconfirmed_texts: Dict[str, Tuple[str, np.ndarray]] = {}
         return self._unconfirmed_texts
 
     @unconfirmed_texts.setter
-    def unconfirmed_texts(self, value: dict):
+    def unconfirmed_texts(self,
+                          value: Dict[str, Tuple[str, np.ndarray]]) -> None:
         if not (isinstance(value, dict)):
             raise ValueError()
         self._unconfirmed_texts = value
 
     @property
-    def unconfirmed_texts_languages(self):
+    def unconfirmed_texts_languages(self) -> List[str]:
         return [t[0] for t in self.unconfirmed_texts.values()]
 
     @property
-    def unconfirmed_texts_indexes(self):
+    def unconfirmed_texts_indexes(self) -> List[np.ndarray]:
         return [t[1] for t in self.unconfirmed_texts.values()]
 
     @property
@@ -367,7 +372,7 @@ class OOT3DHDTextGenerator():
         return self._verbosity
 
     @verbosity.setter
-    def verbosity(self, value: int):
+    def verbosity(self, value: int) -> None:
         if not isinstance(value, int) and value >= 0:
             raise ValueError()
         self._verbosity = value
@@ -379,7 +384,7 @@ class OOT3DHDTextGenerator():
         return self._watch
 
     @watch.setter
-    def watch(self, value: bool):
+    def watch(self, value: bool) -> None:
         if not isinstance(value, bool):
             raise ValueError()
         self._watch = value
@@ -584,14 +589,14 @@ class OOT3DHDTextGenerator():
                         np.array(np.argsort(label_pred, axis=1)[:, -1])]
                     print(char_pred[0])
                     assignment = self.input_prefill(
-                        f"Assign character image {i+1}/{n_unassigned} as:",
+                        f"Assign character image {i + 1}/{n_unassigned} as:",
                         char_pred[0])
                 else:
                     assignment = input(f"Assign character image "
-                                       f"{i+1}/{n_unassigned} as:")
+                                       f"{i + 1}/{n_unassigned} as:")
                 if assignment != "":
                     if self.verbosity >= 2:
-                        print(f"Assigned character image {i+1} as "
+                        print(f"Assigned character image {i + 1} as "
                               f"'{assignment}'")
                     self.chars[char] = (assignment, True)
             except UnicodeDecodeError as e:
@@ -607,7 +612,7 @@ class OOT3DHDTextGenerator():
 
     def process_file(self, filename: str, save: bool = False) -> None:
 
-        def backup(filename):
+        def backup(filename: str) -> None:
             if (self.backup_directory is not None
                     and not isfile(f"{self.backup_directory}/{filename}")):
                 copyfile(f"{self.dump_directory}/{filename}",
@@ -746,7 +751,7 @@ class OOT3DHDTextGenerator():
     # region Static Methods
 
     @staticmethod
-    def input_prefill(prompt: str, prefill:str) -> str:
+    def input_prefill(prompt: str, prefill: str) -> str:
         """
         Prompts user for input with pre-filled text
 
@@ -757,9 +762,8 @@ class OOT3DHDTextGenerator():
         Returns:
             str: Text inputted by user
         """
-        from readline import insert_text, redisplay, set_pre_input_hook
 
-        def pre_input_hook():
+        def pre_input_hook() -> None:
             insert_text(prefill)
             redisplay()
 
