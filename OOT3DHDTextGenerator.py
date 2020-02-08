@@ -528,32 +528,31 @@ class OOT3DHDTextGenerator():
                 confirmations = np.array(cache["characters/confirmations"])
                 images = np.array(cache["characters/images"])
                 for i, a, c in zip(images, assignments, confirmations):
-                    # if a in ['演']:
+                    # if a in []:
                     #     a = ""
                     #     c = False
                     self.chars[i.tobytes()] = (a, c)
-                # embed()
 
             # Load unconfirmed texts
-            # if "texts/unconfirmed" in cache:
-            #     filenames = [f.decode("UTF8") for f in
-            #                  np.array(cache["texts/unconfirmed/filenames"])]
-            #     languages = [l.decode("UTF8") for l in
-            #                  np.array(cache["texts/unconfirmed/languages"])]
-            #     indexes = np.array(cache["texts/unconfirmed/indexes"])
-            #     for f, l, i in zip(filenames, languages, indexes):
-            #         self.unconfirmed_texts[f] = (l, i)
+            if "texts/unconfirmed" in cache:
+                filenames = [f.decode("UTF8") for f in
+                             np.array(cache["texts/unconfirmed/filenames"])]
+                languages = [l.decode("UTF8") for l in
+                             np.array(cache["texts/unconfirmed/languages"])]
+                indexes = np.array(cache["texts/unconfirmed/indexes"])
+                for f, l, i in zip(filenames, languages, indexes):
+                    self.unconfirmed_texts[f] = (l, i)
 
             # Load confirmed texts
-            # if "texts/confirmed" in cache:
-            #     filenames = [f.decode("UTF8") for f in
-            #                  np.array(cache["texts/confirmed/filenames"])]
-            #     languages = [l.decode("UTF8") for l in
-            #                  np.array(cache["texts/confirmed/languages"])]
-            #     texts = [t.decode("UTF8") for t in
-            #              np.array(cache["texts/confirmed/texts"])]
-            #     for f, l, t in zip(filenames, languages, texts):
-            #         self.confirmed_texts[f] = (l, t)
+            if "texts/confirmed" in cache:
+                filenames = [f.decode("UTF8") for f in
+                             np.array(cache["texts/confirmed/filenames"])]
+                languages = [l.decode("UTF8") for l in
+                             np.array(cache["texts/confirmed/languages"])]
+                texts = [t.decode("UTF8") for t in
+                         np.array(cache["texts/confirmed/texts"])]
+                for f, l, t in zip(filenames, languages, texts):
+                    self.confirmed_texts[f] = (l, t)
 
     def manually_assign_chars(self) -> None:
         size = 16 * self.scale
@@ -614,7 +613,7 @@ class OOT3DHDTextGenerator():
                 copyfile(f"{self.dump_directory}/{filename}",
                          f"{self.backup_directory}/{filename}")
                 if self.verbosity >= 1:
-                    print(f"{self.dump_directory}/{filename} backup up "
+                    print(f"{self.dump_directory}/{filename} backed up "
                           f"to {self.backup_directory}/{filename}")
 
         # If file is already confirmed, skip
@@ -747,13 +746,9 @@ class OOT3DHDTextGenerator():
     # region Static Methods
 
     @staticmethod
-    def input_prefill(prompt, prefill):
+    def input_prefill(prompt: str, prefill:str) -> str:
         """
         Prompts user for input with pre-filled text
-
-        Does not handle colored prompt correctly
-
-        TODO: Does this block CTRL-D?
 
         Args:
             prompt (str): Prompt to present to user

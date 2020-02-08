@@ -6,9 +6,8 @@ font: /System/Library/Fonts/STHeiti Medium.ttc
 fontsize: 62
 language: simplified chinese
 cache: $HOME/Documents/Zelda/cache.h5
-# model: $HOME/Documents/Zelda/models/01000_004_0.9916.h5
-# model: $HOME/Documents/Zelda/models/09933_009_0.8897.h5
-model: $HOME/Documents/Zelda/models/01000_011_0.9986.h5
+# model: $HOME/Documents/Zelda/models/01000_011_0.9986.h5
+model: $HOME/Documents/Zelda/models/09933_007_0.8905.h5
 verbosity: 2
-overwrite: True
+overwrite: False
 watch: True

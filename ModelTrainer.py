@@ -28,7 +28,6 @@ hanzi_frequency = pd.read_csv(
     f"{package_root}/data/characters.txt",
     sep="\t", names=["character", "frequency", "cumulative frequency"])
 hanzi_chars = np.array(hanzi_frequency["character"], np.str)
-embed()
 n_chars = 9933
 
 
@@ -60,6 +59,11 @@ class ModelTrainer():
         #     # Generate images
         #     self.draw_images()
         self.draw_images()
+
+        # Save cache
+        if self.verbosity >= 1:
+            print(f"Saving cache to '{self.cache_file}'")
+        self.save_cache()
 
         # Train
         self.select_trn_tst_val_images()
@@ -215,9 +219,9 @@ class ModelTrainer():
         fonts = ["/System/Library/Fonts/STHeiti Light.ttc",
                  "/System/Library/Fonts/STHeiti Medium.ttc",
                  "/Library/Fonts/Songti.ttc"]
-        sizes = [13, 14, 15]
+        sizes = [15, 16]
         offsets = [-1, 0, 1]
-        fills = [225, 235, 245, 255]
+        fills = [215, 225, 235, 245, 255]
         rotations = [0]
         n_images = len(hanzi_chars[:n_chars]) * len(fonts) * len(sizes) \
                    * len(fills) * len(offsets) * len(offsets) \
@@ -225,8 +229,8 @@ class ModelTrainer():
         self.all_images = np.zeros((n_images, 16, 16), np.uint8)
         self.all_labels = np.zeros(n_images, str)
         i = 0
-        for char in hanzi_chars[:n_chars]:
-            print(char)
+        for j, char in enumerate(hanzi_chars[:n_chars]):
+            print(j, char)
             for font in fonts:
                 for size in sizes:
                     for fill in fills:
@@ -236,9 +240,9 @@ class ModelTrainer():
                                     char, font=font, size=size,
                                     fill=fill, offset=offset,
                                     rotation=rotation)
-                                print(f"{i:06d}", char, font, size,
-                                      fill, offset, rotation)
-                                print(data)
+                                # print(f"{i:08d}", char, font, size,
+                                #       fill, offset, rotation)
+                                # print(data)
                                 self.all_images[i] = data
                                 self.all_labels[i] = char
                                 i += 1
