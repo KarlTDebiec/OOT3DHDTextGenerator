@@ -18,6 +18,7 @@ import h5py
 import numpy as np
 import pandas as pd
 import yaml
+from IPython import embed
 from PIL import Image, ImageDraw, ImageFont
 from tensorflow import keras
 
@@ -27,7 +28,8 @@ hanzi_frequency = pd.read_csv(
     f"{package_root}/data/characters.txt",
     sep="\t", names=["character", "frequency", "cumulative frequency"])
 hanzi_chars = np.array(hanzi_frequency["character"], np.str)
-n_chars = 1000
+embed()
+n_chars = 9933
 
 
 ################################### CLASSES ###################################

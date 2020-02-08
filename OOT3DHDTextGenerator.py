@@ -9,6 +9,7 @@
 #   BSD license.
 ################################### MODULES ###################################
 from collections import OrderedDict
+from shutil import copyfile
 from os import R_OK, W_OK, access, listdir
 from os.path import basename, dirname, expandvars, isdir, isfile
 from pathlib import Path
@@ -61,6 +62,7 @@ class OOT3DHDTextGenerator():
             raise ValueError()
         with open(conf_file, "r") as f:
             conf = yaml.load(f, Loader=yaml.SafeLoader)
+        self.backup_directory = conf["backup"]
         self.cache_file = conf["cache"]
         self.dump_directory = conf["dump"]
         self.font = conf["font"]
@@ -122,6 +124,20 @@ class OOT3DHDTextGenerator():
     # endregion
 
     # region Properties
+
+    @property
+    def backup_directory(self):
+        if not hasattr(self, "_backup_directory"):
+            raise ValueError()
+        return self._backup_directory
+
+    @backup_directory.setter
+    def backup_directory(self, value):
+        value = expandvars(value)
+        # TODO: Create if possible
+        if not (isdir(value) and access(value, W_OK)):
+            raise ValueError()
+        self._backup_directory = value
 
     @property
     def cache_file(self) -> Union[str, None]:
@@ -416,19 +432,19 @@ class OOT3DHDTextGenerator():
             if not confirmed:
                 continue
             size = 16 * self.scale
-            debug = False
-            if assignment not in western_chars:
-                if assignment not in numeric_chars:
-                    debug = True
+            # debug = False
+            # if assignment not in western_chars:
+            #     if assignment not in numeric_chars:
+            #         debug = True
 
             # Load original character image for alignment
-            orig_data = np.frombuffer(char, dtype=np.uint8).reshape(16, 16)
-            orig_image = Image.fromarray(orig_data).resize((size, size),
-                                                           Image.BICUBIC)
-            orig_data = np.array(orig_image)
-            if debug:
-                print(orig_data)
-                self.show_image(orig_image)
+            # orig_data = np.frombuffer(char, dtype=np.uint8).reshape(16, 16)
+            # orig_image = Image.fromarray(orig_data).resize((size, size),
+            #                                                Image.BICUBIC)
+            # orig_data = np.array(orig_image)
+            # if debug:
+            #     print(orig_data)
+            #     self.show_image(orig_image)
 
             # Draw scaled character image
             scaled_image = Image.new("L", (size, size), 0)
@@ -438,8 +454,8 @@ class OOT3DHDTextGenerator():
             xy = ((size - width) / 2, (size - height) / 2)
             draw.text(xy, assignment, font=font, fill=255)
             scaled_data = np.array(scaled_image)
-            if debug:
-                self.show_image(scaled_image)
+            # if debug:
+            #     self.show_image(scaled_image)
 
             # Align
             #
@@ -512,12 +528,12 @@ class OOT3DHDTextGenerator():
                 confirmations = np.array(cache["characters/confirmations"])
                 images = np.array(cache["characters/images"])
                 for i, a, c in zip(images, assignments, confirmations):
-                    # if a == "心":
+                    # if a in ['演']:
                     #     a = ""
                     #     c = False
                     self.chars[i.tobytes()] = (a, c)
+                # embed()
 
-            embed()
             # Load unconfirmed texts
             # if "texts/unconfirmed" in cache:
             #     filenames = [f.decode("UTF8") for f in
@@ -549,9 +565,12 @@ class OOT3DHDTextGenerator():
             model = None
 
         # Loop over characters and assign
+        i = 0
+        n_unassigned = len([v for v in self.chars.values() if not v[1]])
         for char, (assignment, confirmed) in self.chars.items():
             if confirmed:
                 continue
+            i += 1
             data = np.frombuffer(char, dtype=np.uint8).reshape(16, 16)
             image = Image.fromarray(data).resize((size, size), Image.NEAREST)
             print(data)
@@ -566,12 +585,15 @@ class OOT3DHDTextGenerator():
                         np.array(np.argsort(label_pred, axis=1)[:, -1])]
                     print(char_pred[0])
                     assignment = self.input_prefill(
-                        "Assign image as character:", char_pred[0])
+                        f"Assign character image {i+1}/{n_unassigned} as:",
+                        char_pred[0])
                 else:
-                    assignment = input("Assign image as character:")
+                    assignment = input(f"Assign character image "
+                                       f"{i+1}/{n_unassigned} as:")
                 if assignment != "":
                     if self.verbosity >= 2:
-                        print(f"Confirmed assignment as '{assignment}'")
+                        print(f"Assigned character image {i+1} as "
+                              f"'{assignment}'")
                     self.chars[char] = (assignment, True)
             except UnicodeDecodeError as e:
                 print(e)
@@ -585,11 +607,22 @@ class OOT3DHDTextGenerator():
                 self.confirm_text(filename)
 
     def process_file(self, filename: str, save: bool = False) -> None:
+
+        def backup(filename):
+            if (self.backup_directory is not None
+                    and not isfile(f"{self.backup_directory}/{filename}")):
+                copyfile(f"{self.dump_directory}/{filename}",
+                         f"{self.backup_directory}/{filename}")
+                if self.verbosity >= 1:
+                    print(f"{self.dump_directory}/{filename} backup up "
+                          f"to {self.backup_directory}/{filename}")
+
         # If file is already confirmed, skip
         if filename in self.confirmed_texts:
             if self.verbosity >= 2:
                 print(f"{self.dump_directory}/{filename}: "
                       f"previously confirmed")
+            backup(filename)
             return
 
         # If file is known and unconfirmed, try confirming
@@ -597,6 +630,7 @@ class OOT3DHDTextGenerator():
             if self.verbosity >= 2:
                 print(f"{self.dump_directory}/{filename}: "
                       f"previously unconfirmed")
+            backup(filename)
             if self.is_text_confirmable(filename):
                 self.confirm_text(filename)
             return
@@ -612,6 +646,7 @@ class OOT3DHDTextGenerator():
         if self.verbosity >= 2:
             print(f"{self.dump_directory}/{filename}: "
                   f"new text image")
+        backup(filename)
         self.add_text(filename)
 
         # Optionally save file immediately
