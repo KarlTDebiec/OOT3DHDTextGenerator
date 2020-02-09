@@ -1,13 +1,10 @@
+# Simplified Chinese
 dump: $HOME/.local/share/citra-emu/dump/textures/000400000008F900
 load: $HOME/.local/share/citra-emu/load/textures/000400000008F900
 backup: $HOME/Documents/Zelda/1x_text_cn
-scale: 4
-font: /System/Library/Fonts/STHeiti Medium.ttc
-fontsize: 62
-language: simplified chinese
-cache: $HOME/Documents/Zelda/cache.h5
+watch: True
+interactive: True
 # model: $HOME/Documents/Zelda/models/01000_011_0.9986.h5
 model: $HOME/Documents/Zelda/models/09933_007_0.8905.h5
-verbosity: 2
 overwrite: False
-watch: True
+xbrzscale: $HOME/OneDrive/code/external/xbrzscale/xbrzscale
