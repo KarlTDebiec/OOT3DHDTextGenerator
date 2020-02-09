@@ -38,7 +38,7 @@ class OOT3DHDTextGenerator:
     Generates hi-res text images for The Legend of Zelda: Ocarina of Time 3D
 
     TODO:
-        - Functions watch_dump_directory and scan_dump_directory
+        - Review hires image output logic
         - Sort characters
         - Document
         - Command-Line Argument for conf file
@@ -63,6 +63,7 @@ class OOT3DHDTextGenerator:
                 host (OOT3DHDTextGenerator): Host to which files will be passed
             """
             self.host = host
+            self.n_new_images = 0
 
         def on_created(self, event):  # type: ignore
             """
@@ -72,7 +73,7 @@ class OOT3DHDTextGenerator:
                 event: File creation event whose file to process
             """
             filename = basename(event.key[1])
-            self.host.process_file(filename)
+            self.n_new_images += self.host.process_file(filename)
 
     # endregion
 
@@ -101,10 +102,11 @@ class OOT3DHDTextGenerator:
         self.verbosity = conf.get("verbosity", 1)
 
         # Input configuration
-        self.dump_directory = conf.get(
-            "dump", "$HOME/.local/share/citra-emu/dump/textures/"
-                    "000400000008F900")
         self.cache_file = conf.get("cache", f"{self.package_root}/cmn-Hans.h5")
+        self.dump_directory = conf.get(
+            "dump",
+            "$HOME/.local/share/citra-emu/dump/textures/000400000008F900")
+        self.operations["scan"] = conf.get("scan", True)
         self.model = conf.get("model", None)
 
         # Operation configuration
@@ -120,8 +122,7 @@ class OOT3DHDTextGenerator:
         # Output configuration
         self.load_directory = conf.get(
             "load",
-            "load: $HOME/.local/share/citra-emu/load/textures/"
-            "000400000008F900)")
+            "$HOME/.local/share/citra-emu/load/textures/000400000008F900)")
         self.operations["overwrite"] = conf.get("overwrite", False)
         self.backup_directory = conf.get("backup", None)
 
@@ -132,60 +133,47 @@ class OOT3DHDTextGenerator:
 
         # Load cache
         if isfile(self.cache_file):
-            if self.verbosity >= 1:
-                print(f"Loading cache from '{self.cache_file}'")
             self.load_hdf5_cache()
 
-        # Review all existing images
-        if self.verbosity >= 1:
-            print(f"Loading images from  '{self.dump_directory}'")
-        for filename in listdir(self.dump_directory):
-            self.process_file(filename)
+        # Review existing images
+        if self.operations["scan"]:
+            n_files = self.scan_dump_directory()
+            if n_files > 0:
+                self.save_hdf5_cache()
 
         # Assign unassigned characters
         if self.operations["assign"]:
-            self.interactively_assign_chars()
-            for filename in list(self.unassigned_files.keys()):
-                self.assign_file(filename)
-            self._initialize_hires_char_images()
+            n_assigned = self.interactively_assign_chars()
+            if n_assigned > 0:
+                if self.verbosity >= 1:
+                    print(f"Assigned {n_assigned} characters, "
+                          f"reassessing unassigned files")
+                for filename in list(self.unassigned_files.keys()):
+                    self.assign_file(filename)
+                self.save_hdf5_cache()
+                self._initialize_hires_chars()
+                self.save_load_directory()
 
         # Validate assigned characters
         if self.operations["validate"]:
-            reassigned_characters = self.interactively_validate_chars()
-            if reassigned_characters > 0:
+            n_reassigned = self.interactively_validate_chars()
+            if n_reassigned > 0:
                 if self.verbosity >= 1:
-                    print(f"Reassigned {reassigned_characters} characters, "
-                          f"must reassess all files")
+                    print(f"Reassigned {n_reassigned} characters, "
+                          f"reassessing all files")
                 self.assigned_files = {}
                 self.unassigned_files = {}
-
-        # Save cache
-        if self.verbosity >= 1:
-            print(f"Saving cache to '{self.cache_file}'")
-        self.save_hdf5_cache()
-
-        # Save text images
-        if self.verbosity >= 1:
-            print(f"Saving images to '{self.load_directory}'")
-        for filename in self.assigned_files:
-            self.save_hires_file(filename)
+                if self.operations["scan"]:
+                    self.scan_dump_directory()
+                self.save_hdf5_cache()
+                self._initialize_hires_chars()
+                self.save_load_directory()
 
         # Watch for additional images and process as they appear
         if self.operations["watch"]:
-            if self.verbosity >= 1:
-                print(f"Watching for new images in '{self.dump_directory}'")
-            self.observer.start()
-            try:
-                while True:
-                    sleep(1)
-            except KeyboardInterrupt:
-                self.observer.stop()
-            self.observer.join()
-
-        # Resave cache after watching
-        if self.verbosity >= 1:
-            print(f"Saving cache to '{self.cache_file}'")
-        self.save_hdf5_cache()
+            n_files = self.watch_dump_directory()
+            if n_files > 0:
+                self.save_hdf5_cache()
 
     # endregion
 
@@ -257,13 +245,6 @@ class OOT3DHDTextGenerator:
         self._dump_directory = value
 
     @property
-    def event_handler(self) -> FileCreatedEventHandler:
-        """FileCreatedEventHandler: Handler for files in dump directory"""
-        if not hasattr(self, "_event_handler"):
-            self._event_handler = self.FileCreatedEventHandler(self)
-        return self._event_handler
-
-    @property
     def font(self) -> ImageFont.truetype:
         """ImageFont.truetype: Font for hi-res images"""
         if not hasattr(self, "_font"):
@@ -290,7 +271,7 @@ class OOT3DHDTextGenerator:
     def hires_chars(self) -> Dict[str, np.ndarray]:
         """Dict[str, np.ndarray]: hi-res images of characters"""
         if not hasattr(self, "_hires_chars"):
-            self._initialize_hires_char_images()
+            self._initialize_hires_chars()
         return self._hires_chars
 
     @hires_chars.setter
@@ -364,14 +345,6 @@ class OOT3DHDTextGenerator:
                 raise ValueError
             value = keras.models.load_model(value)
         self._model = value
-
-    @property
-    def observer(self) -> Observer:
-        """Observer: Observer of new files in dump directory"""
-        if not hasattr(self, "_observer"):
-            self._observer = Observer()
-            self._observer.schedule(self.event_handler, self.dump_directory)
-        return self._observer
 
     @property
     def operations(self) -> Dict[str, bool]:
@@ -514,87 +487,119 @@ class OOT3DHDTextGenerator:
 
         return image
 
-    def interactively_assign_chars(self) -> None:
+    def interactively_assign_chars(self) -> int:
         """
         Prompts user to interactively assign unassigned character images
-        """
-        # Assign unassigned chars
-        i = 0
-        unassigned_chars = OrderedDict(
-            [(b, a) for b, a in self.lores_chars.items() if a == ""])
-        for char_bytes, assignment in unassigned_chars.items():
-            i += 1
-            char_data = np.frombuffer(
-                char_bytes, dtype=np.uint8).reshape(16, 16)
 
-            print()
-            self.show_image(self.get_scaled_image(char_data))
-            print()
+        Returns:
+            int: number of characters assigned
+        """
+        n_unassigned = len(
+            [a for a in self.lores_char_assignments if a == ""])
+        n_assigned = 0
+
+        if self.verbosity >= 1:
+            print(f"Interactively assigning {n_unassigned} characters")
+        i = 0
+        while i < len(self.lores_chars):
+            # Gather data and generate images
+            assignment = self.lores_char_assignments[i]
+            if assignment != "":
+                i += 1
+                continue
+            lores_char_bytes = self.lores_char_bytes[i]
+            lores_char_data = np.frombuffer(
+                lores_char_bytes, dtype=np.uint8).reshape(16, 16)
+            lores_char_image = self.get_scaled_image(lores_char_data)
+
+            # Prompt for assignment
+            self.show_image(lores_char_image)
             try:
                 if self.model is not None:
                     assignment = self.input_prefill(
-                        f"Assign character image "
-                        f"{i}/{len(unassigned_chars)} as:",
-                        self.get_predicted_assignment(char_data))
+                        f"Assign character as:",
+                        self.get_predicted_assignment(lores_char_data))
                 else:
-                    assignment = input(
-                        f"Assign character image "
-                        f"{i}/{len(unassigned_chars)} as:")
-                if len(assignment) == 1:
-                    if self.verbosity >= 1:
-                        print(f"Assigned character image as '{assignment}'")
-                    self.lores_chars[char_bytes] = assignment
-            except UnicodeDecodeError as e:
-                # TODO: Consider removing; how was this condition reached?
-                print(e)
-                break
+                    assignment = input(f"Assign character as:")
+            except EOFError:
+                print()
+                i -= 1
+                continue
             except KeyboardInterrupt:
                 break
+
+            # Assign
+            if len(assignment) == 1:
+                self.lores_chars[lores_char_bytes] = assignment
+                if self.verbosity >= 1:
+                    print(f"Assigned character image as '{assignment}'")
+                n_assigned += 1
+            i += 1
+
+        return n_assigned
 
     def interactively_validate_chars(self) -> int:
         """
         Prompts user to interactively validate assigned character images
 
         Returns:
-            int: Number of characters reassigned
+            int: number of characters reassigned
         """
-        reassigned_characters = 0
+        n_assigned = len(self.hires_chars)
+        n_reassigned = 0
 
-        start = 50
-
-        for i, (assignment, hires_char_data) in enumerate(
-                self.hires_chars.items()):
-            if i < start:
+        if self.verbosity >= 1:
+            print(f"Interactively validating character assignments")
+        i = 0
+        while i < len(self.hires_chars):
+            if i < 488:
+                i += 1
                 continue
+
+            # Gather data and generate images
+            assignment = self.lores_char_assignments[i]
             lores_char_bytes = self.lores_char_bytes[
                 self.lores_char_assignments.index(assignment)]
             lores_char_data = np.frombuffer(
                 lores_char_bytes, dtype=np.uint8).reshape(16, 16)
             lores_char_image = self.get_scaled_image(lores_char_data)
+            hires_char_data = self.hires_chars[assignment]
             hires_char_image = Image.fromarray(hires_char_data)
+            diff_image = ImageChops.difference(lores_char_image,
+                                               hires_char_image)
+            concatenated_image = self.concatenate_images(
+                lores_char_image, hires_char_image, diff_image)
 
-            diff = ImageChops.difference(lores_char_image, hires_char_image)
-            self.show_image(self.concatenate_images(
-                lores_char_image, hires_char_image, diff))
+            # Prompt for reassignment
+            self.show_image(concatenated_image)
             try:
                 new_assignment = self.input_prefill(
-                    f"Character image {i}/{len(self.hires_chars)} assigned as:",
+                    f"Character image {i}/{n_assigned} assigned as:",
                     assignment)
+            except EOFError:
+                print()
+                i -= 1
+                continue
             except KeyboardInterrupt:
+                print()
                 break
-            if new_assignment != assignment:
+
+            # Reassign
+            if new_assignment != assignment and len(assignment) == 1:
                 self.lores_chars[lores_char_bytes] = new_assignment
                 if self.verbosity >= 1:
                     print(f"Reassigned character image as '{new_assignment}'")
+                n_reassigned += 1
+            i += 1
 
-                reassigned_characters += 1
-
-        return reassigned_characters
+        return n_reassigned
 
     def load_hdf5_cache(self) -> None:
         """
         Loads character and image file data structures from hdf5 cache
         """
+        if self.verbosity >= 1:
+            print(f"Loading cache from '{self.cache_file}'")
         with h5py.File(self.cache_file) as cache:
 
             # Load characters
@@ -663,7 +668,7 @@ class OOT3DHDTextGenerator:
 
         self.assign_file(filename)
 
-    def process_file(self, filename: str) -> None:
+    def process_file(self, filename: str) -> bool:
         """
         Processes a lo-res image file in the dump directory
 
@@ -672,6 +677,9 @@ class OOT3DHDTextGenerator:
 
         Args:
             filename (str): lo-res image file to process
+
+        Returns:
+            bool: True if file is a new text image file
         """
 
         def is_text_image_file(filename: str) -> bool:
@@ -702,12 +710,14 @@ class OOT3DHDTextGenerator:
             if self.verbosity >= 2:
                 print(f"{self.dump_directory}/{filename}: previously "
                       f"assigned")
+            new_file = False
 
         # If file is known and unassigned, try assigning
         elif filename in self.unassigned_files:
             if self.verbosity >= 2:
                 print(f"{self.dump_directory}/{filename}: previously "
                       f"unassigned")
+            new_file = False
             self.assign_file(filename)
 
         # If file is not a text image, skip
@@ -715,23 +725,28 @@ class OOT3DHDTextGenerator:
             if self.verbosity >= 3:
                 print(f"{self.dump_directory}/{filename}: not a text image "
                       f"file")
-            return
+            return False
 
         # If file is a new text image, load
         else:
             if self.verbosity >= 2:
                 print(f"{self.dump_directory}/{filename}: new text image file")
             self.load_file(filename)
+            new_file = True
 
         # Back up lo-res and save hi-res file
         self.backup_file(filename)
         if filename in self.assigned_files:
             self.save_hires_file(filename)
 
+        return new_file
+
     def save_hdf5_cache(self) -> None:
         """
         Saves character and text image file data structures to hdf5 cache
         """
+        if self.verbosity >= 1:
+            print(f"Saving cache to '{self.cache_file}'")
         with h5py.File(self.cache_file) as cache:
 
             # Save characters
@@ -813,11 +828,60 @@ class OOT3DHDTextGenerator:
         if self.verbosity >= 1:
             print(f"{self.load_directory}/{filename} saved")
 
+    def save_load_directory(self) -> None:
+        if self.verbosity >= 1:
+            print(f"Saving images to '{self.load_directory}'")
+        for filename in self.assigned_files:
+            self.save_hires_file(filename)
+
+    def scan_dump_directory(self) -> int:
+        """
+        Scans dump directory for files
+
+        Returns:
+            int: number of new files
+        """
+        n_files = 0
+        if self.dump_directory is None:
+            raise ValueError
+
+        if self.verbosity >= 1:
+            print(f"Scanning images in '{self.dump_directory}'")
+        for filename in listdir(self.dump_directory):
+            n_files += self.process_file(filename)
+
+        return n_files
+
+    def watch_dump_directory(self) -> int:
+        """
+        Watches dump directory for new files
+
+        Returns:
+            int: number of new files observed
+        """
+        if self.dump_directory is None:
+            raise ValueError()
+
+        if self.verbosity >= 1:
+            print(f"Watching for new images in '{self.dump_directory}'")
+        event_handler = self.FileCreatedEventHandler(self)
+        observer = Observer()
+        observer.schedule(event_handler, self.dump_directory)
+        observer.start()
+        try:
+            while True:
+                sleep(1)
+        except KeyboardInterrupt:
+            observer.stop()
+        observer.join()
+
+        return event_handler.n_new_images
+
     # endregion
 
     # region Private Methods
 
-    def _initialize_hires_char_images(self) -> None:
+    def _initialize_hires_chars(self) -> None:
         """
         Initializes hi-res character images
         """
