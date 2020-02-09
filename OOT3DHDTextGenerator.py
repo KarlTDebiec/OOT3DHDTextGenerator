@@ -551,13 +551,12 @@ class OOT3DHDTextGenerator:
         if self.verbosity >= 1:
             print(f"Interactively validating character assignments")
         i = 0
-        while i < len(self.hires_chars):
-            if i < 488:
-                i += 1
-                continue
-
+        while i < len(self.lores_chars):
             # Gather data and generate images
             assignment = self.lores_char_assignments[i]
+            if assignment == "":
+                i += 1
+                continue
             lores_char_bytes = self.lores_char_bytes[
                 self.lores_char_assignments.index(assignment)]
             lores_char_data = np.frombuffer(
@@ -748,7 +747,6 @@ class OOT3DHDTextGenerator:
         if self.verbosity >= 1:
             print(f"Saving cache to '{self.cache_file}'")
         with h5py.File(self.cache_file) as cache:
-
             # Save characters
             if "characters" in cache:
                 del cache["characters"]

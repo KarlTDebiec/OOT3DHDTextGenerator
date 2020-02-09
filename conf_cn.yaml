@@ -4,9 +4,8 @@ load: $HOME/.local/share/citra-emu/load/textures/000400000008F900
 backup: $HOME/Documents/Zelda/1x_text_cn
 scan: False
 watch: True
-assign: True
-validate: True
-# model: $HOME/Documents/Zelda/models/01000_011_0.9986.h5
+assign: False
+validate: False
 model: $HOME/Documents/Zelda/models/09933_007_0.8905.h5
 overwrite: False
 xbrzscale: $HOME/OneDrive/code/external/xbrzscale/xbrzscale
