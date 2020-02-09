@@ -26,7 +26,7 @@ import numpy as np
 import pandas as pd
 import yaml
 from IPython import embed
-from PIL import Image, ImageDraw, ImageFont, UnidentifiedImageError
+from PIL import Image, ImageChops, ImageDraw, ImageFont, UnidentifiedImageError
 from tensorflow import keras
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
@@ -36,12 +36,17 @@ from watchdog.observers import Observer
 class OOT3DHDTextGenerator:
     """
     Generates hi-res text images for The Legend of Zelda: Ocarina of Time 3D
-    """
 
-    # TODO: Command-Line Argument for conf file
-    # TODO: Handle times via brute force
-    # TODO: Error message text
-    # TODO: License
+    TODO:
+        - Functions watch_dump_directory and scan_dump_directory
+        - Sort characters
+        - Document
+        - Command-Line Argument for conf file
+        - Handle times via brute force
+        - Add useful error message text
+        - Add License
+        - Add requirements file
+    """
 
     # region Classes
 
@@ -86,8 +91,7 @@ class OOT3DHDTextGenerator:
         Args:
             conf_file (str): file from which to load configuration
         """
-
-        # Read configuration
+        # Read configuration file
         if not (isfile(conf_file) and access(conf_file, R_OK)):
             raise ValueError()
         with open(conf_file, "r") as f:
@@ -101,23 +105,24 @@ class OOT3DHDTextGenerator:
             "dump", "$HOME/.local/share/citra-emu/dump/textures/"
                     "000400000008F900")
         self.cache_file = conf.get("cache", f"{self.package_root}/cmn-Hans.h5")
-        self.model_file = conf.get("model", None)
+        self.model = conf.get("model", None)
 
         # Operation configuration
         self.size = conf.get("size", 64)
         self.font = ImageFont.truetype(
             conf.get("font", "/System/Library/Fonts/STHeiti Medium.ttc"),
             conf.get("fontsize", 62))
-        self.interactive = conf.get("interactive", False)
+        self.operations["assign"] = conf.get("assign", False)
+        self.operations["validate"] = conf.get("validate", False)
+        self.operations["watch"] = conf.get("watch", False)
         self.xbrzscale = conf.get("xbrzscale", None)
-        self.watch = conf.get("watch", False)
 
         # Output configuration
         self.load_directory = conf.get(
             "load",
             "load: $HOME/.local/share/citra-emu/load/textures/"
             "000400000008F900)")
-        self.overwrite = conf.get("overwrite", False)
+        self.operations["overwrite"] = conf.get("overwrite", False)
         self.backup_directory = conf.get("backup", None)
 
     def __call__(self) -> None:
@@ -138,9 +143,21 @@ class OOT3DHDTextGenerator:
             self.process_file(filename)
 
         # Assign unassigned characters
-        if self.interactive:
+        if self.operations["assign"]:
             self.interactively_assign_chars()
+            for filename in list(self.unassigned_files.keys()):
+                self.assign_file(filename)
             self._initialize_hires_char_images()
+
+        # Validate assigned characters
+        if self.operations["validate"]:
+            reassigned_characters = self.interactively_validate_chars()
+            if reassigned_characters > 0:
+                if self.verbosity >= 1:
+                    print(f"Reassigned {reassigned_characters} characters, "
+                          f"must reassess all files")
+                self.assigned_files = {}
+                self.unassigned_files = {}
 
         # Save cache
         if self.verbosity >= 1:
@@ -154,7 +171,7 @@ class OOT3DHDTextGenerator:
             self.save_hires_file(filename)
 
         # Watch for additional images and process as they appear
-        if self.watch:
+        if self.operations["watch"]:
             if self.verbosity >= 1:
                 print(f"Watching for new images in '{self.dump_directory}'")
             self.observer.start()
@@ -225,37 +242,6 @@ class OOT3DHDTextGenerator:
         self._cache_file = value
 
     @property
-    def lores_char_images(self) -> OrderedDict[bytes, str]:
-        """OrderedDict[bytes, str]: Lo-res character images and assignments"""
-        if not hasattr(self, "_lores_char_images"):
-            self._lores_char_images: OrderedDict[bytes, str] = OrderedDict()
-        return self._lores_char_images
-
-    @lores_char_images.setter
-    def lores_char_images(self, value: OrderedDict[bytes, str]) -> None:
-        if not (isinstance(value, OrderedDict)):
-            raise ValueError()
-        self._lores_char_images = value
-
-    @property
-    def lores_char_assignments(self) -> List[str]:
-        """List[str]: Characters assigned to character images"""
-        return list(self.lores_char_images.values())
-
-    @property
-    def lores_char_bytes(self) -> List[bytes]:
-        """List[bytes]: Character images in byte form"""
-        return list(self.lores_char_images.keys())
-
-    @property
-    def lores_char_array(self) -> np.ndarray:
-        """numpy.ndarray: Character images in numpy array form"""
-        return np.stack(
-            [np.frombuffer(k, dtype=np.uint8) for k in
-             self.lores_char_images.keys()]
-        ).reshape((-1, 16, 16))
-
-    @property
     def dump_directory(self) -> Optional[str]:
         """Optional[str]: Directory from which to load lo-res image files"""
         if not hasattr(self, "_dump_directory"):
@@ -290,30 +276,28 @@ class OOT3DHDTextGenerator:
         self._font = value
 
     @property
-    def hires_char_images(self) -> Dict[str, np.ndarray]:
-        """Dict[str, np.ndarray]: hi-res images of characters"""
-        if not hasattr(self, "_hires_char_images"):
-            self._initialize_hires_char_images()
-        return self._hires_char_images
-
-    @hires_char_images.setter
-    def hires_char_images(self, value: Dict[str, np.ndarray]) -> None:
-        if not isinstance(value, dict):
-            raise ValueError()
-        self.hires_char_images = value
+    def hanzi_chars(self) -> List[str]:
+        if not hasattr(self, "_hanzi_chars"):
+            hanzi_frequency: pd.DataFrame = pd.read_csv(
+                f"{self.package_root}/data/characters.txt",
+                sep="\t",
+                names=["character", "frequency", "cumulative frequency"])
+            self._hanzi_chars: List[str] = hanzi_frequency[
+                "character"].tolist()
+        return self._hanzi_chars
 
     @property
-    def interactive(self) -> bool:
-        """bool: Interactively assign unassigned character images"""
-        if not hasattr(self, "_interactive"):
-            self._interactive = False
-        return self._interactive
+    def hires_chars(self) -> Dict[str, np.ndarray]:
+        """Dict[str, np.ndarray]: hi-res images of characters"""
+        if not hasattr(self, "_hires_chars"):
+            self._initialize_hires_char_images()
+        return self._hires_chars
 
-    @interactive.setter
-    def interactive(self, value: bool) -> None:
-        if not isinstance(value, bool):
+    @hires_chars.setter
+    def hires_chars(self, value: Dict[str, np.ndarray]) -> None:
+        if not isinstance(value, dict):
             raise ValueError()
-        self._interactive = value
+        self._hires_chars = value
 
     @property
     def load_directory(self) -> Optional[str]:
@@ -332,14 +316,45 @@ class OOT3DHDTextGenerator:
         self._load_directory = value
 
     @property
-    def model_file(self) -> Optional[str]:
-        """Optional[str]: Model to use for lo-res character assignment"""
-        if not hasattr(self, "_model_file"):
-            self._model_file: Optional[str] = None
-        return self._model_file
+    def lores_chars(self) -> OrderedDict[bytes, str]:
+        """OrderedDict[bytes, str]: Lo-res character bytes and assignments"""
+        if not hasattr(self, "_lores_chars"):
+            self._lores_chars: OrderedDict[bytes, str] = OrderedDict()
+        return self._lores_chars
 
-    @model_file.setter
-    def model_file(self, value: Optional[str]) -> None:
+    @lores_chars.setter
+    def lores_chars(self, value: OrderedDict[bytes, str]) -> None:
+        if not (isinstance(value, OrderedDict)):
+            raise ValueError()
+        self._lores_chars = value
+
+    @property
+    def lores_char_assignments(self) -> List[str]:
+        """List[str]: Characters assigned to character images"""
+        return list(self.lores_chars.values())
+
+    @property
+    def lores_char_bytes(self) -> List[bytes]:
+        """List[bytes]: Character images in byte form"""
+        return list(self.lores_chars.keys())
+
+    @property
+    def lores_char_array(self) -> np.ndarray:
+        """numpy.ndarray: Character images in numpy array form"""
+        return np.stack(
+            [np.frombuffer(k, dtype=np.uint8) for k in
+             self.lores_chars.keys()]
+        ).reshape((-1, 16, 16))
+
+    @property
+    def model(self) -> Optional[keras.Sequential]:
+        """Optional[keras.Sequential]: Lo-res character assignment model"""
+        if not hasattr(self, "_model"):
+            self._model: Optional[keras.Sequential] = None
+        return self._model
+
+    @model.setter
+    def model(self, value: Optional[keras.Sequential]) -> None:
         if value is not None:
             value = expandvars(value)
             if isfile(value):
@@ -347,7 +362,8 @@ class OOT3DHDTextGenerator:
                     raise ValueError()
             else:
                 raise ValueError
-        self._model_file = value
+            value = keras.models.load_model(value)
+        self._model = value
 
     @property
     def observer(self) -> Observer:
@@ -358,17 +374,11 @@ class OOT3DHDTextGenerator:
         return self._observer
 
     @property
-    def overwrite(self) -> bool:
-        """bool: Overwrite existing hi-res image files in load directory"""
-        if not hasattr(self, "_overwrite"):
-            self._overwrite = False
-        return self._overwrite
-
-    @overwrite.setter
-    def overwrite(self, value: bool) -> None:
-        if not isinstance(value, bool):
-            raise ValueError()
-        self._overwrite = value
+    def operations(self) -> Dict[str, bool]:
+        """Dict[str, bool]: Operations to perform and associated flags"""
+        if not hasattr(self, "_operations"):
+            self._operations: Dict[str, bool] = {}
+        return self._operations
 
     @property
     def size(self) -> int:
@@ -410,19 +420,6 @@ class OOT3DHDTextGenerator:
         if not isinstance(value, int) and value >= 0:
             raise ValueError()
         self._verbosity = value
-
-    @property
-    def watch(self) -> bool:
-        """bool: Watch for new image files after processing existing"""
-        if not hasattr(self, "_watch"):
-            self._watch = False
-        return self._watch
-
-    @watch.setter
-    def watch(self, value: bool) -> None:
-        if not isinstance(value, bool):
-            raise ValueError()
-        self._watch = value
 
     @property
     def xbrzscale(self) -> Optional[str]:
@@ -483,6 +480,117 @@ class OOT3DHDTextGenerator:
         if self.verbosity >= 1:
             print(f"{filename}: assigned")
 
+    def get_predicted_assignment(self, data_uint8: np.ndarray) -> str:
+        if self.model is None:
+            raise ValueError()
+        data_float16 = np.expand_dims(np.expand_dims(
+            data_uint8.astype(np.float16) / 255.0, axis=0), axis=3)
+        predicted_index = self.model.predict(data_float16)
+        return str(
+            self.hanzi_chars[np.argsort(predicted_index, axis=1)[:, -1][0]])
+
+    def get_scaled_image(self, data_uint8: np.ndarray) -> Image.Image:
+        if self.xbrzscale is None:
+            return Image.fromarray(data_uint8).resize(
+                (self.size, self.size), Image.NEAREST)
+
+        lores_tempfile = NamedTemporaryFile(delete=False, suffix=".png")
+        Image.fromarray(data_uint8).save(lores_tempfile)
+        lores_tempfile.close()
+
+        xbrz_tempfile = NamedTemporaryFile(delete=False, suffix=".png")
+        xbrz_tempfile.close()
+
+        command = f"{self.xbrzscale} 4 " \
+                  f"{lores_tempfile.name} " \
+                  f"{xbrz_tempfile.name}"
+        Popen(command, shell=True, stdin=PIPE, stdout=DEVNULL,
+              stderr=DEVNULL, close_fds=True).wait()
+
+        image = Image.open(xbrz_tempfile.name).convert("L")
+
+        remove(lores_tempfile.name)
+        remove(xbrz_tempfile.name)
+
+        return image
+
+    def interactively_assign_chars(self) -> None:
+        """
+        Prompts user to interactively assign unassigned character images
+        """
+        # Assign unassigned chars
+        i = 0
+        unassigned_chars = OrderedDict(
+            [(b, a) for b, a in self.lores_chars.items() if a == ""])
+        for char_bytes, assignment in unassigned_chars.items():
+            i += 1
+            char_data = np.frombuffer(
+                char_bytes, dtype=np.uint8).reshape(16, 16)
+
+            print()
+            self.show_image(self.get_scaled_image(char_data))
+            print()
+            try:
+                if self.model is not None:
+                    assignment = self.input_prefill(
+                        f"Assign character image "
+                        f"{i}/{len(unassigned_chars)} as:",
+                        self.get_predicted_assignment(char_data))
+                else:
+                    assignment = input(
+                        f"Assign character image "
+                        f"{i}/{len(unassigned_chars)} as:")
+                if len(assignment) == 1:
+                    if self.verbosity >= 1:
+                        print(f"Assigned character image as '{assignment}'")
+                    self.lores_chars[char_bytes] = assignment
+            except UnicodeDecodeError as e:
+                # TODO: Consider removing; how was this condition reached?
+                print(e)
+                break
+            except KeyboardInterrupt:
+                break
+
+    def interactively_validate_chars(self) -> int:
+        """
+        Prompts user to interactively validate assigned character images
+
+        Returns:
+            int: Number of characters reassigned
+        """
+        reassigned_characters = 0
+
+        start = 50
+
+        for i, (assignment, hires_char_data) in enumerate(
+                self.hires_chars.items()):
+            if i < start:
+                continue
+            lores_char_bytes = self.lores_char_bytes[
+                self.lores_char_assignments.index(assignment)]
+            lores_char_data = np.frombuffer(
+                lores_char_bytes, dtype=np.uint8).reshape(16, 16)
+            lores_char_image = self.get_scaled_image(lores_char_data)
+            hires_char_image = Image.fromarray(hires_char_data)
+
+            diff = ImageChops.difference(lores_char_image, hires_char_image)
+            self.show_image(self.concatenate_images(
+                lores_char_image, hires_char_image, diff))
+            try:
+                new_assignment = self.input_prefill(
+                    f"Character image {i}/{len(self.hires_chars)} assigned as:",
+                    assignment)
+            except KeyboardInterrupt:
+                break
+            if new_assignment != assignment:
+                self.lores_chars[lores_char_bytes] = new_assignment
+                if self.verbosity >= 1:
+                    print(f"Reassigned character image as '{new_assignment}'")
+
+                reassigned_characters += 1
+
+        return reassigned_characters
+
     def load_hdf5_cache(self) -> None:
         """
         Loads character and image file data structures from hdf5 cache
@@ -494,17 +602,15 @@ class OOT3DHDTextGenerator:
                 images = np.array(cache["characters/images"])
                 assignments = np.array(cache["characters/assignments"])
                 for i, a in zip(images, assignments):
+                    # TODO: Consider removing; how was this condition reached?
                     try:
                         a = a.decode("UTF8")
                     except UnicodeDecodeError as e:
                         print(f"Error encountered while decoding characters: "
                               f"{e}, for image:")
                         print(i)
-                        print("skipping...")
-                        sleep(1)
-                    # if a in []:
-                    #     a = ""
-                    self.lores_char_images[i.tobytes()] = a
+                        embed()
+                    self.lores_chars[i.tobytes()] = a
 
             # Load unassigned texts
             if "files/unassigned" in cache:
@@ -547,8 +653,8 @@ class OOT3DHDTextGenerator:
             for y in range(16):
                 char_data = text_data[x * 16:(x + 1) * 16, y * 16:(y + 1) * 16]
                 char_bytes = char_data.tobytes()
-                if char_bytes not in self.lores_char_images:
-                    self.lores_char_images[char_bytes] = ""
+                if char_bytes not in self.lores_chars:
+                    self.lores_chars[char_bytes] = ""
                 indexes.append(self.lores_char_bytes.index(char_bytes))
 
         self.unassigned_files[filename] = np.array(indexes, np.uint32)
@@ -556,91 +662,6 @@ class OOT3DHDTextGenerator:
             print(f"{filename}: added")
 
         self.assign_file(filename)
-
-    def interactively_assign_chars(self) -> None:
-        """
-        Prompts user to interactively assign unassigned character images
-        """
-
-        # Load model
-        if self.model_file is not None:
-            model = keras.models.load_model(self.model_file)
-            hanzi_frequency: pd.DataFrame = pd.read_csv(
-                f"{self.package_root}/data/characters.txt",
-                sep="\t",
-                names=["character", "frequency", "cumulative frequency"])
-            hanzi_chars: List[str] = hanzi_frequency["character"].tolist()
-
-        else:
-            model = None
-
-        def get_predicted_assignment(data_uint8: np.ndarray) -> str:
-            data_float16 = np.expand_dims(np.expand_dims(
-                data_uint8.astype(np.float16) / 255.0, axis=0), axis=3)
-            predicted_index = model.predict(data_float16)
-            return str(
-                hanzi_chars[np.argsort(predicted_index, axis=1)[:, -1][0]])
-
-        def get_xbrz_image(data_uint8: np.ndarray) -> Image.Image:
-            lores_tempfile = NamedTemporaryFile(delete=False, suffix=".png")
-            Image.fromarray(data_uint8).save(lores_tempfile)
-            lores_tempfile.close()
-
-            xbrz_tempfile = NamedTemporaryFile(delete=False, suffix=".png")
-            xbrz_tempfile.close()
-            command = f"{self.xbrzscale} 6 " \
-                      f"{lores_tempfile.name} " \
-                      f"{xbrz_tempfile.name}"
-            Popen(command, shell=True, stdin=PIPE, stdout=DEVNULL,
-                  stderr=DEVNULL, close_fds=True).wait()
-            image = Image.open(xbrz_tempfile.name)
-            remove(lores_tempfile.name)
-            remove(xbrz_tempfile.name)
-            return image
-
-        def get_nn_image(data_uint8: np.ndarray) -> Image.Image:
-            return Image.fromarray(data_uint8).resize((self.size, self.size),
-                                                      Image.NEAREST)
-
-        # Loop over characters and assign
-        i = 0
-        unassigned_chars = OrderedDict(
-            [(i, a) for i, a in self.lores_char_images.items() if a == ""])
-        for char_bytes, assignment in unassigned_chars.items():
-            i += 1
-            char_data = np.frombuffer(char_bytes, dtype=np.uint8).reshape(
-                16, 16)
-
-            if self.xbrzscale is not None:
-                char_image = get_xbrz_image(char_data)
-            else:
-                char_image = get_nn_image(char_data)
-            print()
-            self.show_image(char_image)
-            print()
-            try:
-                if model is not None:
-                    assignment = self.input_prefill(
-                        f"Assign character image "
-                        f"{i + 1}/{len(unassigned_chars)} as:",
-                        get_predicted_assignment(char_data))
-                else:
-                    assignment = input(
-                        f"Assign character image "
-                        f"{i + 1}/{len(unassigned_chars)} as:")
-                if assignment != "":
-                    if self.verbosity >= 1:
-                        print(f"Assigned character image as '{assignment}'")
-                    self.lores_char_images[char_bytes] = assignment
-            except UnicodeDecodeError as e:
-                print(e)
-                break
-            except KeyboardInterrupt:
-                break
-
-        # Reassess unassigned texts
-        for filename in list(self.unassigned_files.keys()):
-            self.assign_file(filename)
 
     def process_file(self, filename: str) -> None:
         """
@@ -774,12 +795,13 @@ class OOT3DHDTextGenerator:
         Args:
             filename (str): text image file to save
         """
-        if isfile(f"{self.load_directory}/{filename}") and not self.overwrite:
+        if (isfile(f"{self.load_directory}/{filename}")
+                and not self.operations["overwrite"]):
             return
 
         text_data = np.zeros((16 * self.size, 16 * self.size, 4), np.uint8)
         for i, char in enumerate(self.assigned_files[filename]):
-            char_data = self.hires_char_images[char]
+            char_data = self.hires_chars[char]
             x = i % 16
             y = i // 16
             # @formatter:off
@@ -799,7 +821,7 @@ class OOT3DHDTextGenerator:
         """
         Initializes hi-res character images
         """
-        hires_char_images = {}
+        hires_chars = {}
 
         for assignment in [a for a in self.lores_char_assignments if a != ""]:
             hires_image = Image.new("L", (self.size, self.size), 0)
@@ -808,13 +830,29 @@ class OOT3DHDTextGenerator:
             draw.text(((self.size - width) / 2, (self.size - height) / 2),
                       assignment, font=self.font, fill=255)
 
-            hires_char_images[assignment] = np.array(hires_image)
+            hires_chars[assignment] = np.array(hires_image)
 
-        self._hires_char_images = hires_char_images
+        self._hires_chars = hires_chars
 
     # endregion
 
     # region Static Methods
+
+    @staticmethod
+    def concatenate_images(*images: Image.ImageMode) -> Image.Image:
+        width = 0
+        height = 0
+        for image in images:
+            width += image.size[0]
+            height = max(height, image.size[1])
+
+        concatenated_image = Image.new("RGB", (width, height))
+        x = 0
+        for image in images:
+            concatenated_image.paste(image, (x, 0))
+            x += image.size[0]
+
+        return concatenated_image
 
     @staticmethod
     def input_prefill(prompt: str, prefill: str) -> str:

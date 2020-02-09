@@ -3,7 +3,8 @@ dump: $HOME/.local/share/citra-emu/dump/textures/000400000008F900
 load: $HOME/.local/share/citra-emu/load/textures/000400000008F900
 backup: $HOME/Documents/Zelda/1x_text_cn
 watch: True
-interactive: True
+assign: False
+validate: True
 # model: $HOME/Documents/Zelda/models/01000_011_0.9986.h5
 model: $HOME/Documents/Zelda/models/09933_007_0.8905.h5
 overwrite: False
