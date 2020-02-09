@@ -8,17 +8,16 @@
 #   This software may be modified and distributed under the terms of the
 #   BSD license.
 ################################### MODULES ###################################
-from pathlib import Path
 from itertools import product
 from os import R_OK, W_OK, access
 from os.path import dirname, expandvars, isdir, isfile
-from typing import Union
+from pathlib import Path
+from typing import Optional
 
 import h5py
 import numpy as np
 import pandas as pd
 import yaml
-from IPython import embed
 from PIL import Image, ImageDraw, ImageFont
 from tensorflow import keras
 
@@ -45,9 +44,7 @@ class ModelTrainer():
         self.cache_file = conf["cache"]
         self.verbosity = conf["verbosity"]
 
-    def __call__(self):
-        pass
-
+    def __call__(self) -> None:
         # Load cache
         # if isfile(self.cache_file):
         #     if not access(self.cache_file, R_OK):
@@ -117,7 +114,7 @@ class ModelTrainer():
         return self._all_images
 
     @all_images.setter
-    def all_images(self, value: np.ndarray):
+    def all_images(self, value: np.ndarray) -> None:
         self._all_images = value
 
     @property
@@ -127,27 +124,28 @@ class ModelTrainer():
         return self._all_labels
 
     @all_labels.setter
-    def all_labels(self, value: np.ndarray):
+    def all_labels(self, value: np.ndarray) -> None:
         self._all_labels = value
 
     @property
-    def cache_file(self) -> Union[str, None]:
+    def cache_file(self) -> Optional[str]:
         if not hasattr(self, "_cache_file"):
             self._cache_file = None
         return self._cache_file
 
     @cache_file.setter
-    def cache_file(self, value: str):
-        value = expandvars(value)
-        if isfile(value):
-            if not (access(value, R_OK) and access(value, W_OK)):
-                raise ValueError()
-        elif isdir(dirname(value)):
-            if not (access(dirname(value), R_OK)
-                    and access(dirname(value), W_OK)):
-                raise ValueError()
-        else:
-            raise ValueError
+    def cache_file(self, value: Optional[str]) -> None:
+        if value is not None:
+            value = expandvars(value)
+            if isfile(value):
+                if not (access(value, R_OK) and access(value, W_OK)):
+                    raise ValueError()
+            elif isdir(dirname(value)):
+                if not (access(dirname(value), R_OK)
+                        and access(dirname(value), W_OK)):
+                    raise ValueError()
+            else:
+                raise ValueError
         self._cache_file = value
 
     @property
@@ -157,7 +155,7 @@ class ModelTrainer():
         return self._trn_images
 
     @trn_images.setter
-    def trn_images(self, value: np.ndarray):
+    def trn_images(self, value: np.ndarray) -> None:
         self._trn_images = value
 
     @property
@@ -167,7 +165,7 @@ class ModelTrainer():
         return self._trn_labels
 
     @trn_labels.setter
-    def trn_labels(self, value: np.ndarray):
+    def trn_labels(self, value: np.ndarray) -> None:
         self._trn_labels = value
 
     @property
@@ -177,7 +175,7 @@ class ModelTrainer():
         return self._tst_images
 
     @tst_images.setter
-    def tst_images(self, value: np.ndarray):
+    def tst_images(self, value: np.ndarray) -> None:
         self._tst_images = value
 
     @property
@@ -187,7 +185,7 @@ class ModelTrainer():
         return self._tst_labels
 
     @tst_labels.setter
-    def tst_labels(self, value: np.ndarray):
+    def tst_labels(self, value: np.ndarray) -> None:
         self._tst_labels = value
 
     @property
@@ -197,7 +195,7 @@ class ModelTrainer():
         return self._val_images
 
     @val_images.setter
-    def val_images(self, value: np.ndarray):
+    def val_images(self, value: np.ndarray) -> None:
         self._val_images = value
 
     @property
@@ -207,7 +205,7 @@ class ModelTrainer():
         return self._val_labels
 
     @val_labels.setter
-    def val_labels(self, value: np.ndarray):
+    def val_labels(self, value: np.ndarray) -> None:
         self._val_labels = value
 
     # endregion
@@ -247,7 +245,7 @@ class ModelTrainer():
                                 self.all_labels[i] = char
                                 i += 1
 
-    def get_model(self):
+    def get_model(self) -> keras.Sequential:
         model = keras.Sequential([
             keras.layers.Conv2D(filters=64, kernel_size=2, padding="same",
                                 activation="relu", input_shape=(16, 16, 1)),
@@ -331,7 +329,7 @@ class ModelTrainer():
                    size: int = 12,
                    fill: int = 0,
                    offset: tuple = (0, 0),
-                   rotation: int = 0):
+                   rotation: int = 0) -> np.ndarray:
         image = Image.new("L", (16, 16), 0)
         draw = ImageDraw.Draw(image)
         font = ImageFont.truetype(font, size)

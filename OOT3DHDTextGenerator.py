@@ -494,20 +494,17 @@ class OOT3DHDTextGenerator:
         Returns:
             int: number of characters assigned
         """
-        n_unassigned = len(
-            [a for a in self.lores_char_assignments if a == ""])
+        unassigned_chars = [b for b, a in self.lores_chars.items() if a == ""]
+        n_unassigned = len(unassigned_chars)
         n_assigned = 0
 
         if self.verbosity >= 1:
             print(f"Interactively assigning {n_unassigned} characters")
+            print("CTRL-C to exit; CTRL-D to undo")
         i = 0
-        while i < len(self.lores_chars):
+        while i < n_unassigned:
             # Gather data and generate images
-            assignment = self.lores_char_assignments[i]
-            if assignment != "":
-                i += 1
-                continue
-            lores_char_bytes = self.lores_char_bytes[i]
+            lores_char_bytes = unassigned_chars[i]
             lores_char_data = np.frombuffer(
                 lores_char_bytes, dtype=np.uint8).reshape(16, 16)
             lores_char_image = self.get_scaled_image(lores_char_data)
@@ -517,22 +514,26 @@ class OOT3DHDTextGenerator:
             try:
                 if self.model is not None:
                     assignment = self.input_prefill(
-                        f"Assign character as:",
+                        f"Assign character {i}/{n_unassigned} as:",
                         self.get_predicted_assignment(lores_char_data))
                 else:
-                    assignment = input(f"Assign character as:")
+                    assignment = input(
+                        f"Assign character {i}/{n_unassigned} as:")
             except EOFError:
                 print()
-                i -= 1
+                if i != 0:
+                    i -= 1
                 continue
             except KeyboardInterrupt:
+                print()
+                print("Quitting interactive assignment")
                 break
 
             # Assign
             if len(assignment) == 1:
                 self.lores_chars[lores_char_bytes] = assignment
                 if self.verbosity >= 1:
-                    print(f"Assigned character image as '{assignment}'")
+                    print(f"Assigned character as '{assignment}'")
                 n_assigned += 1
             i += 1
 
@@ -549,7 +550,9 @@ class OOT3DHDTextGenerator:
         n_reassigned = 0
 
         if self.verbosity >= 1:
-            print(f"Interactively validating character assignments")
+            print(f"Interactively validating {n_assigned} character "
+                  f"assignments")
+            print("CTRL-C to exit; CTRL-D to undo")
         i = 0
         while i < len(self.lores_chars):
             # Gather data and generate images
@@ -573,21 +576,23 @@ class OOT3DHDTextGenerator:
             self.show_image(concatenated_image)
             try:
                 new_assignment = self.input_prefill(
-                    f"Character image {i}/{n_assigned} assigned as:",
+                    f"Character {i}/{n_assigned} assigned as:",
                     assignment)
             except EOFError:
                 print()
-                i -= 1
+                if i != 0:
+                    i -= 1
                 continue
             except KeyboardInterrupt:
                 print()
+                print("Quitting interactive validation")
                 break
 
             # Reassign
             if new_assignment != assignment and len(assignment) == 1:
                 self.lores_chars[lores_char_bytes] = new_assignment
                 if self.verbosity >= 1:
-                    print(f"Reassigned character image as '{new_assignment}'")
+                    print(f"Reassigned character as '{new_assignment}'")
                 n_reassigned += 1
             i += 1
 
