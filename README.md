@@ -9,12 +9,12 @@ including one instance of each unique character in the string is created. This
 behavior is presumably inherited from the Nintendo 64 version, on which it may
 have been useful for conserving memory. The script works around this behavior
 by:
-1. Identifying text image files in the dump directory to which Citra saves
+1. Scanning for text image files in the dump directory to which Citra saves
    textures
-2. Separating each text image into its individual characters and identifying
-   them
-3. Writing a new high resolution text image in the load directory from which
+2. Parsing each text image into its component characters
+3. Writing new high resolution text images in the load directory from which
    Citra loads replacement textures
+
 The script accumulates text images as the game is played. The first time a text
 string is displayed it will be low resolution, but the next time that same
 string is loaded and displayed it will be replaced with a high resolution
