@@ -47,4 +47,6 @@ additional text missing from the package.
 
 ## Usage
 
+## Machine Learning-Powered Optical Character Recognition
+
 ## License
