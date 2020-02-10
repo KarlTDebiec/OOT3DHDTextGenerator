@@ -18,8 +18,8 @@ by:
 The script accumulates text images as the game is played. The first time a text
 string is displayed it will be low resolution, but the next time that same
 string is loaded and displayed it will be replaced with a high resolution
-version. Playing through the complete game should therefore yield a complete
-high resolution text package.
+version. Playing through the complete game should therefore yield a set of
+high resolution text images cover most displayed text.
 
 **Unfortunately**, the North American and European localizations have a
 behaviour that sharply limits the usefulness of this script: they do not fully
@@ -38,12 +38,12 @@ the Japanese or Korean localizations.
 
 **Fortunately**, the Chinese localization, for which this script was originally
 intended, clears the text image between usages, making it viable to generate a
-complete high resolution text pack for this language. The script is
-particularly useful for Chinese, as the original characters' 16x16 pixel
-resolution reduces many complex characters to blurs. This script has been used
-to generate a simplified Chinese high resolution text package. It may still be
-run while playing the Chinese localization to capture any additional text
-missing from the released package
+high resolution text package for this language. This script is particularly
+useful for Chinese, as the original 16x16 pixel resolution obfuscates many
+complex characters. A simplified Chinese high resolution text package covering
+most of the game has been created and is available on the release page. The
+script may be run while playing the Chinese localization to capture any
+additional text missing from the package.
 
 ## Usage
 
