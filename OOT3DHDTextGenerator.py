@@ -23,13 +23,8 @@ from typing import Dict, List, Optional
 
 import h5py
 import numpy as np
-import pandas as pd
 import yaml
-from IPython import embed
 from PIL import Image, ImageChops, ImageDraw, ImageFont, UnidentifiedImageError
-from tensorflow import keras
-from watchdog.events import FileSystemEventHandler
-from watchdog.observers import Observer
 
 
 ################################### CLASSES ###################################
@@ -38,6 +33,7 @@ class OOT3DHDTextGenerator:
     Generates hi-res text images for The Legend of Zelda: Ocarina of Time 3D
 
     TODO:
+        - Reduce number of up required imports
         - Review hires image output logic
         - Sort characters
         - Document
@@ -46,36 +42,8 @@ class OOT3DHDTextGenerator:
         - Add useful error message text
         - Add License
         - Add requirements file
+        - Test on Windows
     """
-
-    # region Classes
-
-    class FileCreatedEventHandler(FileSystemEventHandler):  # type: ignore
-        """
-        Handles file creation in dump folder
-        """
-
-        def __init__(self, host) -> None:  # type: ignore
-            """
-            Initializes
-
-            Args:
-                host (OOT3DHDTextGenerator): Host to which files will be passed
-            """
-            self.host = host
-            self.n_new_images = 0
-
-        def on_created(self, event):  # type: ignore
-            """
-            Handles a file creation event
-
-            Args:
-                event: File creation event whose file to process
-            """
-            filename = basename(event.key[1])
-            self.n_new_images += self.host.process_file(filename)
-
-    # endregion
 
     # region Class Variables
 
@@ -134,6 +102,8 @@ class OOT3DHDTextGenerator:
         # Load cache
         if isfile(self.cache_file):
             self.load_hdf5_cache()
+        from IPython import embed
+        embed()
 
         # Review existing images
         if self.operations["scan"]:
@@ -259,12 +229,9 @@ class OOT3DHDTextGenerator:
     @property
     def hanzi_chars(self) -> List[str]:
         if not hasattr(self, "_hanzi_chars"):
-            hanzi_frequency: pd.DataFrame = pd.read_csv(
+            self._hanzi_chars: List[str] = list(np.loadtxt(
                 f"{self.package_root}/data/characters.txt",
-                sep="\t",
-                names=["character", "frequency", "cumulative frequency"])
-            self._hanzi_chars: List[str] = hanzi_frequency[
-                "character"].tolist()
+                dtype=str, usecols=0))
         return self._hanzi_chars
 
     @property
@@ -328,22 +295,27 @@ class OOT3DHDTextGenerator:
         ).reshape((-1, 16, 16))
 
     @property
-    def model(self) -> Optional[keras.Sequential]:
+    def model(self):  # type: ignore
         """Optional[keras.Sequential]: Lo-res character assignment model"""
         if not hasattr(self, "_model"):
-            self._model: Optional[keras.Sequential] = None
+            self._model = None
         return self._model
 
     @model.setter
-    def model(self, value: Optional[keras.Sequential]) -> None:
+    def model(self, value) -> None:  # type: ignore
         if value is not None:
+            try:
+                from tensorflow.keras.models import load_model
+            except ImportError as e:
+                raise e
+
             value = expandvars(value)
             if isfile(value):
                 if not (access(value, R_OK) and access(value, W_OK)):
                     raise ValueError()
             else:
                 raise ValueError
-            value = keras.models.load_model(value)
+            value = load_model(value)
         self._model = value
 
     @property
@@ -611,32 +583,21 @@ class OOT3DHDTextGenerator:
                 images = np.array(cache["characters/images"])
                 assignments = np.array(cache["characters/assignments"])
                 for i, a in zip(images, assignments):
-                    # TODO: Consider removing; how was this condition reached?
-                    try:
-                        a = a.decode("UTF8")
-                    except UnicodeDecodeError as e:
-                        print(f"Error encountered while decoding characters: "
-                              f"{e}, for image:")
-                        print(i)
-                        embed()
-                    self.lores_chars[i.tobytes()] = a
+                    self.lores_chars[i.tobytes()] = a.decode("UTF8")
 
             # Load unassigned texts
             if "files/unassigned" in cache:
-                filenames = [f.decode("UTF8") for f in
-                             np.array(cache["files/unassigned/filenames"])]
+                filenames = np.array(cache["files/unassigned/filenames"])
                 indexes = np.array(cache["files/unassigned/indexes"])
                 for f, i in zip(filenames, indexes):
-                    self.unassigned_files[f] = i
+                    self.unassigned_files[f.decode("UTF8")] = i
 
             # Load assigned texts
             if "files/assigned" in cache:
-                filenames = [f.decode("UTF8") for f in
-                             np.array(cache["files/assigned/filenames"])]
-                texts = [t.decode("UTF8") for t in
-                         np.array(cache["files/assigned/texts"])]
+                filenames = np.array(cache["files/assigned/filenames"])
+                texts = np.array(cache["files/assigned/texts"])
                 for f, t in zip(filenames, texts):
-                    self.assigned_files[f] = t
+                    self.assigned_files[f.decode("UTF8")] = t.decode("UTF8")
 
     def load_file(self, filename: str) -> None:
         """
@@ -862,12 +823,41 @@ class OOT3DHDTextGenerator:
         Returns:
             int: number of new files observed
         """
+        from watchdog.events import FileSystemEventHandler
+        from watchdog.observers import Observer
+
+        class FileCreatedEventHandler(FileSystemEventHandler):  # type: ignore
+            """
+            Handles file creation in dump folder
+            """
+
+            def __init__(self, host) -> None:  # type: ignore
+                """
+                Initializes
+
+                Args:
+                    host (OOT3DHDTextGenerator): Host to which files will be
+                       passed
+                """
+                self.host = host
+                self.n_new_images = 0
+
+            def on_created(self, event):  # type: ignore
+                """
+                Handles a file creation event
+
+                Args:
+                    event: File creation event whose file to process
+                """
+                filename = basename(event.key[1])
+                self.n_new_images += self.host.process_file(filename)
+
         if self.dump_directory is None:
             raise ValueError()
 
         if self.verbosity >= 1:
             print(f"Watching for new images in '{self.dump_directory}'")
-        event_handler = self.FileCreatedEventHandler(self)
+        event_handler = FileCreatedEventHandler(self)
         observer = Observer()
         observer.schedule(event_handler, self.dump_directory)
         observer.start()
