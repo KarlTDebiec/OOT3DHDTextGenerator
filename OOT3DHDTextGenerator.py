@@ -11,7 +11,8 @@
 from __future__ import annotations
 
 from collections import OrderedDict
-from os import R_OK, W_OK, X_OK, access, listdir, remove, getcwd
+from itertools import product
+from os import R_OK, W_OK, X_OK, access, getcwd, listdir, remove
 from os.path import basename, dirname, expandvars, isdir, isfile
 from pathlib import Path
 from readline import insert_text, redisplay, set_pre_input_hook
@@ -33,6 +34,7 @@ class OOT3DHDTextGenerator:
     Generates hi-res text images for The Legend of Zelda: Ocarina of Time 3D
 
     TODO:
+        - Save scaled images
         - Review hires image output logic
         - Sort characters
         - Reconsider how to handle model
@@ -243,7 +245,7 @@ class OOT3DHDTextGenerator:
         if not hasattr(self, "_hires_chars") or self._hires_chars == {}:
             hires_chars = {}
 
-            for assignment in self.lores_char_assignments:
+            for i, assignment in enumerate(self.lores_char_assignments):
                 if assignment == "":
                     continue
                 hires_image = Image.new("L", (self.size, self.size), 0)
@@ -251,8 +253,25 @@ class OOT3DHDTextGenerator:
                 width, height = draw.textsize(assignment, font=self.font)
                 draw.text(((self.size - width) / 2, (self.size - height) / 2),
                           assignment, font=self.font, fill=255)
+                hires_data = np.array(hires_image)
 
-                hires_chars[assignment] = np.array(hires_image)
+                if self.operations["align"]:
+                    lores_data = self.lores_char_array[i]
+                    scaled_data = np.array(self.get_scaled_image(lores_data))
+
+                    best_diff = self.size * self.size * 255
+                    best_offset = None
+                    for offset in product(range(-8, 9), range(-8, 9)):
+                        diff = scaled_data.astype(np.int16) \
+                               - np.roll(hires_data, offset,
+                                         (0, 1)).astype(np.int16)
+                        diff = np.abs(diff).sum()
+                        if diff < best_diff:
+                            best_diff = diff
+                            best_offset = offset
+                    hires_data = np.roll(hires_data, best_offset, (0, 1))
+
+                hires_chars[assignment] = hires_data
 
             self._hires_chars: Dict[str, np.ndarray] = hires_chars
 

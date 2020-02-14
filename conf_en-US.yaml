@@ -8,11 +8,11 @@ size: 64
 font: /System/Library/Fonts/Helvetica.ttc
 fontsize: 50
 assign: True
-validate: True
+validate: False
 watch: True
 xbrzscale: $HOME/OneDrive/code/external/xbrzscale/xbrzscale
 
 load: $HOME/.local/share/citra-emu/load/textures/0004000000033500
 align: True
-overwrite: False
+overwrite: True
 backup: $HOME/Documents/Zelda/1x_text_en
