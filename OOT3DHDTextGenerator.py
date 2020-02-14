@@ -11,7 +11,7 @@
 from __future__ import annotations
 
 from collections import OrderedDict
-from os import R_OK, W_OK, X_OK, access, listdir, remove
+from os import R_OK, W_OK, X_OK, access, listdir, remove, getcwd
 from os.path import basename, dirname, expandvars, isdir, isfile
 from pathlib import Path
 from readline import insert_text, redisplay, set_pre_input_hook
@@ -33,16 +33,16 @@ class OOT3DHDTextGenerator:
     Generates hi-res text images for The Legend of Zelda: Ocarina of Time 3D
 
     TODO:
-        - Reduce number of up required imports
         - Review hires image output logic
         - Sort characters
+        - Reconsider how to handle model
         - Document
         - Command-Line Argument for conf file
-        - Handle times via brute force
         - Add useful error message text
         - Add License
         - Add requirements file
         - Test on Windows
+        - Handle times via brute force
     """
 
     # region Class Variables
@@ -53,7 +53,7 @@ class OOT3DHDTextGenerator:
 
     # region Builtins
 
-    def __init__(self, conf_file: str = "conf_cn.yaml"):
+    def __init__(self, conf_file: str = "conf_en-US.yaml"):
         """
         Initializes
 
@@ -91,6 +91,7 @@ class OOT3DHDTextGenerator:
         self.load_directory = conf.get(
             "load",
             "$HOME/.local/share/citra-emu/load/textures/000400000008F900)")
+        self.operations["align"] = conf.get("align", False)
         self.operations["overwrite"] = conf.get("overwrite", False)
         self.backup_directory = conf.get("backup", None)
 
@@ -102,8 +103,6 @@ class OOT3DHDTextGenerator:
         # Load cache
         if isfile(self.cache_file):
             self.load_hdf5_cache()
-        from IPython import embed
-        embed()
 
         # Review existing images
         if self.operations["scan"]:
@@ -121,7 +120,7 @@ class OOT3DHDTextGenerator:
                 for filename in list(self.unassigned_files.keys()):
                     self.assign_file(filename)
                 self.save_hdf5_cache()
-                self._initialize_hires_chars()
+                self.hires_chars = {}
                 self.save_load_directory()
 
         # Validate assigned characters
@@ -136,7 +135,7 @@ class OOT3DHDTextGenerator:
                 if self.operations["scan"]:
                     self.scan_dump_directory()
                 self.save_hdf5_cache()
-                self._initialize_hires_chars()
+                self.hires_chars = {}
                 self.save_load_directory()
 
         # Watch for additional images and process as they appear
@@ -188,6 +187,9 @@ class OOT3DHDTextGenerator:
     @cache_file.setter
     def cache_file(self, value: str) -> None:
         value = expandvars(value)
+        if dirname(value) == "":
+            value = f"{getcwd()}/{value}"
+
         if isfile(value):
             if not (access(value, R_OK) and access(value, W_OK)):
                 raise ValueError()
@@ -196,7 +198,8 @@ class OOT3DHDTextGenerator:
                     and access(dirname(value), W_OK)):
                 raise ValueError()
         else:
-            raise ValueError
+            raise ValueError()
+
         self._cache_file = value
 
     @property
@@ -237,8 +240,22 @@ class OOT3DHDTextGenerator:
     @property
     def hires_chars(self) -> Dict[str, np.ndarray]:
         """Dict[str, np.ndarray]: hi-res images of characters"""
-        if not hasattr(self, "_hires_chars"):
-            self._initialize_hires_chars()
+        if not hasattr(self, "_hires_chars") or self._hires_chars == {}:
+            hires_chars = {}
+
+            for assignment in self.lores_char_assignments:
+                if assignment == "":
+                    continue
+                hires_image = Image.new("L", (self.size, self.size), 0)
+                draw = ImageDraw.Draw(hires_image)
+                width, height = draw.textsize(assignment, font=self.font)
+                draw.text(((self.size - width) / 2, (self.size - height) / 2),
+                          assignment, font=self.font, fill=255)
+
+                hires_chars[assignment] = np.array(hires_image)
+
+            self._hires_chars: Dict[str, np.ndarray] = hires_chars
+
         return self._hires_chars
 
     @hires_chars.setter
@@ -793,6 +810,9 @@ class OOT3DHDTextGenerator:
             print(f"{self.load_directory}/{filename} saved")
 
     def save_load_directory(self) -> None:
+        """
+        Saves high resolution images to Citra's load directory
+        """
         if self.verbosity >= 1:
             print(f"Saving images to '{self.load_directory}'")
         for filename in self.assigned_files:
@@ -823,8 +843,11 @@ class OOT3DHDTextGenerator:
         Returns:
             int: number of new files observed
         """
-        from watchdog.events import FileSystemEventHandler
-        from watchdog.observers import Observer
+        try:
+            from watchdog.events import FileSystemEventHandler
+            from watchdog.observers import Observer
+        except ImportError as e:
+            raise e
 
         class FileCreatedEventHandler(FileSystemEventHandler):  # type: ignore
             """
@@ -872,31 +895,19 @@ class OOT3DHDTextGenerator:
 
     # endregion
 
-    # region Private Methods
-
-    def _initialize_hires_chars(self) -> None:
-        """
-        Initializes hi-res character images
-        """
-        hires_chars = {}
-
-        for assignment in [a for a in self.lores_char_assignments if a != ""]:
-            hires_image = Image.new("L", (self.size, self.size), 0)
-            draw = ImageDraw.Draw(hires_image)
-            width, height = draw.textsize(assignment, font=self.font)
-            draw.text(((self.size - width) / 2, (self.size - height) / 2),
-                      assignment, font=self.font, fill=255)
-
-            hires_chars[assignment] = np.array(hires_image)
-
-        self._hires_chars = hires_chars
-
-    # endregion
-
     # region Static Methods
 
     @staticmethod
     def concatenate_images(*images: Image.ImageMode) -> Image.Image:
+        """
+        Horizontally concatenates a series of images
+
+        Args:
+            *images (Image.Image): two or more images to concatenate
+
+        Returns:
+            Image.Image: concatenated image
+        """
         width = 0
         height = 0
         for image in images:
