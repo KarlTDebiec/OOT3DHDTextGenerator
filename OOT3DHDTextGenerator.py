@@ -20,7 +20,7 @@ from shutil import copyfile
 from subprocess import DEVNULL, PIPE, Popen
 from tempfile import NamedTemporaryFile
 from time import sleep
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 
 import h5py
 import numpy as np
@@ -76,7 +76,6 @@ class OOT3DHDTextGenerator:
         self.dump_directory = conf.get(
             "dump",
             "$HOME/.local/share/citra-emu/dump/textures/000400000008F900")
-        self.operations["scan"] = conf.get("scan", True)
         self.model = conf.get("model", None)
 
         # Operation configuration
@@ -84,16 +83,18 @@ class OOT3DHDTextGenerator:
         self.font = ImageFont.truetype(
             conf.get("font", "/System/Library/Fonts/STHeiti Medium.ttc"),
             conf.get("fontsize", 62))
+        self.xbrzscale = conf.get("xbrzscale", None)
+        self.operations["scan"] = conf.get("scan", True)
+        self.operations["offset"] = conf.get("offset", (0, 0))
+        self.operations["align"] = conf.get("align", False)
         self.operations["assign"] = conf.get("assign", False)
         self.operations["validate"] = conf.get("validate", False)
         self.operations["watch"] = conf.get("watch", False)
-        self.xbrzscale = conf.get("xbrzscale", None)
 
         # Output configuration
         self.load_directory = conf.get(
             "load",
             "$HOME/.local/share/citra-emu/load/textures/000400000008F900)")
-        self.operations["align"] = conf.get("align", False)
         self.operations["overwrite"] = conf.get("overwrite", False)
         self.backup_directory = conf.get("backup", None)
 
@@ -245,15 +246,34 @@ class OOT3DHDTextGenerator:
         if not hasattr(self, "_hires_chars") or self._hires_chars == {}:
             hires_chars = {}
 
+            lefts = []
+            rights = []
+            tops = []
+            bottoms = []
             for i, assignment in enumerate(self.lores_char_assignments):
                 if assignment == "":
                     continue
                 hires_image = Image.new("L", (self.size, self.size), 0)
                 draw = ImageDraw.Draw(hires_image)
                 width, height = draw.textsize(assignment, font=self.font)
-                draw.text(((self.size - width) / 2, (self.size - height) / 2),
-                          assignment, font=self.font, fill=255)
+                draw.text((((self.size - width) / 2)
+                           + self.operations["offset"][0],
+                           ((self.size - height) / 2)
+                           + self.operations["offset"][1]),
+                          assignment, font=self.font, fill=255, align="center")
                 hires_data = np.array(hires_image)
+
+                try:
+                    transparent_cols = list((hires_data == 0).all(axis=0))
+                    lefts.append(transparent_cols.index(False))
+                    rights.append(
+                        list(reversed(transparent_cols)).index(False))
+                    transparent_rows = list((hires_data == 0).all(axis=1))
+                    tops.append(transparent_rows.index(False))
+                    bottoms.append(
+                        list(reversed(transparent_rows)).index(False))
+                except ValueError:
+                    pass
 
                 if self.operations["align"]:
                     lores_data = self.lores_char_array[i]
@@ -272,6 +292,11 @@ class OOT3DHDTextGenerator:
                     hires_data = np.roll(hires_data, best_offset, (0, 1))
 
                 hires_chars[assignment] = hires_data
+
+            if self.verbosity >= 1:
+                print(f"Minimum buffer around edges: left = {min(lefts)}, "
+                      f"right = {min(rights)}, top = {min(tops)}, "
+                      f"bottom = {min(bottoms)}")
 
             self._hires_chars: Dict[str, np.ndarray] = hires_chars
 
@@ -355,10 +380,10 @@ class OOT3DHDTextGenerator:
         self._model = value
 
     @property
-    def operations(self) -> Dict[str, bool]:
-        """Dict[str, bool]: Operations to perform and associated flags"""
+    def operations(self) -> Dict[str, Any]:
+        """Dict[str, Any]: Operations to perform and associated flags"""
         if not hasattr(self, "_operations"):
-            self._operations: Dict[str, bool] = {}
+            self._operations: Dict[str, Any] = {}
         return self._operations
 
     @property
