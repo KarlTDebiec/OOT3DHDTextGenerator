@@ -34,7 +34,7 @@ class OOT3DHDTextGenerator:
     Generates hi-res text images for The Legend of Zelda: Ocarina of Time 3D
 
     TODO:
-        - Save scaled images
+        - Save scaled images in cache
         - Review hires image output logic
         - Sort characters
         - Reconsider how to handle model
@@ -55,7 +55,7 @@ class OOT3DHDTextGenerator:
 
     # region Builtins
 
-    def __init__(self, conf_file: str = "conf_en-US.yaml"):
+    def __init__(self, conf_file: str = "conf_cmn-Hans.yaml"):
         """
         Initializes
 
