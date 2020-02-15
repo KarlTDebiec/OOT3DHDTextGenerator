@@ -21,7 +21,7 @@ string is reloaded for display it will be replaced with a high resolution
 version. Playing through the complete game should therefore yield a set of high
 resolution text images that cover most displayed text.
 
-<div align="center">
+<div align="center" style="text-align:center">
     <img src="docs/static/lores_text_lores_texture.png">
     <h3>Low-Resolution Text</h3>
     <img src="docs/static/hires_text_lores_texture.png">
