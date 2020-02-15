@@ -21,8 +21,14 @@ string is reloaded for display it will be replaced with a high resolution
 version. Playing through the complete game should therefore yield a set of high
 resolution text images that cover most displayed text.
 
-<img align="left" src="docs/static/lores_text_lores_texture.png">
-<img align="right" src="docs/static/hires_text_lores_texture.png">
+<p align="left">
+    <img src="docs/static/lores_text_lores_texture.png">
+    <h4>Low-Resolution Text</h4>
+</p>
+<p align="right">
+    <img src="docs/static/hires_text_lores_texture.png">
+    <h4>High-Resolution Text</h4>
+</p>
 
 **Unfortunately**, the North American, European, and Japanese localizations 
 have a behaviour that sharply limits the usefulness of this script: they do not
