@@ -63,8 +63,10 @@ class OOT3DHDTextGenerator:
             conf_file (str): file from which to load configuration
         """
         # Read configuration file
+        conf_file = expandvars(conf_file)
         if not (isfile(conf_file) and access(conf_file, R_OK)):
-            raise ValueError()
+            raise ValueError(f"Configuration file '{conf_file}' could not be "
+                             f"read")
         with open(conf_file, "r") as f:
             conf = yaml.load(f, Loader=yaml.SafeLoader)
 
@@ -107,7 +109,7 @@ class OOT3DHDTextGenerator:
         if isfile(self.cache_file):
             self.load_hdf5_cache()
 
-        # Review existing images
+        # Scan existing images
         if self.operations["scan"]:
             n_files = self.scan_dump_directory()
             if n_files > 0:
@@ -141,7 +143,7 @@ class OOT3DHDTextGenerator:
                 self.hires_chars = {}
                 self.save_load_directory()
 
-        # Watch for additional images and process as they appear
+        # Watch for additional images
         if self.operations["watch"]:
             n_files = self.watch_dump_directory()
             if n_files > 0:
@@ -942,7 +944,7 @@ class OOT3DHDTextGenerator:
     # region Static Methods
 
     @staticmethod
-    def concatenate_images(*images: Image.ImageMode) -> Image.Image:
+    def concatenate_images(*images: Image.Image) -> Image.Image:
         """
         Horizontally concatenates a series of images
 

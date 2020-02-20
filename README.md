@@ -6,9 +6,7 @@ games, this functionality makes it straightforward to obtain high resolution
 text by replacing a small number of font textures. However, Ocarina of Time has
 an unusual text implementation in which every time a text string is displayed
 the game generates an image including one instance of each unique character in
-the string. This behavior is presumably inherited from the Nintendo 64 version,
-on which it may have been useful for conserving memory. The script works around
-this behavior by:
+the string. The script works around this behavior by:
 
 1. Loading text image from the directory to which Citra saves textures
 2. Parsing each text image into its component characters
@@ -45,11 +43,9 @@ text will be high resolution.
 
 **Fortunately**, the Chinese localization, for which this script was originally
 designed to be used, clears the text image between usages, making it viable to
-generate a high resolution text package for this language. This script is
-particularly useful for Chinese, as the original 16x16 pixel resolution is
-ill-suited for complex characters. A simplified Chinese high resolution text
-package covering most of the game text has been created and is available on the
-release page. The script may be run while playing the Chinese localization to
+generate a high resolution text package for this language. A simplified Chinese
+high resolution text package covering most of the game text has been created
+and is available on the release page. The script may be run while playing to
 capture any additional text missing from the package.
 
 ## Usage
