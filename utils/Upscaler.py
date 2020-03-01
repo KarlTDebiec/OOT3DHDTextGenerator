@@ -19,12 +19,11 @@ from pathlib import Path
 from shutil import copyfile, which
 from subprocess import Popen
 from sys import modules
-from typing import Any, Dict, Generator, List, Optional
+from typing import Any, Dict, Generator, List, Optional, Union
 
 import numba as nb
 import numpy as np
 import yaml
-from IPython import embed
 from PIL import Image
 
 
@@ -174,13 +173,14 @@ class PixelmatorProcessor(Processor):
         Popen(command, shell=True, close_fds=True).wait()
 
     @classmethod
-    def get_processors(cls, **kwargs: Dict[str, str]) -> List[Processor]:
+    def get_processors(cls, **kwargs: Any) -> List[Processor]:
         if "workflow_directory" in kwargs:
-            workflow_directory = expandvars(kwargs.pop("workflow_directory"))
+            workflow_directory = expandvars(
+                str(kwargs.pop("workflow_directory")))
         else:
             workflow_directory = f"{Path(__file__).parent.absolute()}/" \
                                  f"workflows"
-        workflows = kwargs.pop("workflow")
+        workflows: Union[List[str], str] = kwargs.pop("workflow")
         if not isinstance(workflows, list):
             workflows = [workflows]
 
