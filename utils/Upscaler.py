@@ -19,7 +19,7 @@ from pathlib import Path
 from shutil import copyfile, which
 from subprocess import Popen
 from sys import modules
-from typing import Any, Dict, Generator, List, Optional, Union
+from typing import Any, Generator, List, Optional, Union, no_type_check
 
 import numba as nb
 import numpy as np
@@ -38,8 +38,8 @@ class Processor(ABC):
             self.executable = expandvars(
                 str(kwargs.get("executable", which(self.executable_name))))
 
-    def __call__(self, downstream_processors: Any = None) \
-            -> Generator[None, str, None]:
+    def __call__(self, downstream_processors: Optional[List[
+        Generator[None, str, None]]] = None) -> Generator[None, str, None]:
         while True:
             infile = (yield)
             outfile = self.get_outfile(infile)
@@ -68,7 +68,7 @@ class Processor(ABC):
 
     @classmethod
     @abstractmethod
-    def get_processors(cls, **kwargs: Dict[str, str]) -> List[Processor]:
+    def get_processors(cls, **kwargs: Any) -> List[Processor]:
         pass
 
 
@@ -86,7 +86,7 @@ class CopyProcessor(Processor):
         copyfile(infile, outfile)
 
     @classmethod
-    def get_processors(cls, **kwargs: Dict[str, str]) -> List[Processor]:
+    def get_processors(cls, **kwargs: Any) -> List[Processor]:
         output_directories = kwargs.pop("output_directory")
         if not isinstance(output_directories, list):
             output_directories = [output_directories]
@@ -113,7 +113,7 @@ class Flattener(Processor):
         Image.fromarray(output_data).convert("RGB").save(outfile)
 
     @classmethod
-    def get_processors(cls, **kwargs: Dict[str, str]) -> List[Processor]:
+    def get_processors(cls, **kwargs: Any) -> List[Processor]:
         return [cls(paramstring=f"flatten")]
 
 
@@ -342,6 +342,7 @@ class ThresholdProcessor(Processor):
                     **kwargs))
         return processors
 
+    @no_type_check
     @staticmethod
     @nb.jit(nopython=True, nogil=True, cache=True, fastmath=True)
     def denoise_data(data: np.ndarray) -> None:
@@ -395,8 +396,8 @@ class WaifuProcessor(Processor):
                         paramstring=f"waifu-"
                                     f"{imagetype}-"
                                     f"{scale}-"
-                                    f"{noise}"),
-                        **kwargs)
+                                    f"{noise}",
+                        **kwargs))
         return processors
 
 
@@ -432,10 +433,6 @@ class XbrzProcessor(Processor):
 
 
 class Upscaler:
-    """
-    TODO:
-        - Test separately tracing black stroke and white fill
-    """
 
     # region Class Variables
 
@@ -467,7 +464,7 @@ class Upscaler:
         self.input_directory = conf.get("input", getcwd())
 
         # Preprocessor configuration
-        self.pipeline = OrderedDict()
+        self.pipeline: OrderedDict[str, List[Processor]] = OrderedDict()
         for stage in conf["pipeline"]:
             stage_name = list(stage.keys())[0]
             processors: List[Processor] = []
@@ -502,26 +499,6 @@ class Upscaler:
 
         self.scan_input_directory(downstream_processors)
 
-    # Trace image
-    # shrunk_file = f"{prefix}_{scale_params}_{trace_params}_" \
-    #               f"shrunk.png"
-    # shrunk_image = Image.open(
-    #     raster_file).convert("RGB").resize(
-    #     (256, 32), Image.BILINEAR)
-    # shrunk_image.save(shrunk_file)
-    # created_files.add(shrunk_file)
-    #
-    # diff_file = f"{prefix}_{scale_params}_{trace_params}_" \
-    #             f"diff.png"
-    # diff_image = ImageChops.difference(flat_image,
-    #                                    shrunk_image)
-    # diff_image.save(diff_file)
-    # created_files.add(diff_file)
-    #
-    # if np.array(diff_image).sum() < best_diff:
-    #     best_params = trace_params
-    #     best_diff = np.array(diff_image).sum()
-
     # endregion
 
     # region Properties
@@ -537,7 +514,6 @@ class Upscaler:
     def input_directory(self, value: Optional[str]) -> None:
         if value is not None:
             value = expandvars(value)
-            # TODO: Create if possible
             if not (isdir(value) and access(value, W_OK)):
                 raise ValueError()
         self._input_directory = value
@@ -594,25 +570,6 @@ class Upscaler:
             for processor in downstream_processors:
                 processor.send(outfile)
             # break
-
-    # endregion
-
-    # region Static Methods
-
-    @staticmethod
-    def show_image(image: Image.Image) -> None:
-        """
-        Shows an image to the user, in the terminal if possible
-
-        Args:
-            image (Image.Image): image to show
-        """
-        try:
-            from imgcat import imgcat
-
-            imgcat(image)
-        except ImportError:
-            image.show()
 
     # endregion
 
