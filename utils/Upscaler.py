@@ -11,27 +11,20 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from asyncio import coroutine
 from collections import OrderedDict
-from itertools import product
-from os import R_OK, W_OK, X_OK, access, getcwd, listdir, remove, mkdir, \
-    makedirs
-from os.path import basename, dirname, expandvars, isdir, isfile, splitext, \
-    join
+from os import R_OK, W_OK, access, getcwd, listdir, makedirs, remove
+from os.path import basename, dirname, expandvars, isdir, isfile, join, \
+    splitext
 from pathlib import Path
-from readline import insert_text, redisplay, set_pre_input_hook
 from shutil import copyfile, which
-from subprocess import DEVNULL, PIPE, Popen
+from subprocess import Popen
 from sys import modules
-from tempfile import NamedTemporaryFile
-from time import sleep
-from typing import Dict, List, Optional, Any, Set, Generator, Callable
+from typing import Any, Dict, Generator, List, Optional
 
-import h5py
+import numba as nb
 import numpy as np
 import yaml
-from IPython import embed
-from PIL import Image, ImageChops, ImageDraw, ImageFont, UnidentifiedImageError
+from PIL import Image
 
 
 ################################### CLASSES ###################################
@@ -97,6 +90,43 @@ class Flattener(Processor):
         return [cls(paramstring=f"flatten")]
 
 
+class ImageMagickProcessor(Processor):
+    executable_name = "convert"
+
+    def __init__(self, extension: str, resize: Any = False,
+                 remove_infile: bool = False, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        self.extension = extension
+        self.remove_infile = remove_infile
+        self.resize = resize
+
+    def process_file(self, infile: str, outfile: str) -> None:
+        if isfile(outfile):
+            return
+        print(f"Processing to '{outfile}'")
+        if self.resize:
+            command = f"{self.executable} " \
+                      f"-resize {self.resize[0]}x{self.resize[1]} " \
+                      f"{infile} " \
+                      f"{outfile}"
+        else:
+            command = f"{self.executable} " \
+                      f"{infile} " \
+                      f"{outfile}"
+        print(command)
+        Popen(command, shell=True, close_fds=True).wait()
+        if self.remove_infile:
+            remove(infile)
+
+    @classmethod
+    def get_processors(cls, **kwargs: Any) -> List[Processor]:
+        return [cls(extension=kwargs.pop("extension", "bmp"),
+                    remove_infile=kwargs.pop("remove_infile", False),
+                    resize=kwargs.pop("resize", False),
+                    paramstring="",
+                    **kwargs)]
+
+
 class PixelmatorProcessor(Processor):
     executable_name = "automator"
 
@@ -107,7 +137,7 @@ class PixelmatorProcessor(Processor):
     def process_file(self, infile: str, outfile: str) -> None:
         if isfile(outfile):
             return
-        print(f"Scaling to '{outfile}'")
+        print(f"Processing to '{outfile}'")
         copyfile(infile, outfile)
         command = f"{self.executable} " \
                   f"-i {outfile} " \
@@ -117,10 +147,16 @@ class PixelmatorProcessor(Processor):
 
     @classmethod
     def get_processors(cls, **kwargs: Dict[str, str]) -> List[Processor]:
-        workflow_directory = expandvars(
-            str(kwargs.get("workflow_directory", getcwd())))
-        processors: List[Processor] = []
+        if "workflow_directory" in kwargs:
+            workflow_directory = expandvars(kwargs.pop("workflow_directory"))
+        else:
+            workflow_directory = f"{Path(__file__).parent.absolute()}/" \
+                                 f"workflows"
         workflows = kwargs.pop("workflow")
+        if not isinstance(workflows, list):
+            workflows = [workflows]
+
+        processors: List[Processor] = []
         for workflow in workflows:
             processors.append(cls(
                 workflow=f"{workflow_directory}/{workflow}.workflow",
@@ -128,105 +164,6 @@ class PixelmatorProcessor(Processor):
                             f"{workflow}",
                 **kwargs))
         return processors
-
-
-class WaifuScaler(Processor):
-    executable_name = "waifu2x"
-
-    def __init__(self, imagetype: str, scale: str, noise: str,
-                 **kwargs: Any) -> None:
-        super().__init__(**kwargs)
-        self.imagetype = imagetype
-        self.scale = scale
-        self.noise = noise
-
-    def process_file(self, infile: str, outfile: str) -> None:
-        if isfile(outfile):
-            return
-        print(f"Scaling to '{outfile}'")
-        command = f"{self.executable} " \
-                  f"-t {self.imagetype} " \
-                  f"-s {self.scale} " \
-                  f"-n {self.noise} " \
-                  f"-i {infile} " \
-                  f"-o {outfile}"
-        print(command)
-        Popen(command, shell=True, close_fds=True).wait()
-
-    @classmethod
-    def get_processors(cls, **kwargs: Any) -> List[Processor]:
-        processors: List[Processor] = []
-        imagetypes = kwargs.pop("imagetype")
-        scales = kwargs.pop("scale")
-        noises = kwargs.pop("noise")
-        for imagetype in imagetypes:
-            for scale in scales:
-                for noise in noises:
-                    processors.append(cls(
-                        imagetype=imagetype,
-                        scale=scale,
-                        noise=noise,
-                        paramstring=f"waifu-"
-                                    f"{imagetype}-"
-                                    f"{scale}-"
-                                    f"{noise}"),
-                        **kwargs)
-        return processors
-
-
-class XbrzScaler(Processor):
-    executable_name = "xbrzscale"
-
-    def __init__(self, scale: str, **kwargs: Any) -> None:
-        super().__init__(**kwargs)
-        self.scale = scale
-
-    def process_file(self, infile: str, outfile: str) -> None:
-        if isfile(outfile):
-            return
-        print(f"Scaling to '{outfile}'")
-        command = f"{self.executable} " \
-                  f"{self.scale} " \
-                  f"{infile} " \
-                  f"{outfile}"
-        print(command)
-        Popen(command, shell=True, close_fds=True).wait()
-
-    @classmethod
-    def get_processors(cls, **kwargs: Any) -> List[Processor]:
-        processors: List[Processor] = []
-        scales = kwargs.pop("scale")
-        for scale in scales:
-            processors.append(cls(
-                scale=scale,
-                paramstring=f"xbrz-"
-                            f"{scale}",
-                **kwargs))
-        return processors
-
-
-class ImageMagickConverter(Processor):
-    executable_name = "convert"
-
-    def __init__(self, extension: str, **kwargs: Any) -> None:
-        super().__init__(**kwargs)
-        self.extension = extension
-
-    def process_file(self, infile: str, outfile: str) -> None:
-        if isfile(outfile):
-            return
-        print(f"Converting to '{outfile}'")
-        command = f"{self.executable} " \
-                  f"{infile} " \
-                  f"{outfile}"
-        print(command)
-        Popen(command, shell=True, close_fds=True).wait()
-
-    @classmethod
-    def get_processors(cls, **kwargs: Any) -> List[Processor]:
-        return [cls(extension=kwargs.pop("extension", "bmp"),
-                    paramstring="",
-                    **kwargs)]
 
 
 class PotraceTracer(Processor):
@@ -272,6 +209,147 @@ class PotraceTracer(Processor):
                                     f"{alphamax}-" \
                                     f"{float(opttolerance):3.1f}",
                         **kwargs))
+        return processors
+
+
+class ThresholdProcessor(Processor):
+
+    def __init__(self, threshold: int = 128, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        self.threshold = threshold
+
+    def process_file(self, infile: str, outfile: str) -> None:
+        # if isfile(outfile):
+        #     return
+        print(f"Processeing to '{outfile}'")
+        input_image = Image.open(infile).convert("L").point(
+            lambda p: p > self.threshold and 255)
+
+        # Denoise
+        # self.denoise(paletted_data)
+
+        # Reconstruct RGBA image from palette
+        # processed_data = np.zeros_like(input_data)  # Start all black transparent
+        # processed_data[:, :, 3][paletted_data != 127] = 255
+        # processed_data[:, :, :3][paletted_data == 255] = 255
+        # processed_image = Image.fromarray(processed_data)
+        input_image.save(outfile)
+
+    @classmethod
+    def get_processors(cls, **kwargs: Any) -> List[Processor]:
+        thresholds = kwargs.pop("threshold")
+        if not isinstance(thresholds, list):
+            thresholds = [thresholds]
+
+        processors: List[Processor] = []
+        for threshold in thresholds:
+            processors.append(cls(
+                threshold=threshold,
+                paramstring=f"threshold-{threshold}",
+                **kwargs))
+        return processors
+
+    @staticmethod
+    @nb.jit(nopython=True, nogil=True, cache=True, fastmath=True)
+    def denoise(paletted_data: np.ndarray) -> None:
+        for x in range(1, paletted_data.shape[1] - 1):
+            for y in range(1, paletted_data.shape[0] - 1):
+                slc = paletted_data[y - 1:y + 2, x - 1:x + 2]
+                n_transparent = (slc == 127).sum()
+                n_black = (slc == 0).sum()
+                n_white = (slc == 255).sum()
+                if paletted_data[y, x] == 127:
+                    if n_transparent < 4:
+                        if n_black > n_white:
+                            paletted_data[y, x] = 0
+                        else:
+                            paletted_data[y, x] = 255
+                elif paletted_data[y, x] == 0:
+                    if n_black < 4:
+                        if n_transparent > n_white:
+                            paletted_data[y, x] = 127
+                        else:
+                            paletted_data[y, x] = 255
+                elif paletted_data[y, x] == 255:
+                    if n_white < 4:
+                        if n_transparent > n_black:
+                            paletted_data[y, x] = 127
+                        else:
+                            paletted_data[y, x] = 0
+
+
+class WaifuProcessor(Processor):
+    executable_name = "waifu2x"
+
+    def __init__(self, imagetype: str, scale: str, noise: str,
+                 **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        self.imagetype = imagetype
+        self.scale = scale
+        self.noise = noise
+
+    def process_file(self, infile: str, outfile: str) -> None:
+        if isfile(outfile):
+            return
+        print(f"Processing to '{outfile}'")
+        command = f"{self.executable} " \
+                  f"-t {self.imagetype} " \
+                  f"-s {self.scale} " \
+                  f"-n {self.noise} " \
+                  f"-i {infile} " \
+                  f"-o {outfile}"
+        print(command)
+        Popen(command, shell=True, close_fds=True).wait()
+
+    @classmethod
+    def get_processors(cls, **kwargs: Any) -> List[Processor]:
+        processors: List[Processor] = []
+        imagetypes = kwargs.pop("imagetype")
+        scales = kwargs.pop("scale")
+        noises = kwargs.pop("noise")
+        for imagetype in imagetypes:
+            for scale in scales:
+                for noise in noises:
+                    processors.append(cls(
+                        imagetype=imagetype,
+                        scale=scale,
+                        noise=noise,
+                        paramstring=f"waifu-"
+                                    f"{imagetype}-"
+                                    f"{scale}-"
+                                    f"{noise}"),
+                        **kwargs)
+        return processors
+
+
+class XbrzProcessor(Processor):
+    executable_name = "xbrzscale"
+
+    def __init__(self, scale: str, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        self.scale = scale
+
+    def process_file(self, infile: str, outfile: str) -> None:
+        if isfile(outfile):
+            return
+        print(f"Processing to '{outfile}'")
+        command = f"{self.executable} " \
+                  f"{self.scale} " \
+                  f"{infile} " \
+                  f"{outfile}"
+        print(command)
+        Popen(command, shell=True, close_fds=True).wait()
+
+    @classmethod
+    def get_processors(cls, **kwargs: Any) -> List[Processor]:
+        processors: List[Processor] = []
+        scales = kwargs.pop("scale")
+        for scale in scales:
+            processors.append(cls(
+                scale=scale,
+                paramstring=f"xbrz-"
+                            f"{scale}",
+                **kwargs))
         return processors
 
 
@@ -347,56 +425,25 @@ class Upscaler:
         self.scan_input_directory(downstream_processors)
 
     # Trace image
-    # blacklevels = np.arange(0.05, 0.30, 0.05)
-    # alphamaxes = np.arange(1, 6, 1)
-    # opttolerances = np.arange(0.2, 1.2, 0.2)
-    # best_params = 0
-    # best_diff = 1000000
-    # best_files: Set[str] = set()
-    # for blacklevel in blacklevels:
-    #     for alphamax in alphamaxes:
-    #         for opttolerance in opttolerances:
-    #             trace_params = f"potrace-{blacklevel:3.2f}-{alphamax}-" \
-    #                            f"{opttolerance:3.1f}"
-    #             vector_file = f"{prefix}_{scale_params}_{trace_params}.svg"
-    #             raster_file = f"{prefix}_{scale_params}_{trace_params}.png"
-    #             if not isfile(raster_file):
-    #                 if not isfile(vector_file):
-    #                     self.trace_potrace(scale_file, vector_file,
-    #                                        blacklevel, alphamax,
-    #                                        opttolerance)
-    #                 self.convert(vector_file, raster_file)
-    #             created_files.add(vector_file)
-    #             created_files.add(raster_file)
+    # shrunk_file = f"{prefix}_{scale_params}_{trace_params}_" \
+    #               f"shrunk.png"
+    # shrunk_image = Image.open(
+    #     raster_file).convert("RGB").resize(
+    #     (256, 32), Image.BILINEAR)
+    # shrunk_image.save(shrunk_file)
+    # created_files.add(shrunk_file)
     #
-    #             shrunk_file = f"{prefix}_{scale_params}_{trace_params}_" \
-    #                           f"shrunk.png"
-    #             shrunk_image = Image.open(
-    #                 raster_file).convert("RGB").resize(
-    #                 (256, 32), Image.BILINEAR)
-    #             shrunk_image.save(shrunk_file)
-    #             created_files.add(shrunk_file)
+    # diff_file = f"{prefix}_{scale_params}_{trace_params}_" \
+    #             f"diff.png"
+    # diff_image = ImageChops.difference(flat_image,
+    #                                    shrunk_image)
+    # diff_image.save(diff_file)
+    # created_files.add(diff_file)
     #
-    #             diff_file = f"{prefix}_{scale_params}_{trace_params}_" \
-    #                         f"diff.png"
-    #             diff_image = ImageChops.difference(flat_image,
-    #                                                shrunk_image)
-    #             diff_image.save(diff_file)
-    #             created_files.add(diff_file)
-    #
-    #             if np.array(diff_image).sum() < best_diff:
-    #                 best_params = trace_params
-    #                 best_diff = np.array(diff_image).sum()
-    #                 best_files: Set[str] = {vector_file, raster_file,
-    #                                         shrunk_file, diff_file}
-    #
-    #             if self.verbosity >= 1:
-    #                 print(f"{scale_params} {trace_params} "
-    #                       f"{np.array(diff_image).sum()}")
-    #                 print()
-    # print(f"{best_params} {best_diff}")
-    # for suboptimal_file in created_files - best_files:
-    #     remove(suboptimal_file)
+    # if np.array(diff_image).sum() < best_diff:
+    #     best_params = trace_params
+    #     best_diff = np.array(diff_image).sum()
+
 
     # endregion
 
@@ -469,7 +516,7 @@ class Upscaler:
                 print(f"Copying to '{outfile}'")
             for processor in downstream_processors:
                 processor.send(outfile)
-            break
+            # break
 
     # endregion
 

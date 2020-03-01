@@ -4,29 +4,26 @@ output: $HOME/Documents/Zelda/4x_large_text_cn_2
 pipeline:
   - preprocessor:
       - Flattener
-  - scaler:
+  - stage_1:
       - PixelmatorProcessor:
-          executable: /usr/bin/automator
-          workflow_directory: $HOME/OneDrive/code/OOT3DHDTextGenerator/utils/workflows
           workflow:
-            - 3x-100-100
-            - 9x-100-100
-#      - WaifuScaler:
-#          executable: /Users/kdebiec/OneDrive/code/external/waifu2x/waifu2x
-#          imagetype: [a, p]
-#          scale: [2]
-#          noise: [0, 1, 2, 3, 4]
-      - XbrzScaler:
-          executable: $HOME/OneDrive/code/external/xbrzscale/xbrzscale
-          scale: [2, 3, 4, 5, 6]
-  - bmp_converter:
-      - ImageMagickConverter:
-          extension: bmp
-  - tracer:
-      - PotraceTracer:
-          blacklevel: [0.05, 0.10, 0.15, 0.20, 0.25, 0.30]
-          alphamax: [1, 2, 3, 4, 5]
-          opttolerance: [0.2, 0.4, 0.6, 0.8, 1.0]
-  - png_converters:
-      - ImageMagickConverter:
-          extension: png
+            - "3x"
+  - stage_2:
+      - PixelmatorProcessor:
+          workflow:
+            - "100.100"
+  - stage_3:
+      - PixelmatorProcessor:
+          workflow:
+            - "3x"
+  - stage_4:
+      - PixelmatorProcessor:
+          workflow:
+            - "100.100"
+  - stage_7:
+      - ThresholdProcessor:
+          threshold: 112
+#  - png_converters:
+#      - ImageMagickProcessor:
+#          extension: png
+#          resize: [256, 32]
