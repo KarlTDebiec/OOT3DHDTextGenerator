@@ -1,6 +1,6 @@
 # Upscaler
 input: $HOME/Documents/Zelda/1x_large_text_cn
-output: $HOME/Documents/Zelda/4x_large_text_cn_2
+output: $HOME/Documents/Zelda/4x_large_text_cn_wip
 pipeline:
   - preprocessor:
       - Flattener
@@ -20,10 +20,18 @@ pipeline:
       - PixelmatorProcessor:
           workflow:
             - "100.100"
-  - stage_7:
+  - stage_5:
       - ThresholdProcessor:
           threshold: 112
-#  - png_converters:
-#      - ImageMagickProcessor:
-#          extension: png
-#          resize: [256, 32]
+          denoise: True
+  - stage 6:
+      - PotraceProcessor:
+          blacklevel: 0.3
+          alphamax: 1.34
+          opttolerance: 0.2
+  - stage_7:
+      - ResizeProcessor:
+          scale: 0.4444444
+  - stage_8:
+      - CopyProcessor:
+          output_directory: $HOME/Documents/Zelda/4x_large_text_cn

@@ -24,6 +24,7 @@ from typing import Any, Dict, Generator, List, Optional
 import numba as nb
 import numpy as np
 import yaml
+from IPython import embed
 from PIL import Image
 
 
@@ -33,7 +34,7 @@ class Processor(ABC):
     extension: str = "png"
 
     def __init__(self, **kwargs: Any) -> None:
-        self.paramstring = kwargs["paramstring"]
+        self.paramstring = kwargs.get("paramstring", None)
         if self.executable_name is not None:
             self.executable = expandvars(
                 str(kwargs.get("executable", which(self.executable_name))))
@@ -70,6 +71,33 @@ class Processor(ABC):
     @abstractmethod
     def get_processors(cls, **kwargs: Dict[str, str]) -> List[Processor]:
         pass
+
+
+class CopyProcessor(Processor):
+    def __init__(self, output_directory: str, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        self.output_directory = expandvars(output_directory)
+
+    def get_outfile(self, infile: str) -> str:
+        return f"{self.output_directory}/{basename(dirname(infile))}.png"
+
+    def process_file(self, infile: str, outfile: str) -> None:
+        if isfile(outfile):
+            return
+        copyfile(infile, outfile)
+
+    @classmethod
+    def get_processors(cls, **kwargs: Dict[str, str]) -> List[Processor]:
+        output_directories = kwargs.pop("output_directory")
+        if not isinstance(output_directories, list):
+            output_directories = [output_directories]
+
+        processors: List[Processor] = []
+        for output_directory in output_directories:
+            processors.append(cls(
+                output_directory=output_directory,
+                **kwargs))
+        return processors
 
 
 class Flattener(Processor):
@@ -166,11 +194,10 @@ class PixelmatorProcessor(Processor):
         return processors
 
 
-class PotraceTracer(Processor):
+class PotraceProcessor(Processor):
     executable_name = "potrace"
-    extension: str = "svg"
 
-    def __init__(self, blacklevel: str, alphamax: str, opttolerance: str,
+    def __init__(self, blacklevel: float, alphamax: float, opttolerance: float,
                  **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.blacklevel = blacklevel
@@ -181,22 +208,51 @@ class PotraceTracer(Processor):
         if isfile(outfile):
             return
         print(f"Tracing to '{outfile}'")
-        command = f"{self.executable} " \
+
+        # Convert to bmp; potrace does not accept png
+        bmpfile = f"{splitext(infile)[0]}.bmp"
+        command = f"convert " \
                   f"{infile} " \
+                  f"{bmpfile}"
+        print(command)
+        Popen(command, shell=True, close_fds=True).wait()
+
+        # trace
+        svgfile = f"{splitext(outfile)[0]}.svg"
+        command = f"{self.executable} " \
+                  f"{bmpfile} " \
                   f"-b svg " \
                   f"-k {self.blacklevel} " \
                   f"-a {self.alphamax} " \
                   f"-O {self.opttolerance} " \
-                  f"-o {outfile}"
+                  f"-o {svgfile}"
         print(command)
         Popen(command, shell=True, close_fds=True).wait()
 
+        # Rasterize svg to png
+        pngfile = f"{splitext(outfile)[0]}.png"
+        command = f"convert " \
+                  f"{svgfile} " \
+                  f"{pngfile}"
+        print(command)
+        Popen(command, shell=True, close_fds=True).wait()
+
+        remove(bmpfile)
+        remove(svgfile)
+
     @classmethod
     def get_processors(cls, **kwargs: Any) -> List[Processor]:
-        processors: List[Processor] = []
         blacklevels = kwargs.pop("blacklevel")
+        if not isinstance(blacklevels, list):
+            blacklevels = [blacklevels]
         alphamaxes = kwargs.pop("alphamax")
+        if not isinstance(alphamaxes, list):
+            alphamaxes = [alphamaxes]
         opttolerances = kwargs.pop("opttolerance")
+        if not isinstance(opttolerances, list):
+            opttolerances = [opttolerances]
+
+        processors: List[Processor] = []
         for blacklevel in blacklevels:
             for alphamax in alphamaxes:
                 for opttolerance in opttolerances:
@@ -206,76 +262,98 @@ class PotraceTracer(Processor):
                         opttolerance=opttolerance,
                         paramstring=f"potrace-"
                                     f"{float(blacklevel):3.2f}-"
-                                    f"{alphamax}-" \
+                                    f"{alphamax}-"
                                     f"{float(opttolerance):3.1f}",
                         **kwargs))
         return processors
 
 
-class ThresholdProcessor(Processor):
+class ResizeProcessor(Processor):
 
-    def __init__(self, threshold: int = 128, **kwargs: Any) -> None:
+    def __init__(self, scale: float, **kwargs: Any) -> None:
         super().__init__(**kwargs)
-        self.threshold = threshold
+        self.scale = scale
 
     def process_file(self, infile: str, outfile: str) -> None:
-        # if isfile(outfile):
-        #     return
+        if isfile(outfile):
+            return
+        print(f"Processeing to '{outfile}'")
+        input_image = Image.open(infile).convert("L")
+        output_image = input_image.resize((
+            int(np.round(input_image.size[0] * self.scale)),
+            int(np.round(input_image.size[1] * self.scale))))
+        output_image.save(outfile)
+
+    @classmethod
+    def get_processors(cls, **kwargs: Any) -> List[Processor]:
+        scales = kwargs.pop("scale")
+        if not isinstance(scales, list):
+            scales = [scales]
+
+        processors: List[Processor] = []
+        for scale in scales:
+            processors.append(cls(
+                scale=scale,
+                paramstring=f"resize-{scale:7.5f}",
+                **kwargs))
+        return processors
+
+
+class ThresholdProcessor(Processor):
+
+    def __init__(self, threshold: int = 128, denoise: bool = False,
+                 **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        self.threshold = threshold
+        self.denoise = denoise
+
+    def process_file(self, infile: str, outfile: str) -> None:
+        if isfile(outfile):
+            return
         print(f"Processeing to '{outfile}'")
         input_image = Image.open(infile).convert("L").point(
             lambda p: p > self.threshold and 255)
-
-        # Denoise
-        # self.denoise(paletted_data)
-
-        # Reconstruct RGBA image from palette
-        # processed_data = np.zeros_like(input_data)  # Start all black transparent
-        # processed_data[:, :, 3][paletted_data != 127] = 255
-        # processed_data[:, :, :3][paletted_data == 255] = 255
-        # processed_image = Image.fromarray(processed_data)
-        input_image.save(outfile)
+        data = np.array(input_image)
+        if self.denoise:
+            self.denoise_data(data)
+        processed_image = Image.fromarray(data)
+        processed_image.save(outfile)
 
     @classmethod
     def get_processors(cls, **kwargs: Any) -> List[Processor]:
         thresholds = kwargs.pop("threshold")
         if not isinstance(thresholds, list):
             thresholds = [thresholds]
+        denoises = kwargs.pop("denoise")
+        if not isinstance(denoises, list):
+            denoises = [denoises]
 
         processors: List[Processor] = []
         for threshold in thresholds:
-            processors.append(cls(
-                threshold=threshold,
-                paramstring=f"threshold-{threshold}",
-                **kwargs))
+            for denoise in denoises:
+                if denoise:
+                    paramstring = f"threshold-{threshold}-denoise"
+                else:
+                    paramstring = f"threshold-{threshold}"
+                processors.append(cls(
+                    threshold=threshold,
+                    denoise=denoise,
+                    paramstring=paramstring,
+                    **kwargs))
         return processors
 
     @staticmethod
     @nb.jit(nopython=True, nogil=True, cache=True, fastmath=True)
-    def denoise(paletted_data: np.ndarray) -> None:
-        for x in range(1, paletted_data.shape[1] - 1):
-            for y in range(1, paletted_data.shape[0] - 1):
-                slc = paletted_data[y - 1:y + 2, x - 1:x + 2]
-                n_transparent = (slc == 127).sum()
-                n_black = (slc == 0).sum()
-                n_white = (slc == 255).sum()
-                if paletted_data[y, x] == 127:
-                    if n_transparent < 4:
-                        if n_black > n_white:
-                            paletted_data[y, x] = 0
-                        else:
-                            paletted_data[y, x] = 255
-                elif paletted_data[y, x] == 0:
-                    if n_black < 4:
-                        if n_transparent > n_white:
-                            paletted_data[y, x] = 127
-                        else:
-                            paletted_data[y, x] = 255
-                elif paletted_data[y, x] == 255:
-                    if n_white < 4:
-                        if n_transparent > n_black:
-                            paletted_data[y, x] = 127
-                        else:
-                            paletted_data[y, x] = 0
+    def denoise_data(data: np.ndarray) -> None:
+        for x in range(1, data.shape[1] - 1):
+            for y in range(1, data.shape[0] - 1):
+                slc = data[y - 1:y + 2, x - 1:x + 2]
+                if data[y, x] == 0:
+                    if (slc == 0).sum() < 4:
+                        data[y, x] = 255
+                else:
+                    if (slc == 255).sum() < 4:
+                        data[y, x] = 0
 
 
 class WaifuProcessor(Processor):
@@ -443,7 +521,6 @@ class Upscaler:
     # if np.array(diff_image).sum() < best_diff:
     #     best_params = trace_params
     #     best_diff = np.array(diff_image).sum()
-
 
     # endregion
 
