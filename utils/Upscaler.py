@@ -433,7 +433,6 @@ class XbrzProcessor(Processor):
 
 
 class Upscaler:
-
     # region Class Variables
 
     package_root: str = str(Path(__file__).parent.absolute())
