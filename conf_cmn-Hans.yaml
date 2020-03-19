@@ -26,12 +26,12 @@ offset: [0, -1]
 # offset: [0, -10]
 
 scan: True
-assign: True
+assign: False
 validate: False
 watch: True
 xbrzscale: $HOME/OneDrive/code/external/xbrzscale/xbrzscale
 
 load: $HOME/.local/share/citra-emu/load/textures/000400000008F900
 align: False
-overwrite: False
+overwrite: True
 backup: $HOME/Documents/Zelda/1x_text_cn

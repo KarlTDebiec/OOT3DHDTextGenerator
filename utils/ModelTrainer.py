@@ -90,7 +90,7 @@ class ModelTrainer():
                           monitor="val_loss", min_delta=0.01, patience=3,
                           verbose=1),
                       keras.callbacks.ModelCheckpoint(
-                          f"{dirname(self.cache_file)}/{n_chars:05d}_"
+                          f"{dirname(str(self.cache_file))}/{n_chars:05d}_"
                           "{epoch:03d}_{val_accuracy:6.4f}.h5",
                           monitor="val_accuracy", verbose=1)])
 
