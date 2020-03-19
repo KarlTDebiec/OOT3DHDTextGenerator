@@ -109,6 +109,10 @@ class OOT3DHDTextGenerator:
         if isfile(self.cache_file):
             self.load_hdf5_cache()
 
+        # Write known images
+        for filename in list(self.assigned_files):
+            self.save_hires_file(filename)
+
         # Scan existing images
         if self.operations["scan"]:
             n_files = self.scan_dump_directory()

@@ -33,5 +33,5 @@ xbrzscale: $HOME/OneDrive/code/external/xbrzscale/xbrzscale
 
 load: $HOME/.local/share/citra-emu/load/textures/000400000008F900
 align: False
-overwrite: True
+overwrite: False
 backup: $HOME/Documents/Zelda/1x_text_cn
