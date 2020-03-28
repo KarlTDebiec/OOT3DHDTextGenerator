@@ -1,5 +1,4 @@
 #!python
-# -*- coding: utf-8 -*-
 #   OOT3DHDTextGenerator.py
 #
 #   Copyright (C) 2020 Karl T Debiec
@@ -10,6 +9,8 @@
 ################################### MODULES ###################################
 from __future__ import annotations
 
+import re
+from argparse import ArgumentError, ArgumentParser, RawDescriptionHelpFormatter
 from collections import OrderedDict
 from itertools import product
 from os import R_OK, W_OK, X_OK, access, getcwd, listdir, remove
@@ -20,7 +21,7 @@ from shutil import copyfile
 from subprocess import DEVNULL, PIPE, Popen
 from tempfile import NamedTemporaryFile
 from time import sleep
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
 
 import h5py
 import numpy as np
@@ -34,44 +35,43 @@ class OOT3DHDTextGenerator:
     Generates hi-res text images for The Legend of Zelda: Ocarina of Time 3D
 
     TODO:
-        - Save scaled images in cache
-        - Review hires image output logic
-        - Sort characters
-        - Reconsider how to handle model
-        - Document
-        - Command-Line Argument for conf file
-        - Add useful error message text
-        - Add License
-        - Add requirements file
-        - Test on Windows
-        - Handle times via brute force
+        - [x] Command-Line Argument for conf file
+        - [x] Handle 512 x 128 and 256 x 128 text
+        - [ ] Add License
+        - [x] Assign remaining characters
+        - [ ] Sort characters
+        - [ ] Review assignments
+        - [ ] Review hires image output logic
+        - [ ] Reconsider how to handle model
+        - [ ] Document
+        - [ ] Add useful error message text
+        - [ ] Add requirements file
+        - [ ] Include a free font
+        - [ ] Test on Windows
+        - [ ] Handle times via brute force
+        - [ ] Bilingual README
     """
 
-    # region Class Variables
-
     package_root: str = str(Path(__file__).parent.absolute())
-
-    # endregion
+    re_filename = re.compile(
+        "tex1_(?P<width>\d+)x(?P<height>\d+)_(?P<id>[^_]+)_(?P<kind>\d+)\.png")
 
     # region Builtins
 
-    def __init__(self, conf_file: str = "conf_cmn-Hans.yaml"):
+    def __init__(self, conf_file: str, verbosity: int = 1):
         """
         Initializes
 
         Args:
             conf_file (str): file from which to load configuration
         """
-        # Read configuration file
-        conf_file = expandvars(conf_file)
-        if not (isfile(conf_file) and access(conf_file, R_OK)):
-            raise ValueError(f"Configuration file '{conf_file}' could not be "
-                             f"read")
-        with open(conf_file, "r") as f:
-            conf = yaml.load(f, Loader=yaml.SafeLoader)
 
         # General configuration
-        self.verbosity = conf.get("verbosity", 1)
+        self.verbosity = verbosity
+
+        # Read configuration file
+        with open(conf_file, "r") as f:
+            conf = yaml.load(f, Loader=yaml.SafeLoader)
 
         # Input configuration
         self.cache_file = conf.get("cache", f"{self.package_root}/cmn-Hans.h5")
@@ -449,7 +449,7 @@ class OOT3DHDTextGenerator:
 
     # endregion
 
-    # region Public Methods
+    # region Methods
 
     def backup_file(self, filename: str) -> None:
         """
@@ -686,13 +686,18 @@ class OOT3DHDTextGenerator:
         text_data = text_data[:, :, 3]
 
         indexes = []
-        for x in range(16):
-            for y in range(16):
-                char_data = text_data[x * 16:(x + 1) * 16, y * 16:(y + 1) * 16]
+        for y in range(text_data.shape[0] // 16):
+            for x in range(text_data.shape[1] // 16):
+                char_data = text_data[y * 16:(y + 1) * 16, x * 16:(x + 1) * 16]
                 char_bytes = char_data.tobytes()
                 if char_bytes not in self.lores_chars:
                     self.lores_chars[char_bytes] = ""
                 indexes.append(self.lores_char_bytes.index(char_bytes))
+
+        # For images with less than 256 characters, extend with spaces
+        if len(indexes) != 256:
+            indexes.extend([self.lores_char_bytes.index(
+                np.zeros((16, 16), np.uint8).tobytes())] * 128)
 
         self.unassigned_files[filename] = np.array(indexes, np.uint32)
         if self.verbosity >= 1:
@@ -724,13 +729,17 @@ class OOT3DHDTextGenerator:
             Returns:
                 bool: True if file is a text image file; false otherwise
             """
+            match = self.re_filename.match(filename)
+            if not match:
+                return False
+            elif int(match["kind"]) != 11:
+                return False
             try:
                 image = Image.open(f"{self.dump_directory}/{filename}")
                 data = np.array(image)
             except UnidentifiedImageError:
                 return False
-
-            if data.shape != (256, 256, 4):
+            if data.shape not in [(128, 256, 4), (128, 512, 4), (256, 256, 4)]:
                 return False
             if data[:, :, :3].sum() != 0:
                 return False
@@ -844,12 +853,18 @@ class OOT3DHDTextGenerator:
         if (isfile(f"{self.load_directory}/{filename}")
                 and not self.operations["overwrite"]):
             return
+        match = self.re_filename.match(filename)
+        if match is None:
+            raise ValueError()
+        line_width = int(match["width"]) // 16
+        text_height = int(match["height"]) // 16
 
-        text_data = np.zeros((16 * self.size, 16 * self.size, 4), np.uint8)
+        text_data = np.zeros((text_height * self.size,
+                              line_width * self.size, 4), np.uint8)
         for i, char in enumerate(self.assigned_files[filename]):
             char_data = self.hires_chars[char]
-            x = i % 16
-            y = i // 16
+            x = i % line_width
+            y = i // line_width
             # @formatter:off
             text_data[y * self.size:(y + 1) * self.size,
                       x * self.size:(x + 1) * self.size, 3] = char_data
@@ -945,6 +960,62 @@ class OOT3DHDTextGenerator:
 
     # endregion
 
+    # region Class Methods
+
+    @classmethod
+    def construct_argparser(cls) -> ArgumentParser:
+        """
+        Constructs argument parser
+
+        Returns:
+            parser (ArgumentParser): Argument parser
+        """
+
+        def infile_argument(value: str) -> str:
+            if not isinstance(value, str):
+                raise ArgumentError()
+
+            value = expandvars(value)
+            if not isfile(value):
+                raise ArgumentError(f"infile '{value}' does not exist")
+            elif not access(value, R_OK):
+                raise ArgumentError(f"infile '{value}' cannot be read")
+
+            return value
+
+        parser = ArgumentParser(
+            description=__doc__,
+            formatter_class=RawDescriptionHelpFormatter)
+        verbosity = parser.add_mutually_exclusive_group()
+        verbosity.add_argument(
+            "-v", "--verbose",
+            action="count",
+            default=1,
+            dest="verbosity",
+            help="enable verbose output, may be specified more than once")
+        verbosity.add_argument(
+            "-q", "--quiet",
+            action="store_const",
+            const=0,
+            dest="verbosity",
+            help="disable verbose output")
+        parser.add_argument(
+            "conf_file",
+            type=infile_argument,
+            help="configuration file")
+
+        return parser
+
+    @classmethod
+    def main(cls) -> None:
+        """Parses and validates arguments, constructs and calls object"""
+
+        parser = cls.construct_argparser()
+        kwargs = vars(parser.parse_args())
+        cls(**kwargs)()
+
+    # endregion
+
     # region Static Methods
 
     @staticmethod
@@ -1015,4 +1086,4 @@ class OOT3DHDTextGenerator:
 
 #################################### MAIN #####################################
 if __name__ == "__main__":
-    OOT3DHDTextGenerator()()
+    OOT3DHDTextGenerator.main()
