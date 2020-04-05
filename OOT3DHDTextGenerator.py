@@ -37,11 +37,10 @@ class OOT3DHDTextGenerator:
     TODO:
         - [x] Command-Line Argument for conf file
         - [x] Handle 512 x 128 and 256 x 128 text
-        - [ ] Add License
+        - [x] Add License
         - [x] Assign remaining characters
         - [ ] Sort characters
         - [ ] Review assignments
-        - [ ] Review hires image output logic
         - [ ] Reconsider how to handle model
         - [ ] Document
         - [ ] Add useful error message text
@@ -85,7 +84,6 @@ class OOT3DHDTextGenerator:
         self.font = ImageFont.truetype(
             conf.get("font", "/System/Library/Fonts/STHeiti Medium.ttc"),
             conf.get("fontsize", 62))
-        self.xbrzscale = conf.get("xbrzscale", None)
         self.operations["scan"] = conf.get("scan", True)
         self.operations["offset"] = conf.get("offset", (0, 0))
         self.operations["align"] = conf.get("align", False)
@@ -433,20 +431,6 @@ class OOT3DHDTextGenerator:
             raise ValueError()
         self._verbosity = value
 
-    @property
-    def xbrzscale(self) -> Optional[str]:
-        """Optional[str]: xbrzscale executable file path"""
-        if not hasattr(self, "_xbrzscale"):
-            raise ValueError()
-        return self._xbrzscale
-
-    @xbrzscale.setter
-    def xbrzscale(self, value: str) -> None:
-        value = expandvars(value)
-        if not isfile(value) or not (access(value, X_OK)):
-            raise ValueError()
-        self._xbrzscale = value
-
     # endregion
 
     # region Methods
@@ -502,29 +486,8 @@ class OOT3DHDTextGenerator:
             self.hanzi_chars[np.argsort(predicted_index, axis=1)[:, -1][0]])
 
     def get_scaled_image(self, data_uint8: np.ndarray) -> Image.Image:
-        if self.xbrzscale is None:
-            return Image.fromarray(data_uint8).resize(
-                (self.size, self.size), Image.NEAREST)
-
-        lores_tempfile = NamedTemporaryFile(delete=False, suffix=".png")
-        Image.fromarray(data_uint8).save(lores_tempfile)
-        lores_tempfile.close()
-
-        xbrz_tempfile = NamedTemporaryFile(delete=False, suffix=".png")
-        xbrz_tempfile.close()
-
-        command = f"{self.xbrzscale} 4 " \
-                  f"{lores_tempfile.name} " \
-                  f"{xbrz_tempfile.name}"
-        Popen(command, shell=True, stdin=PIPE, stdout=DEVNULL,
-              stderr=DEVNULL, close_fds=True).wait()
-
-        image = Image.open(xbrz_tempfile.name).convert("L")
-
-        remove(lores_tempfile.name)
-        remove(xbrz_tempfile.name)
-
-        return image
+        return Image.fromarray(data_uint8).resize(
+            (self.size, self.size), Image.NEAREST)
 
     def interactively_assign_chars(self) -> int:
         """

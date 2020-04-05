@@ -1,5 +1,4 @@
 #!python
-# -*- coding: utf-8 -*-
 #   ModelTrainer.py
 #
 #   Copyright (C) 2020 Karl T Debiec
@@ -31,7 +30,7 @@ n_chars = 9933
 
 
 ################################### CLASSES ###################################
-class ModelTrainer():
+class ModelTrainer:
 
     # region Builtins
 
@@ -46,16 +45,15 @@ class ModelTrainer():
 
     def __call__(self) -> None:
         # Load cache
-        # if isfile(self.cache_file):
-        #     if not access(self.cache_file, R_OK):
-        #         raise ValueError()
-        #     if self.verbosity >= 1:
-        #         print(f"Loading cache from '{self.cache_file}'")
-        #     self.load_cache()
-        # else:
-        #     # Generate images
-        #     self.draw_images()
-        self.draw_images()
+        if isfile(self.cache_file):
+            if not access(self.cache_file, R_OK):
+                raise ValueError()
+            if self.verbosity >= 1:
+                print(f"Loading cache from '{self.cache_file}'")
+            self.load_cache()
+        else:
+            # Generate images
+            self.draw_images()
 
         # Save cache
         if self.verbosity >= 1:
@@ -130,7 +128,7 @@ class ModelTrainer():
     @property
     def cache_file(self) -> Optional[str]:
         if not hasattr(self, "_cache_file"):
-            self._cache_file = None
+            self._cache_file: Optional[str] = None
         return self._cache_file
 
     @cache_file.setter
@@ -245,28 +243,6 @@ class ModelTrainer():
                                 self.all_labels[i] = char
                                 i += 1
 
-    def get_model(self) -> keras.Sequential:
-        model = keras.Sequential([
-            keras.layers.Conv2D(filters=64, kernel_size=2, padding="same",
-                                activation="relu", input_shape=(16, 16, 1)),
-            keras.layers.MaxPooling2D(pool_size=2),
-            keras.layers.Dropout(0.5),
-            keras.layers.Conv2D(filters=128, kernel_size=2, padding="same",
-                                activation="relu"),
-            keras.layers.MaxPooling2D(pool_size=2),
-            keras.layers.Dropout(0.5),
-            keras.layers.Conv2D(filters=256, kernel_size=2, padding="same",
-                                activation="relu"),
-            keras.layers.MaxPooling2D(pool_size=2),
-            keras.layers.Dropout(0.5),
-            keras.layers.Flatten(),
-            keras.layers.Dense(n_chars, activation="softmax")
-        ])
-        model.compile(optimizer="adam",
-                      loss="sparse_categorical_crossentropy",
-                      metrics=["accuracy"])
-        return model
-
     def load_cache(self) -> None:
 
         with h5py.File(self.cache_file) as cache:
@@ -341,6 +317,29 @@ class ModelTrainer():
         data = np.roll(data, offset, (0, 1))
 
         return data
+
+    @staticmethod
+    def get_model() -> keras.Sequential:
+        model = keras.Sequential([
+            keras.layers.Conv2D(filters=64, kernel_size=2, padding="same",
+                                activation="relu", input_shape=(16, 16, 1)),
+            keras.layers.MaxPooling2D(pool_size=2),
+            keras.layers.Dropout(0.5),
+            keras.layers.Conv2D(filters=128, kernel_size=2, padding="same",
+                                activation="relu"),
+            keras.layers.MaxPooling2D(pool_size=2),
+            keras.layers.Dropout(0.5),
+            keras.layers.Conv2D(filters=256, kernel_size=2, padding="same",
+                                activation="relu"),
+            keras.layers.MaxPooling2D(pool_size=2),
+            keras.layers.Dropout(0.5),
+            keras.layers.Flatten(),
+            keras.layers.Dense(n_chars, activation="softmax")
+        ])
+        model.compile(optimizer="adam",
+                      loss="sparse_categorical_crossentropy",
+                      metrics=["accuracy"])
+        return model
 
     # endregion
 

@@ -1,11 +1,11 @@
 # Simplified Chinese
 cache: cmn-Hans.h5
 dump: $HOME/.local/share/citra-emu/dump/textures/000400000008F900
-model: $HOME/Documents/Zelda/models/09933_007_0.8905.h5
+model: $HOME/Documents/OOT/models/09933_007_0.8905.h5
 
 size: 64
 
-# Heiti
+#  Heiti
 font: /System/Library/Fonts/STHeiti Medium.ttc
 fontsize: 63
 offset: [0, -1]
@@ -29,9 +29,8 @@ scan: True
 assign: True
 validate: False
 watch: True
-xbrzscale: $HOME/OneDrive/code/external/xbrzscale/xbrzscale
 
 load: $HOME/.local/share/citra-emu/load/textures/000400000008F900
 align: False
 overwrite: False
-backup: $HOME/Documents/Zelda/1x_text_cn
+backup: $HOME/Documents/OOT/1x_text_cn
