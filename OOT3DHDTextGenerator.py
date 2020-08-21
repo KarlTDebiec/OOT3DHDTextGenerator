@@ -1,4 +1,4 @@
-#!python
+#!/usr/bin/env python
 #   OOT3DHDTextGenerator.py
 #
 #   Copyright (C) 2020 Karl T Debiec
@@ -9,7 +9,11 @@
 ################################### MODULES ###################################
 from __future__ import annotations
 
+import h5py
+import numpy as np
 import re
+import yaml
+from PIL import Image, ImageChops, ImageDraw, ImageFont, UnidentifiedImageError
 from argparse import ArgumentError, ArgumentParser, RawDescriptionHelpFormatter
 from collections import OrderedDict
 from itertools import product
@@ -22,11 +26,6 @@ from subprocess import DEVNULL, PIPE, Popen
 from tempfile import NamedTemporaryFile
 from time import sleep
 from typing import Any, Dict, List, Optional
-
-import h5py
-import numpy as np
-import yaml
-from PIL import Image, ImageChops, ImageDraw, ImageFont, UnidentifiedImageError
 
 
 ################################### CLASSES ###################################

@@ -45,11 +45,11 @@ text will be high resolution.
 designed to be used, clears the text image between usages, making it viable to
 generate a high resolution text package for this language. A simplified Chinese
 high resolution text package covering most of the game text has been created
-and is available on the release page. The script may be run while playing to
-capture any additional text missing from the package.
-
-## Usage
-
-## Machine Learning-Powered Optical Character Recognition
+and is available on the 
+[releases page](https://github.com/KarlTDebiec/OOT3DHDTextGenerator/releases/).
+The script may be run while playing to capture any additional text missing from
+the package.
 
 ## License
+
+Released under a 3-clause BSD license.

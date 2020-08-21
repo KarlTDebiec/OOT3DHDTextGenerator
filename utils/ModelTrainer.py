@@ -1,4 +1,4 @@
-#!python
+#!/usr/bin/env python
 #   ModelTrainer.py
 #
 #   Copyright (C) 2020 Karl T Debiec
@@ -7,18 +7,17 @@
 #   This software may be modified and distributed under the terms of the
 #   BSD license.
 ################################### MODULES ###################################
-from itertools import product
-from os import R_OK, W_OK, access
-from os.path import dirname, expandvars, isdir, isfile
-from pathlib import Path
-from typing import Optional
-
 import h5py
 import numpy as np
 import pandas as pd
 import yaml
 from PIL import Image, ImageDraw, ImageFont
+from itertools import product
+from os import R_OK, W_OK, access
+from os.path import dirname, expandvars, isdir, isfile
+from pathlib import Path
 from tensorflow import keras
+from typing import Optional
 
 ################################## VARIABLES ##################################
 package_root = str(Path(__file__).parent.absolute())
