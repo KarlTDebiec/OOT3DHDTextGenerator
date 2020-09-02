@@ -1,3 +1,5 @@
+[![Code Style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+
 ## Description
 This script generates high resolution text for The Legend of Zelda Ocarina of
 Time 3D, to be used with the Citra 3DS emulator. Citra includes support for
