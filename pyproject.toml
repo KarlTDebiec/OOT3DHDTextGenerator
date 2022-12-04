@@ -1,0 +1,179 @@
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length=88
+target-version=['py39']
+
+[tool.coverage.run]
+data_file='coverage.coverage'
+concurrency='multiprocessing'
+parallel='True'
+
+[tool.isort]
+profile='black'
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+
+[tool.poetry]
+name = "oot3dhdtextgenerator"
+version = "0.2.0"
+description = ""
+authors = ["Karl T Debiec <karl.t.debiec@gmail.com>"]
+license = "BSD"
+include = ["pipescaler/data/**"]
+
+[tool.poetry.dependencies]
+python = "~3.9"
+pandas = "^1.5.2"
+Pillow = "^9.3.0"
+torch = "~1.12"
+h5py = "^3.7.0"
+
+[tool.poetry.dev-dependencies]
+black = "^22.10.0"
+coverage = "^6.5.0"
+isort = "^5.10.1"
+mypy = "^0.991"
+pandas-stubs = "^1.5.2.221124"
+prospector = "^1.8.2"
+pytest = "^7.2.0"
+pytest-cov = "^4.0.0"
+pytest-xdist = "^3.1.0"
+types-Pillow = "^9.3.0"
+
+[tool.pydocstyle]
+convention='google'
+
+[tool.pylint.master]
+fail-under=10.0
+ignore=['CVS']
+jobs=1
+limit-inference-results=100
+persistent=['yes']
+py-version=3.9
+suggestion-mode=['yes']
+unsafe-load-any-extension=['no']
+
+[tool.pylint.messages_control]
+disable=['raw-checker-failed', 'bad-inline-option', 'locally-disabled', 'file-ignored',
+    'suppressed-message', 'useless-suppression', 'deprecated-pragma',
+    'use-symbolic-message-instead', 'C0330', 'C0326']
+enable=['c-extension-no-member']
+
+[tool.pylint.reports]
+evaluation=['10.0 - ((float(5 * error + warning + refactor + convention) / statement) * 10)']
+output-format=['text']
+reports=['no']
+score=['yes']
+
+[tool.pylint.refactoring]
+max-nested-blocks=5
+never-returning-functions=['sys.exit', 'argparse.parse_error']
+
+[tool.pylint.basic]
+argument-naming-style=['snake_case']
+attr-naming-style=['snake_case']
+bad-names=['foo', 'bar', 'baz', 'toto', 'tutu', 'tata']
+class-attribute-naming-style=['any']
+class-const-naming-style=['UPPER_CASE']
+class-naming-style=['PascalCase']
+const-naming-style=['UPPER_CASE']
+docstring-min-length=-1
+function-naming-style=['snake_case']
+good-names=['i', 'j', 'k', 'ex', 'Run', '_']
+include-naming-hint=['no']
+inlinevar-naming-style=['any']
+method-naming-style=['snake_case']
+module-naming-style=['snake_case']
+no-docstring-rgx=['^_']
+property-classes=['abc.abstractproperty']
+variable-naming-style=['snake_case']
+
+[tool.pylint.format]
+ignore-long-lines=['^\s*(# )?<?https?://\S+>?$']
+indent-after-paren=4
+indent-string='    '
+max-line-length=88
+max-module-lines=1000
+single-line-class-stmt=['no']
+single-line-if-stmt=['no']
+
+[tool.pylint.logging]
+logging-format-style=['old']
+logging-modules=['logging']
+
+[tool.pylint.miscellaneous]
+notes=['FIXME', 'XXX', 'TODO']
+
+[tool.pylint.similarities]
+ignore-comments=['yes']
+ignore-docstrings=['yes']
+ignore-imports=['no']
+ignore-signatures=['no']
+min-similarity-lines=4
+
+[tool.pylint.spelling]
+max-spelling-suggestions=4
+spelling-ignore-comment-directives=['fmt: on', 'fmt: off', 'noqa:', 'noqa', 'nosec',
+    'isort:skip', 'mypy:']
+spelling-store-unknown-words=['no']
+
+[tool.pylint.string]
+check-quote-consistency=['no']
+check-str-concat-over-line-jumps=['no']
+
+[tool.pylint.typecheck]
+contextmanager-decorators=['contextlib.contextmanager']
+ignore-mixin-members=['yes']
+ignore-none=['yes']
+ignore-on-opaque-inference=['yes']
+ignored-classes=['optparse.Values', 'thread._local', '_thread._local']
+missing-member-hint=['yes']
+missing-member-hint-distance=1
+missing-member-max-choices=1
+mixin-class-rgx=['.*[Mm]ixin']
+
+[tool.pylint.variables]
+allow-global-unused-variables=['yes']
+callbacks=['cb_', '_cb']
+dummy-variables-rgx=['_+$|(_[a-zA-Z0-9_]*[a-zA-Z0-9]+?$)|dummy|^ignored_|^unused_']
+ignored-argument-names=['_.*|^ignored_|^unused_|kwargs']
+init-import=['no']
+redefining-builtins-modules=['six.moves', 'past.builtins', 'future.builtins', 'builtins',
+    'io']
+
+[tool.pylint.classes]
+check-protected-access-in-special-methods=['no']
+defining-attr-methods=['__init__', '__new__', 'setUp', '__post_init__']
+exclude-protected=['_asdict', '_fields', '_replace', '_source', '_make']
+valid-classmethod-first-arg=['cls']
+valid-metaclass-classmethod-first-arg=['cls']
+
+[tool.pylint.design]
+max-args=5
+max-attributes=7
+max-bool-expr=5
+max-branches=12
+max-locals=15
+max-parents=7
+max-public-methods=20
+max-returns=6
+max-statements=50
+min-public-methods=2
+
+[tool.pylint.imports]
+allow-wildcard-with-all=['no']
+analyse-fallback-blocks=['no']
+known-third-party=['enchant']
+
+[tool.pylint.exceptions]
+overgeneral-exceptions=['BaseException', 'Exception']
+
+[tool.pytest.ini_options]
+log_cli=true
+log_cli_level="WARNING"

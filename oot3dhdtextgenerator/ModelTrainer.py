@@ -1,27 +1,8 @@
-#!/usr/bin/env python
-#   ModelTrainer.py
-#
-#   Copyright (C) 2020 Karl T Debiec
-#   All rights reserved.
-#
-#   This software may be modified and distributed under the terms of the
-#   BSD license.
-####################################### MODULES ########################################
-from itertools import product
-from os import R_OK, W_OK, access
-from os.path import dirname, expandvars, isdir, isfile
-from pathlib import Path
-from typing import Optional
-
-import h5py
 import numpy as np
 import pandas as pd
-import yaml
-from PIL import Image, ImageDraw, ImageFont
-from tensorflow import keras
 
-###################################### VARIABLES #######################################
-package_root = str(Path(__file__).parent.absolute())
+from oot3dhdtextgenerator.common import package_root
+
 hanzi_frequency = pd.read_csv(
     f"{package_root}/data/characters.txt",
     sep="\t",
@@ -31,7 +12,6 @@ hanzi_chars = np.array(hanzi_frequency["character"], np.str)
 n_chars = 9933
 
 
-####################################### CLASSES ########################################
 class ModelTrainer:
 
     # region Builtins
@@ -384,6 +364,5 @@ class ModelTrainer:
     # endregion
 
 
-######################################### MAIN #########################################
 if __name__ == "__main__":
     ModelTrainer()()
