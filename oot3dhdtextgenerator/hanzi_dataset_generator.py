@@ -5,13 +5,22 @@
 """Hanzi character dataset generator."""
 from argparse import ArgumentParser
 from itertools import product
-from typing import Any
+from logging import info
+from pathlib import Path
+from typing import Union
 
+import h5py
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
 from oot3dhdtextgenerator import hanzi_frequency
-from oot3dhdtextgenerator.common import CommandLineInterface, set_logging_verbosity
+from oot3dhdtextgenerator.common import (
+    CommandLineInterface,
+    int_arg,
+    output_file_arg,
+    set_logging_verbosity,
+    validate_output_file,
+)
 
 
 class HanziDatasetGenerator(CommandLineInterface):
@@ -28,82 +37,84 @@ class HanziDatasetGenerator(CommandLineInterface):
 
         parser.add_argument(
             "--n_chars",
-            type=cls.int_arg(min_value=10, max_value=9933),
+            type=int_arg(min_value=10, max_value=9933),
             default=10,
             help="number of characters to include in dataset, starting from the most"
             "common and ending with the least common (default: 10, max: 9933)",
         )
         parser.add_argument(
             "--outfile",
-            type=cls.output_file_arg(),
+            type=output_file_arg(),
             default="cmn-Hans.h5",
             help="output file",
         )
 
     @classmethod
-    def execute(cls, verbosity: int, **kwargs: Any) -> None:
-        """Execute with provided keyword arguments.
-
-        Arguments:
-            verbosity: Verbosity level
-            **kwargs: Command-line arguments
-        """
-        set_logging_verbosity(verbosity)
-        cls.execute_internal(**kwargs)
-
-    @classmethod
-    def execute_internal(cls, n_chars: int, outfile: str) -> None:
-        images, labels = cls.create_character_images(n_chars)
-
-        print(f"Must save to {outfile}")
-
-    @classmethod
-    def create_character_images(
+    def generate_character_images(
         cls, n_chars: int = 10
     ) -> tuple[np.ndarray, np.ndarray]:
+        characters = hanzi_frequency["character"].values[:n_chars]
         fonts = [
-            "C:\Windows\Fonts\simhei.ttf",
+            r"C:\Windows\Fonts\simhei.ttf",
         ]
         sizes = [15, 16]
         offsets = [-1, 0, 1]
         fills = [215, 225, 235, 245, 255]
         rotations = [0]
-        n_images = (
-            n_chars
-            * len(fonts)
-            * len(sizes)
-            * len(fills)
-            * len(offsets)
-            * len(offsets)
-            * len(rotations)
+        combinations = product(
+            characters,
+            fonts,
+            sizes,
+            offsets,
+            offsets,
+            fills,
+            rotations,
         )
-        arrays = np.zeros((n_images, 16, 16), np.uint8)
-        labels = np.zeros(n_images, str)
-        i = 0
-        for char_i in range(n_chars):
-            char = hanzi_frequency.loc[0, "character"]
-            print(char_i, char)
-            for font in fonts:
-                for size in sizes:
-                    for fill in fills:
-                        for offset in product(offsets, offsets):
-                            for rotation in rotations:
-                                arrays[i] = cls.create_character_image(
-                                    char,
-                                    font=font,
-                                    size=size,
-                                    fill=fill,
-                                    offset=offset,
-                                    rotation=rotation,
-                                )
-                                labels[i] = char_i
-                                i += 1
-        return arrays, labels
+        dtypes = [
+            ("character", "U1"),
+            ("font", "U256"),
+            ("size", "uint8"),
+            ("x_offset", "int8"),
+            ("y_offset", "int8"),
+            ("fill", "uint8"),
+            ("rotation", "float32"),
+        ]
+        specifications = np.array(list(combinations), dtype=dtypes)
+        arrays = np.zeros((len(specifications), 16, 16), np.uint8)
+        for i, specification in enumerate(specifications):
+            arrays[i] = cls.generate_character_image(
+                specification["character"],
+                font=specification["font"],
+                size=specification["size"],
+                fill=specification["fill"],
+                offset=(specification["x_offset"], specification["y_offset"]),
+                rotation=specification["rotation"],
+            )
+
+        return arrays, specifications
+
+    @classmethod
+    def main(cls) -> None:
+        """Execute from command line."""
+        parser = cls.argparser()
+        kwargs = vars(parser.parse_args())
+        verbosity = kwargs.pop("verbosity", 1)
+        set_logging_verbosity(verbosity)
+        cls.main_internal(**kwargs)
+
+    @classmethod
+    def main_internal(cls, n_chars: int, outfile: Union[Path, str]) -> None:
+        images, labels = cls.generate_character_images(n_chars)
+        info(f"Generated {images.shape[0]} character images")
+
+        outfile = validate_output_file(outfile)
+        cls.save_dataset(images, labels, outfile)
+        info(f"Saved {images.shape[0]} character images to {outfile}")
 
     @staticmethod
-    def create_character_image(
+    def generate_character_image(
         char: str,
-        font: str = "C:\Windows\Fonts\simhei.ttf",
+        font: str = r"C:\Windows\Fonts\simhei.ttf",
         size: int = 12,
         fill: int = 0,
         offset: tuple[int, int] = (0, 0),
@@ -112,14 +123,61 @@ class HanziDatasetGenerator(CommandLineInterface):
         image = Image.new("L", (16, 16), 0)
         draw = ImageDraw.Draw(image)
         font_type = ImageFont.truetype(font, size)
-        width, height = draw.textsize(char, font=font_type)
+        _, _, width, height = draw.textbbox((0, 0), char, font=font_type)
         xy = ((16 - width) / 2, (16 - height) / 2)
-        draw.text(xy, char, font=font_type, fill=fill)
+        draw.text(xy, char, font=font_type, fill=int(fill))
         image = image.rotate(rotation)
         array = np.array(image)
         array = np.roll(array, offset, (0, 1))
 
         return array
+
+    @staticmethod
+    def save_dataset(
+        images: np.ndarray, specifications: np.ndarray, outfile: Path
+    ) -> None:
+        with h5py.File(outfile, "w") as h5_file:
+            if "images" in h5_file:
+                del h5_file["images"]
+            h5_file.create_dataset(
+                "images/images",
+                data=images,
+                dtype=np.uint8,
+                chunks=True,
+                compression="gzip",
+            )
+            encoded_dtypes = [
+                ("character", "S1"),
+                ("font", "S255"),
+                ("size", "uint8"),
+                ("x_offset", "int8"),
+                ("y_offset", "int8"),
+                ("fill", "uint8"),
+                ("rotation", "float32"),
+            ]
+            encoded_specifications = np.array(
+                [
+                    (
+                        s["character"].encode("utf8"),
+                        s["font"].encode("utf8"),
+                        s["size"],
+                        s["x_offset"],
+                        s["y_offset"],
+                        s["fill"],
+                        s["rotation"],
+                    )
+                    for s in specifications
+                ],
+                dtype=encoded_dtypes,
+            )
+
+            h5_file.create_dataset(
+                "images/specifications",
+                data=encoded_specifications,
+                dtype=encoded_dtypes,
+                chunks=True,
+                compression="gzip",
+            )
 
 
 if __name__ == "__main__":
