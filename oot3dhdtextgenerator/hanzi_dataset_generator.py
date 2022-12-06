@@ -70,16 +70,9 @@ class HanziDatasetGenerator(CommandLineInterface):
             fills,
             rotations,
         )
-        dtypes = [
-            ("character", "U1"),
-            ("font", "U256"),
-            ("size", "uint8"),
-            ("x_offset", "int8"),
-            ("y_offset", "int8"),
-            ("fill", "uint8"),
-            ("rotation", "float32"),
-        ]
-        specifications = np.array(list(combinations), dtype=dtypes)
+        specifications = np.array(
+            list(combinations), dtype=HanziDataset.specification_dtypes
+        )
         arrays = np.zeros((len(specifications), 16, 16), np.uint8)
         for i, specification in enumerate(specifications):
             arrays[i] = cls.generate_character_image(
