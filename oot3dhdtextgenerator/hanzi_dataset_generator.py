@@ -9,7 +9,6 @@ from logging import info
 from pathlib import Path
 from typing import Union
 
-import h5py
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
@@ -21,6 +20,7 @@ from oot3dhdtextgenerator.common import (
     set_logging_verbosity,
     validate_output_file,
 )
+from oot3dhdtextgenerator.hanzi_dataset import HanziDataset
 
 
 class HanziDatasetGenerator(CommandLineInterface):
@@ -108,7 +108,7 @@ class HanziDatasetGenerator(CommandLineInterface):
         info(f"Generated {images.shape[0]} character images")
 
         outfile = validate_output_file(outfile)
-        cls.save_dataset(images, labels, outfile)
+        HanziDataset.save_hdf5(images, labels, outfile)
         info(f"Saved {images.shape[0]} character images to {outfile}")
 
     @staticmethod
@@ -131,53 +131,6 @@ class HanziDatasetGenerator(CommandLineInterface):
         array = np.roll(array, offset, (0, 1))
 
         return array
-
-    @staticmethod
-    def save_dataset(
-        images: np.ndarray, specifications: np.ndarray, outfile: Path
-    ) -> None:
-        with h5py.File(outfile, "w") as h5_file:
-            if "images" in h5_file:
-                del h5_file["images"]
-            h5_file.create_dataset(
-                "images/images",
-                data=images,
-                dtype=np.uint8,
-                chunks=True,
-                compression="gzip",
-            )
-            encoded_dtypes = [
-                ("character", "S1"),
-                ("font", "S255"),
-                ("size", "uint8"),
-                ("x_offset", "int8"),
-                ("y_offset", "int8"),
-                ("fill", "uint8"),
-                ("rotation", "float32"),
-            ]
-            encoded_specifications = np.array(
-                [
-                    (
-                        s["character"].encode("utf8"),
-                        s["font"].encode("utf8"),
-                        s["size"],
-                        s["x_offset"],
-                        s["y_offset"],
-                        s["fill"],
-                        s["rotation"],
-                    )
-                    for s in specifications
-                ],
-                dtype=encoded_dtypes,
-            )
-
-            h5_file.create_dataset(
-                "images/specifications",
-                data=encoded_specifications,
-                dtype=encoded_dtypes,
-                chunks=True,
-                compression="gzip",
-            )
 
 
 if __name__ == "__main__":
