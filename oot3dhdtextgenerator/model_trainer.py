@@ -7,8 +7,6 @@ from torch.nn.functional import nll_loss
 from torch.optim import Adadelta
 from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import DataLoader
-from torchvision import datasets
-from torchvision.datasets import MNIST
 from torchvision.transforms import Compose, Normalize, ToTensor
 
 from oot3dhdtextgenerator.common import (
@@ -16,6 +14,7 @@ from oot3dhdtextgenerator.common import (
     output_file_arg,
     set_logging_verbosity,
 )
+from oot3dhdtextgenerator.hanzi_dataset import HanziDataset
 from oot3dhdtextgenerator.model import Model
 
 
@@ -34,35 +33,35 @@ class ModelTrainer(CommandLineInterface):
             type=int,
             default=64,
             metavar="N",
-            help="batch size for training (default: 64)",
+            help="batch size for training (default: %(default)d)",
         )
         parser.add_argument(
             "--test-batch-size",
             type=int,
             default=1000,
             metavar="N",
-            help="batch size for testing (default: 1000)",
+            help="batch size for testing (default: %(default)d)",
         )
         parser.add_argument(
             "--epochs",
             type=int,
-            default=14,
+            default=1,
             metavar="N",
-            help="number of epochs to train (default: 14)",
+            help="number of epochs to train (default: %(default)d)",
         )
         parser.add_argument(
             "--lr",
             type=float,
             default=1.0,
             metavar="LR",
-            help="learning rate (default: 1.0)",
+            help="learning rate (default: %(default)f)",
         )
         parser.add_argument(
             "--gamma",
             type=float,
             default=0.7,
             metavar="M",
-            help="learning rate step gamma (default: 0.7)",
+            help="learning rate step gamma (default: %(default)f)",
         )
         parser.add_argument(
             "--disable-cuda",
@@ -89,20 +88,20 @@ class ModelTrainer(CommandLineInterface):
             type=int,
             default=1,
             metavar="S",
-            help="random seed (default: 1)",
+            help="random seed (default: %(default)d)",
         )
         parser.add_argument(
             "--log-interval",
             type=int,
             default=10,
             metavar="N",
-            help="training status logging interval",
+            help="training status logging interval (default: %(default)d)",
         )
         parser.add_argument(
             "--outfile",
             type=output_file_arg(),
             default="model.pt",
-            help="model output file",
+            help="model output file (default: %(default)s)",
         )
 
     @classmethod
@@ -120,7 +119,7 @@ class ModelTrainer(CommandLineInterface):
         *,
         batch_size: int = 64,
         test_batch_size: int = 1000,
-        epochs: int = 14,
+        epochs: int = 1,
         lr: float = 1.0,
         gamma: float = 0.7,
         cuda_enabled: bool = True,
@@ -152,11 +151,13 @@ class ModelTrainer(CommandLineInterface):
         # Load training and test data
         transform = Compose([ToTensor(), Normalize((0.1307,), (0.3081,))])
 
-        dataset1 = MNIST("../data", train=True, download=True, transform=transform)
+        # dataset1 = MNIST("../data", train=True, download=True, transform=transform)
+        dataset1 = HanziDataset("cmn-Hans.h5", transform=transform)
         train_loader = DataLoader(dataset1, **train_loader_kwargs)
+        print(len(dataset1))
 
-        dataset2 = datasets.MNIST("../data", train=False, transform=transform)
-        test_loader = DataLoader(dataset2, **test_loader_kwargs)
+        # dataset2 = datasets.MNIST("../data", train=False, transform=transform)
+        # test_loader = DataLoader(dataset2, **test_loader_kwargs)
 
         # Set up model
         model = Model().to(device)
@@ -174,7 +175,7 @@ class ModelTrainer(CommandLineInterface):
                 log_interval=log_interval,
                 dry_run=dry_run,
             )
-            cls.test(model, device, test_loader)
+            # cls.test(model, device, test_loader)
             scheduler.step()
 
         # Save model

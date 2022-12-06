@@ -28,8 +28,8 @@ class HanziDataset(VisionDataset):
         ("rotation", "float32"),
     ]
     encoded_specification_dtypes = [
-        ("character", "S1"),
-        ("font", "S255"),
+        ("character", "S4"),
+        ("font", "S1024"),
         ("size", "uint8"),
         ("x_offset", "int8"),
         ("y_offset", "int8"),
@@ -64,6 +64,9 @@ class HanziDataset(VisionDataset):
             target = self.target_transform(target)
 
         return image, target
+
+    def __len__(self) -> int:
+        return len(self.images)
 
     @classmethod
     def decode_specification(cls, encoded_specifications: np.ndarray) -> np.ndarray:

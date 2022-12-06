@@ -11,7 +11,7 @@ class Model(Module):
         self.conv2 = Conv2d(32, 64, 3, 1)
         self.dropout1 = Dropout(0.25)
         self.dropout2 = Dropout(0.5)
-        self.fc1 = Linear(9216, 128)
+        self.fc1 = Linear(2304, 128)
         self.fc2 = Linear(128, 10)
 
     def forward(self, x):

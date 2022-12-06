@@ -39,14 +39,14 @@ class HanziDatasetGenerator(CommandLineInterface):
             "--n_chars",
             type=int_arg(min_value=10, max_value=9933),
             default=10,
-            help="number of characters to include in dataset, starting from the most"
-            "common and ending with the least common (default: 10, max: 9933)",
+            help="number of characters to include in dataset, starting from the most "
+            "common and ending with the least common (default: %(default)d, max: 9933)",
         )
         parser.add_argument(
             "--outfile",
             type=output_file_arg(),
             default="cmn-Hans.h5",
-            help="output file",
+            help="output file (default: cmn-Hans.h5)",
         )
 
     @classmethod
@@ -57,10 +57,10 @@ class HanziDatasetGenerator(CommandLineInterface):
         fonts = [
             r"C:\Windows\Fonts\simhei.ttf",
         ]
-        sizes = [15, 16]
-        offsets = [-1, 0, 1]
-        fills = [215, 225, 235, 245, 255]
-        rotations = [0]
+        sizes = [14, 15, 16]
+        offsets = [-2, -1, 0, 1, 2]
+        fills = [215, 220, 225, 230, 235, 240, 245, 250, 255]
+        rotations = [-10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10]
         combinations = product(
             characters,
             fonts,
@@ -73,6 +73,7 @@ class HanziDatasetGenerator(CommandLineInterface):
         specifications = np.array(
             list(combinations), dtype=HanziDataset.specification_dtypes
         )
+        info(f"Generating {len(specifications)} images")
         arrays = np.zeros((len(specifications), 16, 16), np.uint8)
         for i, specification in enumerate(specifications):
             arrays[i] = cls.generate_character_image(
