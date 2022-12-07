@@ -2,7 +2,7 @@
 #  Copyright 2020-2022 Karl T Debiec
 #  All rights reserved. This software may be modified and distributed under
 #  the terms of the BSD license. See the LICENSE file for details.
-"""Hanzi character dataset."""
+"""Learning dataset."""
 from pathlib import Path
 from typing import Callable, Optional, Union
 
@@ -11,18 +11,12 @@ import numpy as np
 from PIL import Image
 from torchvision.datasets import VisionDataset
 
-from oot3dhdtextgenerator import character_to_index
 from oot3dhdtextgenerator.common import validate_input_file
-
-# TODO: Do not load entire dataset into memory
-#   Keep h5py file open and read from it as needed
-#   Need to update __len__ and __getitem__
-#   May also add new save_h5py and load_h5py methods
-#   Not clear if the old methods ought to be kept around
+from oot3dhdtextgenerator.data import character_to_index
 
 
-class HanziDataset(VisionDataset):
-    """Hanzi character dataset."""
+class LearningDataset(VisionDataset):
+    """Learning dataset."""
 
     specification_dtypes = [
         ("character", "U1"),
@@ -94,8 +88,8 @@ class HanziDataset(VisionDataset):
         specifications = np.array(
             [
                 (
-                    s["character"].decode("utf8"),
-                    s["font"].decode("utf8"),
+                    s["character"].decode("utf-8"),
+                    s["font"].decode("utf-8"),
                     s["size"],
                     s["x_offset"],
                     s["y_offset"],
@@ -121,8 +115,8 @@ class HanziDataset(VisionDataset):
         encoded_specifications = np.array(
             [
                 (
-                    s["character"].encode("utf8"),
-                    s["font"].encode("utf8"),
+                    s["character"].encode("utf-8"),
+                    s["font"].encode("utf-8"),
                     s["size"],
                     s["x_offset"],
                     s["y_offset"],

@@ -2,9 +2,8 @@
 #  Copyright 2020-2022 Karl T Debiec
 #  All rights reserved. This software may be modified and distributed under
 #  the terms of the BSD license. See the LICENSE file for details.
-"""Hanzi character dataset generator."""
+"""Learning dataset generator."""
 import time
-from argparse import ArgumentParser
 from itertools import product
 from logging import info
 from pathlib import Path
@@ -13,69 +12,12 @@ from random import sample
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
-from oot3dhdtextgenerator import hanzi_frequency
-from oot3dhdtextgenerator.common import (
-    CommandLineInterface,
-    float_arg,
-    int_arg,
-    output_file_arg,
-    set_logging_verbosity,
-)
-from oot3dhdtextgenerator.common.argument_parsing import get_arg_groups_by_name
-from oot3dhdtextgenerator.hanzi_dataset import HanziDataset
+from oot3dhdtextgenerator.core import LearningDataset
+from oot3dhdtextgenerator.data import hanzi_frequency
 
 
-class HanziDatasetGenerator(CommandLineInterface):
-    """Hanzi character dataset generator."""
-
-    @classmethod
-    def add_arguments_to_argparser(cls, parser: ArgumentParser) -> None:
-        """Add arguments to a nascent argument parser.
-
-        Arguments:
-            parser: Nascent argument parser
-        """
-        super().add_arguments_to_argparser(parser)
-
-        arg_groups = get_arg_groups_by_name(
-            parser,
-            "input arguments",
-            "operation arguments",
-            "output arguments",
-            optional_arguments_name="additional arguments",
-        )
-
-        # Input arguments
-        arg_groups["input arguments"].add_argument(
-            "--n_chars",
-            type=int_arg(min_value=10, max_value=9933),
-            default=1000,
-            help="number of characters to include in dataset, starting from the most "
-            "common and ending with the least common (default: %(default)d, max: 9933)",
-        )
-
-        # Operation arguments
-        arg_groups["operation arguments"].add_argument(
-            "--test_proportion",
-            default=0.1,
-            type=float_arg(min_value=0, max_value=1),
-            help="proportion of dataset to be set aside for testing "
-            "(default: %(default)f)",
-        )
-
-        # Output arguments
-        arg_groups["output arguments"].add_argument(
-            "--train_outfile",
-            type=output_file_arg(),
-            default="train.h5",
-            help="train output file (default: %(default)s)",
-        )
-        arg_groups["output arguments"].add_argument(
-            "--test_outfile",
-            type=output_file_arg(),
-            default="test.h5",
-            help="test output file (default: %(default)s)",
-        )
+class LearningDatasetGenerator:
+    """Learning dataset generator."""
 
     @classmethod
     def generate_character_images(
@@ -115,7 +57,7 @@ class HanziDatasetGenerator(CommandLineInterface):
             rotations,
         )
         specifications = np.array(
-            list(combinations), dtype=HanziDataset.specification_dtypes
+            list(combinations), dtype=LearningDataset.specification_dtypes
         )
         n_images = len(specifications)
         info(f"Generating {n_images} images total")
@@ -139,23 +81,14 @@ class HanziDatasetGenerator(CommandLineInterface):
         return arrays, specifications
 
     @classmethod
-    def main(cls) -> None:
-        """Execute from command line."""
-        parser = cls.argparser()
-        kwargs = vars(parser.parse_args())
-        verbosity = kwargs.pop("verbosity", 1)
-        set_logging_verbosity(verbosity)
-        cls.main_internal(**kwargs)
-
-    @classmethod
-    def main_internal(
+    def run(
         cls,
         n_chars: int,
         test_proportion: float,
         train_outfile: Path,
         test_outfile: Path,
     ) -> None:
-        """Execute from command line.
+        """Execute.
 
         Arguments:
             n_chars: Number of unique characters to include in dataset
@@ -176,9 +109,9 @@ class HanziDatasetGenerator(CommandLineInterface):
             f"{test_images.shape[0]} test images"
         )
 
-        HanziDataset.save_hdf5(train_images, train_specifications, train_outfile)
+        LearningDataset.save_hdf5(train_images, train_specifications, train_outfile)
         info(f"Saved {train_images.shape[0]} character images to {train_outfile}")
-        HanziDataset.save_hdf5(test_images, test_specifications, test_outfile)
+        LearningDataset.save_hdf5(test_images, test_specifications, test_outfile)
         info(f"Saved {test_images.shape[0]} character images to {test_outfile}")
 
     @staticmethod
@@ -248,7 +181,3 @@ class HanziDatasetGenerator(CommandLineInterface):
         test_specifications = specifications[test_indexes]
 
         return train_images, train_specifications, test_images, test_specifications
-
-
-if __name__ == "__main__":
-    HanziDatasetGenerator.main()
