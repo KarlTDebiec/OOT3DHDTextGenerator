@@ -45,6 +45,7 @@ class HanziDatasetGenerator(CommandLineInterface):
             optional_arguments_name="additional arguments",
         )
 
+        # Operation arguments
         arg_groups["operation arguments"].add_argument(
             "--n_chars",
             type=int_arg(min_value=10, max_value=9933),
@@ -56,8 +57,11 @@ class HanziDatasetGenerator(CommandLineInterface):
             "--test_proportion",
             default=0.1,
             type=float_arg(min_value=0, max_value=1),
-            help="proportion of dataset to be used as test set (default: %(default)f)",
+            help="proportion of dataset to be set aside for testing "
+            "(default: %(default)f)",
         )
+
+        # Output arguments
         arg_groups["output arguments"].add_argument(
             "--outfile",
             type=output_file_arg(),
@@ -82,8 +86,17 @@ class HanziDatasetGenerator(CommandLineInterface):
         ]
         sizes = [14, 15, 16]
         offsets = [-2, -1, 0, 1, 2]
-        fills = [215, 220, 225, 230, 235, 240, 245, 250, 255]
-        rotations = [-10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10]
+        fills = [215, 225, 235, 245, 255]
+        rotations = [-6, -4, -2, 0, 2, 4, 6]
+        info(
+            f"Generating images of "
+            f"{n_chars} character{'s' if n_chars > 1 else ''} using "
+            f"{len(fonts)} font{'s' if len(fonts) > 1 else ''}, "
+            f"{len(sizes)} size{'s' if len(sizes) > 1 else ''}, "
+            f"{len(offsets)} offset{'s' if len(offsets) > 1 else ''}, "
+            f"{len(fills)} fill{'s' if len(fills) > 1 else ''}, and "
+            f"{len(rotations)} rotation{'s' if len(rotations) > 1 else ''}"
+        )
         combinations = product(
             characters,
             fonts,
@@ -96,7 +109,7 @@ class HanziDatasetGenerator(CommandLineInterface):
         specifications = np.array(
             list(combinations), dtype=HanziDataset.specification_dtypes
         )
-        info(f"Generating {len(specifications)} images")
+        info(f"Generating {len(specifications)} images total")
         arrays = np.zeros((len(specifications), 16, 16), np.uint8)
         for i, specification in enumerate(specifications):
             arrays[i] = cls.generate_character_image(
@@ -128,6 +141,7 @@ class HanziDatasetGenerator(CommandLineInterface):
 
         Arguments:
             n_chars: Number of unique characters to include in dataset
+            test_proportion: Proportion of dataset to be set aside for testing
             outfile: Output file
         """
         images, specifications = cls.generate_character_images(n_chars)
@@ -145,8 +159,9 @@ class HanziDatasetGenerator(CommandLineInterface):
 
         outfile = validate_output_file(outfile)
         HanziDataset.save_hdf5(train_images, train_specifications, outfile, "train")
+        info(f"Saved {train_images.shape[0]} character images to {outfile}/train")
         HanziDataset.save_hdf5(test_images, test_specifications, outfile, "test")
-        info(f"Saved {images.shape[0]} character images to {outfile}")
+        info(f"Saved {test_images.shape[0]} character images to {outfile}/test")
 
     @staticmethod
     def generate_character_image(
@@ -195,25 +210,26 @@ class HanziDatasetGenerator(CommandLineInterface):
         Arguments:
             images: Images
             specifications: Specifications
-            test_proportion: Proportion of images to use for testing
+            test_proportion: Proportion of images to set aside for testing
         Returns:
             Train and test images and specifications
         """
         train_index_set = set()
-        characters = set(specifications["character"])
-        for character in characters:
+        for character in set(specifications["character"]):
             indexes = set(np.where(specifications["character"] == character)[0])
-            n_test = int(len(indexes) * test_proportion)
-            train_index_set |= sample(list(indexes), n_test)
+            n_test = int(len(indexes) * (1.0 - test_proportion))
+            train_index_set |= set(sample(list(indexes), n_test))
         test_index_set = set(range(images.shape[0])) - train_index_set
+
         train_indexes = sorted(train_index_set)
         test_indexes = sorted(test_index_set)
-        train_images = images[train_indexes]
-        train_labels = specifications[train_indexes]
-        test_images = images[test_indexes]
-        test_labels = specifications[test_indexes]
 
-        return train_images, train_labels, test_images, test_labels
+        train_images = images[train_indexes]
+        train_specifications = specifications[train_indexes]
+        test_images = images[test_indexes]
+        test_specifications = specifications[test_indexes]
+
+        return train_images, train_specifications, test_images, test_specifications
 
 
 if __name__ == "__main__":

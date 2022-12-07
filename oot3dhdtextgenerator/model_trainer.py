@@ -19,6 +19,7 @@ from oot3dhdtextgenerator.common import (
     output_file_arg,
     set_logging_verbosity,
 )
+from oot3dhdtextgenerator.common.argument_parsing import get_arg_groups_by_name
 from oot3dhdtextgenerator.hanzi_dataset import HanziDataset
 from oot3dhdtextgenerator.model import Model
 
@@ -35,76 +36,84 @@ class ModelTrainer(CommandLineInterface):
         """
         super().add_arguments_to_argparser(parser)
 
-        parser.add_argument(
+        arg_groups = get_arg_groups_by_name(
+            parser,
+            "input arguments",
+            "operation arguments",
+            "output arguments",
+            optional_arguments_name="additional arguments",
+        )
+        arg_groups["operation arguments"].add_argument(
             "--batch-size",
             type=int,
             default=64,
             metavar="N",
             help="batch size for training (default: %(default)d)",
         )
-        parser.add_argument(
+        arg_groups["operation arguments"].add_argument(
             "--test-batch-size",
             type=int,
             default=1000,
             metavar="N",
             help="batch size for testing (default: %(default)d)",
         )
-        parser.add_argument(
+        arg_groups["operation arguments"].add_argument(
             "--epochs",
             type=int,
             default=14,
             metavar="N",
             help="number of epochs to train (default: %(default)d)",
         )
-        parser.add_argument(
+        arg_groups["operation arguments"].add_argument(
             "--lr",
             type=float,
             default=1.0,
             metavar="LR",
             help="learning rate (default: %(default)f)",
         )
-        parser.add_argument(
+        arg_groups["operation arguments"].add_argument(
             "--gamma",
             type=float,
             default=0.7,
             metavar="M",
             help="learning rate step gamma (default: %(default)f)",
         )
-        parser.add_argument(
+        arg_groups["operation arguments"].add_argument(
             "--disable-cuda",
             dest="cuda_enabled",
             action="store_false",
             default=True,
             help="disable CUDA",
         )
-        parser.add_argument(
+        arg_groups["operation arguments"].add_argument(
             "--disable-mps",
             dest="mps_enabled",
             action="store_false",
             default=True,
             help="disable macOS GPU",
         )
-        parser.add_argument(
+        arg_groups["operation arguments"].add_argument(
             "--dry-run",
             action="store_true",
             default=False,
             help="check a single pass",
         )
-        parser.add_argument(
+        arg_groups["operation arguments"].add_argument(
             "--seed",
             type=int,
             default=1,
             metavar="S",
             help="random seed (default: %(default)d)",
         )
-        parser.add_argument(
+        arg_groups["operation arguments"].add_argument(
             "--log-interval",
             type=int,
             default=10,
             metavar="N",
             help="training status logging interval (default: %(default)d)",
         )
-        parser.add_argument(
+
+        arg_groups["output arguments"].add_argument(
             "--outfile",
             type=output_file_arg(),
             default="model.pt",
@@ -117,7 +126,7 @@ class ModelTrainer(CommandLineInterface):
         parser = cls.argparser()
         kwargs = vars(parser.parse_args())
         verbosity = kwargs.pop("verbosity", 1)
-        set_logging_verbosity(4)
+        set_logging_verbosity(verbosity)
         cls.main_internal(**kwargs)
 
     @classmethod
