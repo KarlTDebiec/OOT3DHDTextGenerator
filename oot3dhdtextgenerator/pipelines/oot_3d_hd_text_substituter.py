@@ -33,7 +33,7 @@ class OOT3DHDTextSubstituter:
 
         self.characters = {}
 
-        self.load_hdf5_cache()
+        self.load_hdf5()
 
     def __call__(self, pipe_image: PipeImage) -> PipeImage:
         all_characters_assigned = True
@@ -60,7 +60,7 @@ class OOT3DHDTextSubstituter:
                 f"{len(character_arrays) - len(characters)} unknown characters"
             )
 
-    def load_hdf5_cache(self) -> None:
+    def load_hdf5(self) -> None:
         """Load cache from HDF5 file."""
         info(f"{self}: Loading cache from '{self.cache_file}'")
 
@@ -73,7 +73,7 @@ class OOT3DHDTextSubstituter:
                 for i, a in zip(images, assignments):
                     self.characters[i.tobytes()] = a.decode("UTF8")
 
-    def save_hdf5_cache(self) -> None:
+    def save_hdf5(self) -> None:
         """Save cache to HDF5 file."""
         info(f"{self}: Saving cache to '{self.cache_file}'")
 

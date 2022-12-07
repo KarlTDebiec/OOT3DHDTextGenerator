@@ -1,3 +1,8 @@
+#!/usr/bin/env python
+#  Copyright 2020-2022 Karl T Debiec
+#  All rights reserved. This software may be modified and distributed under
+#  the terms of the BSD license. See the LICENSE file for details.
+"""Optical character recognition model trainer."""
 import argparse
 from logging import info
 from pathlib import Path
@@ -19,6 +24,8 @@ from oot3dhdtextgenerator.model import Model
 
 
 class ModelTrainer(CommandLineInterface):
+    """Optical character recognition model trainer."""
+
     @classmethod
     def add_arguments_to_argparser(cls, parser: argparse.ArgumentParser) -> None:
         """Add arguments to a nascent argument parser.
@@ -45,7 +52,7 @@ class ModelTrainer(CommandLineInterface):
         parser.add_argument(
             "--epochs",
             type=int,
-            default=1,
+            default=14,
             metavar="N",
             help="number of epochs to train (default: %(default)d)",
         )
@@ -129,6 +136,21 @@ class ModelTrainer(CommandLineInterface):
         log_interval: int = 10,
         outfile: Path,
     ) -> None:
+        """Execute from command line.
+
+        Arguments:
+            batch_size: Batch size for training
+            test_batch_size: Batch size for testing
+            epochs: Number of epochs to train
+            lr: Learning rate
+            gamma: Learning rate step gamma
+            cuda_enabled: Whether to use CUDA
+            mps_enabled: Whether to use macOS GPU
+            dry_run: Whether to check a single pass
+            seed: Random seed
+            log_interval: Training status logging interval
+            outfile: Model output file
+        """
         # Determine which device to use
         cuda_enabled = torch.cuda.is_available() and cuda_enabled
         mps_enabled = torch.backends.mps.is_available() and mps_enabled
@@ -154,7 +176,6 @@ class ModelTrainer(CommandLineInterface):
         # dataset1 = MNIST("../data", train=True, download=True, transform=transform)
         dataset1 = HanziDataset("cmn-Hans.h5", transform=transform)
         train_loader = DataLoader(dataset1, **train_loader_kwargs)
-        print(len(dataset1))
 
         # dataset2 = datasets.MNIST("../data", train=False, transform=transform)
         # test_loader = DataLoader(dataset2, **test_loader_kwargs)
@@ -237,4 +258,3 @@ class ModelTrainer(CommandLineInterface):
 
 if __name__ == "__main__":
     ModelTrainer.main()
-    # torch.from_numpy(np.zeros((100*16*16), dtype=np.uint8)).view([100,16,16])
