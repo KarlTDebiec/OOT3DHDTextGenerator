@@ -48,3 +48,37 @@ class Model(Module):
         x = log_softmax(x, dim=1)
 
         return x
+
+
+# def get_model() -> keras.Sequential:
+#     model = keras.Sequential(
+#         [
+#             keras.layers.Conv2D(
+#                 filters=64,
+#                 kernel_size=2,
+#                 padding="same",
+#                 activation="relu",
+#                 input_shape=(16, 16, 1),
+#             ),
+#             keras.layers.MaxPooling2D(pool_size=2),
+#             keras.layers.Dropout(0.5),
+#             keras.layers.Conv2D(
+#                 filters=128, kernel_size=2, padding="same", activation="relu"
+#             ),
+#             keras.layers.MaxPooling2D(pool_size=2),
+#             keras.layers.Dropout(0.5),
+#             keras.layers.Conv2D(
+#                 filters=256, kernel_size=2, padding="same", activation="relu"
+#             ),
+#             keras.layers.MaxPooling2D(pool_size=2),
+#             keras.layers.Dropout(0.5),
+#             keras.layers.Flatten(),
+#             keras.layers.Dense(n_chars, activation="softmax"),
+#         ]
+#     )
+#     model.compile(
+#         optimizer="adam",
+#         loss="sparse_categorical_crossentropy",
+#         metrics=["accuracy"],
+#     )
+#     return model

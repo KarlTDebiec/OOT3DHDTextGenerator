@@ -9,7 +9,7 @@ from pathlib import Path
 
 import torch
 from torch.nn.functional import nll_loss
-from torch.optim import Adadelta
+from torch.optim import Adadelta, Optimizer
 from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import DataLoader
 from torchvision.transforms import Compose, Normalize, ToTensor
@@ -236,7 +236,14 @@ class ModelTrainer(CommandLineInterface):
         info(f"{cls}: Model saved to {model_outfile}")
 
     @staticmethod
-    def test(model, device, loader):
+    def test(model: Model, device: torch.device, loader: DataLoader) -> None:
+        """Test model against test data.
+
+        Arguments:
+            model: Model to test
+            device: Device to use
+            loader: Test data loader
+        """
         model.eval()
         test_loss = 0
         correct = 0
@@ -244,12 +251,8 @@ class ModelTrainer(CommandLineInterface):
             for data, target in loader:
                 data, target = data.to(device), target.to(device)
                 output = model(data)
-                test_loss += nll_loss(
-                    output, target, reduction="sum"
-                ).item()  # sum up batch loss
-                pred = output.argmax(
-                    dim=1, keepdim=True
-                )  # get the index of the max log-probability
+                test_loss += nll_loss(output, target, reduction="sum").item()
+                pred = output.argmax(dim=1, keepdim=True)
                 correct += pred.eq(target.view_as(pred)).sum().item()
         test_loss /= len(loader.dataset)
         info(
@@ -260,15 +263,26 @@ class ModelTrainer(CommandLineInterface):
 
     @staticmethod
     def train(
-        model,
-        device,
-        loader,
-        optimizer,
+        model: Model,
+        device: torch.device,
+        loader: DataLoader,
+        optimizer: Optimizer,
         *,
         epoch: int,
         log_interval: int,
         dry_run: bool,
     ):
+        """Train model against training data.
+
+        Arguments:
+            model: Model to train
+            device: Device to use
+            loader: Training data loader
+            optimizer: Optimizer to use
+            epoch: Epoch number
+            log_interval: Logging interval
+            dry_run: Whether to check a single pass
+        """
         model.train()
         for batch_idx, (data, target) in enumerate(loader):
             data, target = data.to(device), target.to(device)
