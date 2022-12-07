@@ -5,4 +5,4 @@
 .mypy_cache
 __pycache__
 *.h5
-*.pt
+*.pth
