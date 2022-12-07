@@ -22,6 +22,7 @@ from oot3dhdtextgenerator.common import (
     set_logging_verbosity,
     validate_output_file,
 )
+from oot3dhdtextgenerator.common.argument_parsing import get_arg_groups_by_name
 from oot3dhdtextgenerator.hanzi_dataset import HanziDataset
 
 
@@ -37,20 +38,27 @@ class HanziDatasetGenerator(CommandLineInterface):
         """
         super().add_arguments_to_argparser(parser)
 
-        parser.add_argument(
+        arg_groups = get_arg_groups_by_name(
+            parser,
+            "operation arguments",
+            "output arguments",
+            optional_arguments_name="additional arguments",
+        )
+
+        arg_groups["operation arguments"].add_argument(
             "--n_chars",
             type=int_arg(min_value=10, max_value=9933),
             default=10,
             help="number of characters to include in dataset, starting from the most "
             "common and ending with the least common (default: %(default)d, max: 9933)",
         )
-        parser.add_argument(
+        arg_groups["operation arguments"].add_argument(
             "--test_proportion",
             default=0.1,
             type=float_arg(min_value=0, max_value=1),
             help="proportion of dataset to be used as test set (default: %(default)f)",
         )
-        parser.add_argument(
+        arg_groups["output arguments"].add_argument(
             "--outfile",
             type=output_file_arg(),
             default="cmn-Hans.h5",
@@ -113,7 +121,9 @@ class HanziDatasetGenerator(CommandLineInterface):
         cls.main_internal(**kwargs)
 
     @classmethod
-    def main_internal(cls, n_chars: int, outfile: Union[Path, str]) -> None:
+    def main_internal(
+        cls, n_chars: int, test_proportion: float, outfile: Union[str, Path]
+    ) -> None:
         """Execute from command line.
 
         Arguments:
@@ -127,7 +137,7 @@ class HanziDatasetGenerator(CommandLineInterface):
             train_specifications,
             test_images,
             test_specifications,
-        ) = cls.split_train_and_test(images, specifications)
+        ) = cls.split_train_and_test(images, specifications, test_proportion)
         info(
             f"Split into {train_images.shape[0]} train and "
             f"{test_images.shape[0]} test images"
