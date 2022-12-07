@@ -3,12 +3,12 @@
 #  All rights reserved. This software may be modified and distributed under
 #  the terms of the BSD license. See the LICENSE file for details.
 """Hanzi character dataset generator."""
+import time
 from argparse import ArgumentParser
 from itertools import product
 from logging import info
 from pathlib import Path
 from random import sample
-from typing import Union
 
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
@@ -20,7 +20,6 @@ from oot3dhdtextgenerator.common import (
     int_arg,
     output_file_arg,
     set_logging_verbosity,
-    validate_output_file,
 )
 from oot3dhdtextgenerator.common.argument_parsing import get_arg_groups_by_name
 from oot3dhdtextgenerator.hanzi_dataset import HanziDataset
@@ -40,19 +39,22 @@ class HanziDatasetGenerator(CommandLineInterface):
 
         arg_groups = get_arg_groups_by_name(
             parser,
+            "input arguments",
             "operation arguments",
             "output arguments",
             optional_arguments_name="additional arguments",
         )
 
-        # Operation arguments
-        arg_groups["operation arguments"].add_argument(
+        # Input arguments
+        arg_groups["input arguments"].add_argument(
             "--n_chars",
             type=int_arg(min_value=10, max_value=9933),
-            default=10,
+            default=1000,
             help="number of characters to include in dataset, starting from the most "
             "common and ending with the least common (default: %(default)d, max: 9933)",
         )
+
+        # Operation arguments
         arg_groups["operation arguments"].add_argument(
             "--test_proportion",
             default=0.1,
@@ -63,10 +65,16 @@ class HanziDatasetGenerator(CommandLineInterface):
 
         # Output arguments
         arg_groups["output arguments"].add_argument(
-            "--outfile",
+            "--train_outfile",
             type=output_file_arg(),
-            default="cmn-Hans.h5",
-            help="output file (default: %(default)s)",
+            default="train.h5",
+            help="train output file (default: %(default)s)",
+        )
+        arg_groups["output arguments"].add_argument(
+            "--test_outfile",
+            type=output_file_arg(),
+            default="test.h5",
+            help="test output file (default: %(default)s)",
         )
 
     @classmethod
@@ -87,7 +95,7 @@ class HanziDatasetGenerator(CommandLineInterface):
         sizes = [14, 15, 16]
         offsets = [-2, -1, 0, 1, 2]
         fills = [215, 225, 235, 245, 255]
-        rotations = [-6, -4, -2, 0, 2, 4, 6]
+        rotations = [-4, -2, 0, 2, 4]
         info(
             f"Generating images of "
             f"{n_chars} character{'s' if n_chars > 1 else ''} using "
@@ -109,8 +117,10 @@ class HanziDatasetGenerator(CommandLineInterface):
         specifications = np.array(
             list(combinations), dtype=HanziDataset.specification_dtypes
         )
-        info(f"Generating {len(specifications)} images total")
-        arrays = np.zeros((len(specifications), 16, 16), np.uint8)
+        n_images = len(specifications)
+        info(f"Generating {n_images} images total")
+        arrays = np.zeros((n_images, 16, 16), np.uint8)
+        last_update_time = time.time()
         for i, specification in enumerate(specifications):
             arrays[i] = cls.generate_character_image(
                 char=specification["character"],
@@ -121,6 +131,10 @@ class HanziDatasetGenerator(CommandLineInterface):
                 y_offset=specification["y_offset"],
                 rotation=specification["rotation"],
             )
+            if i % 1000 == 0 and (current_time := time.time()) - last_update_time > 10:
+                info(f"{int(float(i + 1) / n_images * 100):3d}% complete")
+                last_update_time = current_time
+        info("100% complete")
 
         return arrays, specifications
 
@@ -135,14 +149,19 @@ class HanziDatasetGenerator(CommandLineInterface):
 
     @classmethod
     def main_internal(
-        cls, n_chars: int, test_proportion: float, outfile: Union[str, Path]
+        cls,
+        n_chars: int,
+        test_proportion: float,
+        train_outfile: Path,
+        test_outfile: Path,
     ) -> None:
         """Execute from command line.
 
         Arguments:
             n_chars: Number of unique characters to include in dataset
             test_proportion: Proportion of dataset to be set aside for testing
-            outfile: Output file
+            train_outfile: Train output file path
+            test_outfile: Test output file path
         """
         images, specifications = cls.generate_character_images(n_chars)
         info(f"Generated {images.shape[0]} character images")
@@ -157,11 +176,10 @@ class HanziDatasetGenerator(CommandLineInterface):
             f"{test_images.shape[0]} test images"
         )
 
-        outfile = validate_output_file(outfile)
-        HanziDataset.save_hdf5(train_images, train_specifications, outfile, "train")
-        info(f"Saved {train_images.shape[0]} character images to {outfile}/train")
-        HanziDataset.save_hdf5(test_images, test_specifications, outfile, "test")
-        info(f"Saved {test_images.shape[0]} character images to {outfile}/test")
+        HanziDataset.save_hdf5(train_images, train_specifications, train_outfile)
+        info(f"Saved {train_images.shape[0]} character images to {train_outfile}")
+        HanziDataset.save_hdf5(test_images, test_specifications, test_outfile)
+        info(f"Saved {test_images.shape[0]} character images to {test_outfile}")
 
     @staticmethod
     def generate_character_image(

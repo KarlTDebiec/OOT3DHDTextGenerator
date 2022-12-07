@@ -48,7 +48,6 @@ class HanziDataset(VisionDataset):
     def __init__(
         self,
         infile: Union[str, Path],
-        name: str,
         transform: Optional[Callable] = None,
         target_transform: Optional[Callable] = None,
     ) -> None:
@@ -56,7 +55,6 @@ class HanziDataset(VisionDataset):
 
         Arguments:
             infile: Path to HDF5 file
-            name: Name of dataset within HDF5 file
             transform: Transform to apply to images
             target_transform: Transform to apply to targets
         """
@@ -66,7 +64,7 @@ class HanziDataset(VisionDataset):
             transform=transform,
             target_transform=target_transform,
         )
-        self.images, self.specifications = self.load_hdf5(infile, name)
+        self.images, self.specifications = self.load_hdf5(infile)
 
     def __getitem__(self, index: int) -> tuple[np.ndarray, int]:
         """Get image and target at index."""
@@ -142,29 +140,24 @@ class HanziDataset(VisionDataset):
     def load_hdf5(
         cls,
         infile: Path,
-        name: str,
     ) -> tuple[np.ndarray, np.ndarray]:
         """Load images and specifications from an HDF5 file.
 
         Arguments:
             infile: Path to HDF5 infile
-            name: Name of dataset within HDF5 file
         Returns:
             Train images, train specifications, test images, and test specifications
         Raises:
             ValueError: If infile does not contain images and specifications
         """
         with h5py.File(infile, "r") as h5_file:
-            if (
-                f"{name}/images" not in h5_file
-                or f"{name}/specifications" not in h5_file
-            ):
+            if "images" not in h5_file or "specifications" not in h5_file:
                 raise ValueError(
-                    f"HDF5{infile} does not contain '{name}' images and specifications"
+                    f"HDF5{infile} does not contain images and specifications"
                 )
 
-            images = np.array(h5_file[f"{name}/images"])
-            encoded_specifications = np.array(h5_file[f"{name}/specifications"])
+            images = np.array(h5_file["images"])
+            encoded_specifications = np.array(h5_file["specifications"])
             specifications = cls.decode_specification(encoded_specifications)
 
         return images, specifications
@@ -175,7 +168,6 @@ class HanziDataset(VisionDataset):
         images: np.ndarray,
         specifications: np.ndarray,
         outfile: Path,
-        name: str,
     ) -> None:
         """Save images and specifications to an HDF5 file.
 
@@ -183,22 +175,22 @@ class HanziDataset(VisionDataset):
             images: Train images
             specifications: Train image specifications
             outfile: Path to HDF5 outfile
-            name: Name of dataset within HDF5 file
         """
         with h5py.File(outfile, "w") as h5_file:
-            if name in h5_file:
-                del h5_file[name]
-
+            if "images" in h5_file:
+                del h5_file["images"]
             h5_file.create_dataset(
-                f"{name}/images",
+                f"images",
                 data=images,
                 dtype=np.uint8,
                 chunks=True,
                 compression="gzip",
             )
 
+            if "specifications" in h5_file:
+                del h5_file["specifications"]
             h5_file.create_dataset(
-                f"{name}/specifications",
+                f"specifications",
                 data=cls.encode_specifications(specifications),
                 dtype=cls.encoded_specification_dtypes,
                 chunks=True,
