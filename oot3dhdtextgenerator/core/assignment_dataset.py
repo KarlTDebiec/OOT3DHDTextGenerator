@@ -16,33 +16,37 @@ from oot3dhdtextgenerator.common import validate_output_file
 class AssignmentDataset:
     """Assignment dataset."""
 
+    multi_char_array_sizes = ((128, 256), (128, 512), (256, 256))
+    char_array_size = (16, 16)
+
     def __init__(self, infile: Path) -> None:
         """Initialize."""
+        assigned_chars, unassigned_chars = {}, set()
+
         infile = validate_output_file(infile, exists_ok=True)
         if infile.exists():
             assigned_chars, unassigned_chars = self.load_hdf5(infile)
-        else:
-            assigned_chars, unassigned_chars = {}, set()
 
         self.assigned_chars = assigned_chars
         """Dictionary whose keys are image hashes and values are characters"""
         self.unassigned_chars = unassigned_chars
         """Set of image hashes of unassigned characters"""
 
-    def __getitem__(self, image: np.ndarray) -> Optional[str]:
+    def __getitem__(self, array: np.ndarray) -> Optional[str]:
         """Get assignment for image.
 
         Arguments:
-            image: Image to assign
+            array: Image to assign
         """
-        if image.shape in ((128, 256, 4), (256, 256, 4)):
+        if array.shape in self.multi_char_array_sizes:
+            multi_char_array = array
             all_chars_assigned = True
             chars = []
 
             breaking = False
-            for x in range(0, image.shape[0], 16):
-                for y in range(0, image.shape[1], 16):
-                    char_array = image[x : x + 16, y : y + 16]
+            for x in range(0, multi_char_array.shape[0], 16):
+                for y in range(0, multi_char_array.shape[1], 16):
+                    char_array = multi_char_array[x : x + 16, y : y + 16]
                     if char_array.sum() == 0:
                         breaking = True
                         break
@@ -54,17 +58,28 @@ class AssignmentDataset:
                 if breaking:
                     break
             if all_chars_assigned:
-                return chars
+                return "".join(chars)
             return None
+        elif array.shape == self.char_array_size:
+            char_array = array
+            char_bytes = char_array.tobytes()
+            if char_bytes in self.assigned_chars:
+                info(f"Assigned character {char_bytes} retrieved")
+                return self.assigned_chars[char_bytes]
+            elif char_bytes not in self.unassigned_chars:
+                info(f"Unassigned character added")
+                self.unassigned_chars.add(char_bytes)
+            return None
+        else:
+            raise ValueError(f"Unsupported array shape {array.shape}")
 
-        char_bytes = image.tobytes()
-        if char_bytes in self.assigned_chars:
-            info(f"Assigned character {char_bytes} retrieved")
-            return self.assigned_chars[char_bytes]
-        elif char_bytes not in self.unassigned_chars:
-            info(f"Unassigned character added")
-            self.unassigned_chars.add(char_bytes)
-        return None
+    def __repr__(self):
+        """Representation."""
+        return f"{self.__class__.__name__}()"
+
+    def __str__(self):
+        """String representation."""
+        return f"<{self.__class__.__name__}>"
 
     @classmethod
     def decode_assignments(cls, assignments: list[bytes]) -> list[str]:
@@ -87,8 +102,8 @@ class AssignmentDataset:
             Decoded images
         """
         return np.array(
-            [np.frombuffer(image, dtype=np.uint8) for image in images]
-        ).reshape((-1, 16, 16))
+            [np.frombuffer(image, dtype=np.uint8).reshape((16, 16)) for image in images]
+        )
 
     @classmethod
     def encode_assignments(cls, assignments: Iterable[str]) -> list[bytes]:
@@ -122,18 +137,16 @@ class AssignmentDataset:
             Assigned images in dictionary whose keys are image bytes and values are
             assigned characters, and unassigned images in set of bytes
         """
+        assigned, assignments = [], []
+        unassigned = []
+
         with h5py.File(infile, "r") as h5_file:
-            if (
-                "assigned" not in h5_file
-                or "assignments" not in h5_file
-                or "unassigned" not in h5_file
-            ):
-                raise ValueError(
-                    f"{infile} does not contain assigned and unassigned images"
-                )
-            assigned = cls.encode_images(h5_file["assigned"])
-            assignments = cls.decode_assignments(h5_file["assignments"])
-            unassigned = cls.encode_images(h5_file["unassigned"])
+            if "assigned" in h5_file and "assignments" in h5_file:
+                assigned = cls.encode_images(h5_file["assigned"])
+                assignments = cls.decode_assignments(h5_file["assignments"])
+
+            if "unassigned" in h5_file:
+                unassigned = cls.encode_images(h5_file["unassigned"])
 
         return dict(zip(assigned, assignments)), set(unassigned)
 
@@ -154,30 +167,31 @@ class AssignmentDataset:
         with h5py.File(outfile, "w") as h5_file:
             if "assigned" in h5_file:
                 del h5_file["assigned"]
-            h5_file.create_dataset(
-                f"assigned",
-                data=cls.decode_images(assigned_images.keys()),
-                dtype=np.uint8,
-                chunks=True,
-                compression="gzip",
-            )
-
             if "assignments" in h5_file:
                 del h5_file["assignments"]
-            h5_file.create_dataset(
-                f"assignments",
-                data=cls.encode_assignments(assigned_images.values()),
-                dtype="S4",
-                chunks=True,
-                compression="gzip",
-            )
+            if len(assigned_images) > 0:
+                h5_file.create_dataset(
+                    f"assigned",
+                    data=cls.decode_images(assigned_images.keys()),
+                    dtype=np.uint8,
+                    chunks=True,
+                    compression="gzip",
+                )
+                h5_file.create_dataset(
+                    f"assignments",
+                    data=cls.encode_assignments(assigned_images.values()),
+                    dtype="S4",
+                    chunks=True,
+                    compression="gzip",
+                )
 
             if "unassigned" in h5_file:
                 del h5_file["unassigned"]
-            h5_file.create_dataset(
-                f"unassigned",
-                data=cls.decode_images(unassigned_images),
-                dtype=np.uint8,
-                chunks=True,
-                compression="gzip",
-            )
+            if len(unassigned_images) > 0:
+                h5_file.create_dataset(
+                    f"unassigned",
+                    data=cls.decode_images(unassigned_images),
+                    dtype=np.uint8,
+                    chunks=True,
+                    compression="gzip",
+                )
