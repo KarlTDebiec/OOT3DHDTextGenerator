@@ -3,9 +3,9 @@
 #  All rights reserved. This software may be modified and distributed under
 #  the terms of the BSD license. See the LICENSE file for details.
 """Optical character recognition model."""
-from torch import Tensor, flatten
-from torch.nn import Conv2d, Dropout, Linear, Module
-from torch.nn.functional import log_softmax, max_pool2d, relu
+from torch import Tensor, flatten, log_softmax, max_pool2d, relu
+from torch.nn import Conv2d, Dropout, Flatten, Linear, MaxPool2d, Module
+from torchinfo import summary
 
 
 class Model(Module):
@@ -25,6 +25,12 @@ class Model(Module):
         self.dropout2 = Dropout(0.5)
         self.fc1 = Linear(2304, 128)
         self.fc2 = Linear(128, n_chars)
+        summary(self.conv1, input_size=(1, 1, 16, 16))
+        summary(self.conv2, input_size=(1, 32, 14, 14))
+        summary(MaxPool2d(2), input_size=(1, 64, 12, 12))
+        summary(Flatten(), input_size=(1, 64, 6, 6))
+        summary(self.fc1, input_size=(1, 2304))
+        summary(self.fc2, input_size=(1, 128))
 
     def forward(self, x: Tensor) -> Tensor:
         """Forward pass of the model.

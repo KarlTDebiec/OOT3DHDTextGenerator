@@ -81,6 +81,23 @@ class AssignmentDataset:
         """String representation."""
         return f"<{self.__class__.__name__}>"
 
+    def assign(self, char_array: np.ndarray, char: str) -> None:
+        """Assign character to image.
+
+        Arguments:
+            char_array: Image to assign
+            char: Character to assign
+        """
+        char_bytes = char_array.tobytes()
+        if char_bytes not in self.unassigned_chars:
+            raise ValueError(f"Character {char_bytes} not unassigned")
+        if char_bytes in self.assigned_chars:
+            raise ValueError(f"Character {char_bytes} already assigned")
+        if len(char) != 1:
+            raise ValueError(f"Character {char} must be a single character")
+        self.unassigned_chars.remove(char_bytes)
+        self.assigned_chars[char_bytes] = char
+
     @classmethod
     def decode_assignments(cls, assignments: list[bytes]) -> list[str]:
         """Decode assignments from HDF5 file.

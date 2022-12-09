@@ -39,7 +39,7 @@ class ModelTrainerCli(CommandLineInterface):
         arg_groups["input arguments"].add_argument(
             "--n_chars",
             type=int_arg(min_value=10, max_value=9933),
-            default=10,
+            default=2000,
             help="number of characters included in model, starting from the most "
             "common and ending with the least common (default: %(default)d, max: 9933)",
         )
@@ -60,7 +60,7 @@ class ModelTrainerCli(CommandLineInterface):
         arg_groups["operation arguments"].add_argument(
             "--batch-size",
             type=int,
-            default=100,
+            default=1000,
             help="batch size for training (default: %(default)d)",
         )
         arg_groups["operation arguments"].add_argument(

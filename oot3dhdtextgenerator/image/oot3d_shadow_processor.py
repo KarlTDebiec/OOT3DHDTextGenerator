@@ -12,93 +12,63 @@ from typing import Any
 
 import numpy as np
 from PIL import Image
-from pipescaler.core.image import Processor
+from pipescaler.image.processors import PotraceProcessor
 
 
-class OOT3DShadowProcessor(Processor):
+class OOT3DShadowProcessor(PotraceProcessor):
     """Processes shadow images."""
 
     def __init__(
         self,
-        blacklevel: float = 0.3,
-        alphamax: float = 1.34,
-        opttolerance: float = 0.2,
-        scale: int = 4,
-        **kwargs: Any,
+        arguments: str = "-b svg -k 0.3 -a 1.34 -O 0.2",
+        invert: bool = False,
+        scale: float = 4.0,
     ) -> None:
-        super().__init__(**kwargs)
+        """Initialize.
 
-        self.blacklevel = blacklevel
-        self.alphamax = alphamax
-        self.opttolerance = opttolerance
-        self.scale = scale
+        Arguments:
+            arguments: Command-line arguments to pass to potrace
+            invert: Whether to invert image before tracing
+            scale: Scale of re-rasterized output image relative to input
+        """
+        super().__init__(arguments=arguments, invert=invert, scale=scale)
 
-        self.desc = (
-            f"potrace-{self.blacklevel:4.2f}-"
-            f"{self.alphamax:4.2f}-{self.opttolerance:3.1f}-"
-            f"{self.scale}"
-        )
+    def __call__(self, input_image: Image.Image) -> Image.Image:
 
-    def process_file_in_pipeline(self, infile: str, outfile: str) -> None:
-        self.process_file(
-            infile,
-            outfile,
-            self.blacklevel,
-            self.alphamax,
-            self.opttolerance,
-            self.scale,
-            self.pipeline.verbosity,
+        # Flatten image and convert to monochrome
+        canvas = Image.new("RGBA", input_image.size, (255, 255, 255))
+        composite = Image.alpha_composite(canvas, input_image)
+        monochrome_image = composite.point(lambda p: p > 240 and 255)
+
+        # Trace image using potrace
+        traced_image = super().__call__(monochrome_image).convert("L")
+
+        # Convert back to shadow
+        output_data = np.zeros((traced_image.height, traced_image.width, 4))
+        output_data[:, :, 3] = (255 - np.array(traced_image)) * 0.666667
+        output_image = Image.fromarray(output_data.astype(np.uint8))
+
+        return output_image
+
+    @classmethod
+    def help_markdown(cls) -> str:
+        """Short description of this tool in markdown, with links."""
+        return (
+            "Traces OOT 3D shadow image using "
+            "[Potrace](http://potrace.sourceforge.net/) and re-rasterizes, optionally "
+            "resizing."
         )
 
     @classmethod
-    def process_file(
-        cls,
-        infile: str,
-        outfile: str,
-        blacklevel: float,
-        alphamax: float,
-        opttolerance: float,
-        scale: int,
-        verbosity: int,
-    ):
-        # TODO: Use temporary files
+    def inputs(cls) -> dict[str, tuple[str, ...]]:
+        """Inputs to this operator."""
+        return {
+            "input": ("RGBA",),
+        }
 
-        # Flatten image and convert to bmp; potrace does not accept png
-        bmpfile = f"{splitext(infile)[0]}.bmp"
-        input_image = Image.open(infile)
-        canvas = Image.new("RGBA", input_image.size, (255, 255, 255))
-        composite = Image.alpha_composite(canvas, input_image)
-        point = composite.point(lambda p: p > 240 and 255)
-        point.save(bmpfile)
-
-        # Trace to svg
-        svgfile = f"{splitext(outfile)[0]}.svg"
-        command = (
-            f"potrace "
-            f"{bmpfile} "
-            f"-b svg "
-            f"-k {blacklevel} "
-            f"-a {alphamax} "
-            f"-O {opttolerance} "
-            f"-o {svgfile}"
-        )
-        if verbosity >= 1:
-            print(command)
-        Popen(command, shell=True, close_fds=True).wait()
-
-        # Rasterize svg to png and scale
-        command = f"convert " f"-resize {scale * 100}% " f"{svgfile} " f"{outfile}"
-        if verbosity >= 1:
-            print(command)
-        Popen(command, shell=True, close_fds=True).wait()
-
-        # Convert back to shadow
-        raster_image = Image.open(outfile).convert("L")
-        output_data = np.zeros((raster_image.size[0], raster_image.size[1], 4))
-        output_data[:, :, 3] = (255 - np.array(raster_image)) * 0.666667
-        output_image = Image.fromarray(output_data.astype(np.uint8))
-        output_image.save(outfile)
-
-        # Clean up
-        remove(bmpfile)
-        remove(svgfile)
+    @classmethod
+    def outputs(cls) -> dict[str, tuple[str, ...]]:
+        """Outputs of this operator."""
+        return {
+            "output": ("RGBA",),
+        }

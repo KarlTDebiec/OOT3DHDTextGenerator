@@ -62,6 +62,11 @@ class OOT3DHDTextProcessor(Processor):
         info(f"Saved assignments to {self.assignment_file}")
 
     @classmethod
+    def help_markdown(cls) -> str:
+        """Short description of this tool in markdown, with links."""
+        return "Reads OOT 3D text image and draws higher-resolution version."
+
+    @classmethod
     def inputs(cls) -> dict[str, tuple[str, ...]]:
         """Inputs to this operator."""
         return {

@@ -8,8 +8,13 @@ from pathlib import Path
 import numpy as np
 import torch
 from PIL import Image
+from torchvision.transforms import Compose, Normalize, ToTensor
 
 from oot3dhdtextgenerator.core import AssignmentDataset, Model
+
+# TODO: Load dataset in form supported by model
+# TODO: Make and display model predictions
+# TODO: Create a web GUI
 
 
 class CharAssigner:
@@ -44,12 +49,21 @@ class CharAssigner:
             device = torch.device("mps")
         else:
             device = torch.device("cpu")
-        model = Model(n_chars).to(device)
+        model = Model(10)
+        state_dict = torch.load(model_infile)
+        model.load_state_dict(state_dict)
+        model.eval()
+        model = model.to(device)
+        yat = dataset.decode_images(dataset.unassigned_chars)
+        transform = Compose([ToTensor(), Normalize((0.1307,), (0.3081,))])
+        eee = transform(yat[0])
 
+        # Assign chars
         for char_bytes in dataset.unassigned_chars:
             char_array = np.frombuffer(char_bytes, dtype=np.uint8).reshape((16, 16))
             char_image = Image.fromarray(char_array)
             char_image.show()
             char = input("Character: ")
-            dataset.assigned_chars[char_bytes] = char
+            if char != "":
+                dataset.assign(char_bytes, char)
         pass
