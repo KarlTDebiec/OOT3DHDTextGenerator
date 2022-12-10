@@ -2,183 +2,226 @@
 #  Copyright 2020-2022 Karl T Debiec
 #  All rights reserved. This software may be modified and distributed under
 #  the terms of the BSD license. See the LICENSE file for details.
-"""Assignment dataset."""
+"""Assignment project."""
 from logging import info
 from pathlib import Path
 from typing import Iterable, Optional
 
 import h5py
 import numpy as np
+from PIL import Image
+from torch import Tensor
+from torchvision.datasets import VisionDataset
+from torchvision.transforms import Compose, Normalize, ToTensor
 
-from oot3dhdtextgenerator.common import validate_output_file
+from oot3dhdtextgenerator.common import validate_input_file
 
 
-class AssignmentDataset:
-    """Assignment dataset."""
+class AssignmentDataset(VisionDataset):
+    """Assignment project."""
 
-    multi_char_array_sizes = ((128, 256), (128, 512), (256, 256))
-    char_array_size = (16, 16)
+    multi_char_array_shapes = ((128, 256), (128, 512), (256, 256))
+    char_array_shape = (16, 16)
 
     def __init__(self, infile: Path) -> None:
         """Initialize."""
-        assigned_chars, unassigned_chars = {}, set()
+        infile = validate_input_file(infile, must_exist=False)
 
-        infile = validate_output_file(infile, exists_ok=True)
+        transform = Compose([ToTensor(), Normalize((0.1307,), (0.3081,))])
+        super().__init__(str(infile.parent), transform=transform)
+
+        assigned_char_bytes, unassigned_char_bytes = {}, []
         if infile.exists():
-            assigned_chars, unassigned_chars = self.load_hdf5(infile)
+            assigned_char_bytes, unassigned_char_bytes = self.load_hdf5(infile)
 
-        self.assigned_chars = assigned_chars
-        """Dictionary whose keys are image hashes and values are characters"""
-        self.unassigned_chars = unassigned_chars
-        """Set of image hashes of unassigned characters"""
+        self.assigned_char_bytes = assigned_char_bytes
+        """Dictionary whose keys are char bytes and values are char strs"""
+        self.unassigned_char_bytes = unassigned_char_bytes
+        """List of unassigned char bytes"""
 
-    def __getitem__(self, array: np.ndarray) -> Optional[str]:
-        """Get assignment for image.
+    def __getitem__(self, index: int) -> Tensor:
+        """Get unassigned char Tensor at index."""
+        char_bytes = self.unassigned_char_bytes[index]
+        char_array = self.bytes_to_array(char_bytes)
+        char_image = Image.fromarray(char_array)
+        char_tensor = self.transform(char_image)
 
-        Arguments:
-            array: Image to assign
-        """
-        if array.shape in self.multi_char_array_sizes:
-            multi_char_array = array
-            all_chars_assigned = True
-            chars = []
+        return char_tensor
 
-            breaking = False
-            for x in range(0, multi_char_array.shape[0], 16):
-                for y in range(0, multi_char_array.shape[1], 16):
-                    char_array = multi_char_array[x : x + 16, y : y + 16]
-                    if char_array.sum() == 0:
-                        breaking = True
-                        break
-                    char = self[char_array]
-                    if char is None:
-                        all_chars_assigned = False
-                    else:
-                        chars.append(char)
-                if breaking:
-                    break
-            if all_chars_assigned:
-                return "".join(chars)
-            return None
-        elif array.shape == self.char_array_size:
-            char_array = array
-            char_bytes = char_array.tobytes()
-            if char_bytes in self.assigned_chars:
-                info(f"Assigned character {char_bytes} retrieved")
-                return self.assigned_chars[char_bytes]
-            elif char_bytes not in self.unassigned_chars:
-                info(f"Unassigned character added")
-                self.unassigned_chars.add(char_bytes)
-            return None
-        else:
-            raise ValueError(f"Unsupported array shape {array.shape}")
-
-    def __repr__(self):
-        """Representation."""
-        return f"{self.__class__.__name__}()"
+    def __len__(self) -> int:
+        """Number of images in the dataset."""
+        return len(self.unassigned_char_bytes)
 
     def __str__(self):
         """String representation."""
         return f"<{self.__class__.__name__}>"
 
     def assign(self, char_array: np.ndarray, char: str) -> None:
-        """Assign character to image.
+        """Assign char to char array.
 
         Arguments:
-            char_array: Image to assign
-            char: Character to assign
+            char_array: Char array to assign
+            char: Char to assign
         """
-        char_bytes = char_array.tobytes()
-        if char_bytes not in self.unassigned_chars:
-            raise ValueError(f"Character {char_bytes} not unassigned")
-        if char_bytes in self.assigned_chars:
-            raise ValueError(f"Character {char_bytes} already assigned")
+        char_bytes = self.array_to_bytes(char_array)
+        if char_bytes not in self.unassigned_char_bytes:
+            raise ValueError(f"Character not unassigned")
+        if char_bytes in self.assigned_char_bytes:
+            raise ValueError(
+                "Character already assigned to "
+                f"{self.assigned_char_bytes[char_bytes]}, cannot assign to {char}"
+            )
         if len(char) != 1:
             raise ValueError(f"Character {char} must be a single character")
-        self.unassigned_chars.remove(char_bytes)
-        self.assigned_chars[char_bytes] = char
 
-    @classmethod
-    def decode_assignments(cls, assignments: list[bytes]) -> list[str]:
-        """Decode assignments from HDF5 file.
+        self.unassigned_char_bytes.pop(self.unassigned_char_bytes.index(char_bytes))
+        self.assigned_char_bytes[char_bytes] = char
 
-        Arguments:
-            assignments: Assignments to decode
-        Returns:
-            Decoded assignments
-        """
-        return [assignment.decode("utf-8") for assignment in assignments]
-
-    @classmethod
-    def decode_images(cls, images: Iterable[bytes]) -> np.ndarray:
-        """Decode images for storage in HDF5 file.
+    def get_chars_for_multi_char_array(
+        self, multi_char_array: np.ndarray
+    ) -> Optional[str]:
+        """Get chars for a multi-char array, if all assigned, or None otherwise.
 
         Arguments:
-            images: Images to decode
+            multi_char_array: Multi-char array whose chars to retrieve
         Returns:
-            Decoded images
+            Chars, or None if not all chars are assigned
         """
-        return np.array(
-            [np.frombuffer(image, dtype=np.uint8).reshape((16, 16)) for image in images]
-        )
+        if multi_char_array.shape not in self.multi_char_array_shapes:
+            raise ValueError(
+                f"Invalid array shape {multi_char_array.shape}, "
+                f"expected one of {self.multi_char_array_shapes}"
+            )
 
-    @classmethod
-    def encode_assignments(cls, assignments: Iterable[str]) -> list[bytes]:
-        """Encode assignments for storage in HDF5 file.
+        # Extract each character and check if it is assigned
+        all_chars_assigned = True
+        chars = []
+        breaking = False
+        for x in range(0, multi_char_array.shape[0], self.char_array_shape[0]):
+            for y in range(0, multi_char_array.shape[1], self.char_array_shape[1]):
+                char_array = multi_char_array[
+                    x : x + self.char_array_shape[0], y : y + self.char_array_shape[1]
+                ]
+                if char_array.sum() == 0:
+                    breaking = True
+                    break
+                char = self.get_char_for_char_array(char_array)
+                if char is None:
+                    all_chars_assigned = False
+                else:
+                    chars.append(char)
+            if breaking:
+                break
+
+        # Return assignments, if all characters are assigned, or None otherwise
+        if all_chars_assigned:
+            return "".join(chars)
+        return None
+
+    def get_char_for_char_array(self, char_array: np.ndarray) -> Optional[str]:
+        """Get char for a char array, if assigned, or None otherwise.
+
+        If char_array is not assigned, it is added to self.unassigned_char_arrays.
 
         Arguments:
-            assignments: Assignments to encode
+            char_array: Char array whose char to retrieve
         Returns:
-            Encoded assignments
+            Char, or None if not assigned
         """
-        return [assignment.encode("utf-8") for assignment in assignments]
+        if char_array.shape != self.char_array_shape:
+            raise ValueError(
+                f"Invalid array shape {char_array.shape}, "
+                f"expected {self.char_array_shape}"
+            )
+
+        char_bytes = self.array_to_bytes(char_array)
+        if char_bytes in self.assigned_char_bytes:
+            char = self.assigned_char_bytes[char_bytes]
+            info(f"Assigned character {char} retrieved")
+            return char
+        elif char_bytes not in self.unassigned_char_bytes:
+            self.unassigned_char_bytes.append(char_bytes)
+            info(f"Unassigned character added, {len(self.unassigned_char_bytes)} total")
+        return None
 
     @classmethod
-    def encode_images(cls, images: np.ndarray) -> list[bytes]:
-        """Encode images from HDF5 file.
+    def array_to_bytes(cls, char_array: np.ndarray) -> bytes:
+        """Convert car array to char bytes.
 
         Arguments:
-            images: Images to encode
+            char_array: Char array
         Returns:
-            Encoded images
+            char bytes
         """
-        return [image.tobytes() for image in images]
+        return char_array.tobytes()
 
     @classmethod
-    def load_hdf5(cls, infile: Path) -> tuple[dict[bytes, str], set[bytes]]:
-        """Load assignments from HDF5 file.
+    def bytes_to_array(cls, char_bytes: Iterable[bytes]) -> np.ndarray:
+        """Convert char bytes to char array.
+
+        Arguments:
+            char_bytes: Char bytes
+        Returns:
+            Char array
+        """
+        return np.frombuffer(char_bytes, dtype=np.uint8).reshape(cls.char_array_shape)
+
+    @classmethod
+    def decode_chars(cls, encoded_chars: Iterable[bytes]) -> list[str]:
+        """Decode chars from HDF5 file.
+
+        Arguments:
+            encoded_chars: Chars to decode
+        Returns:
+            Decoded chars
+        """
+        return [assignment.decode("utf-8") for assignment in encoded_chars]
+
+    @classmethod
+    def encode_chars(cls, chars: Iterable[str]) -> list[bytes]:
+        """Encode chars for HDF5 file.
+
+        Arguments:
+            chars: Chars to encode
+        Returns:
+            Encoded chars
+        """
+        return [assignment.encode("utf-8") for assignment in chars]
+
+    @classmethod
+    def load_hdf5(cls, infile: Path) -> tuple[dict[bytes, str], list[bytes]]:
+        """Load char arrays and assignments from an HDF5 file.
 
         Arguments:
             infile: Path to HDF5 file
         Returns:
-            Assigned images in dictionary whose keys are image bytes and values are
-            assigned characters, and unassigned images in set of bytes
+            Assigned and unassigned char bytes
         """
         assigned, assignments = [], []
         unassigned = []
 
         with h5py.File(infile, "r") as h5_file:
             if "assigned" in h5_file and "assignments" in h5_file:
-                assigned = cls.encode_images(h5_file["assigned"])
-                assignments = cls.decode_assignments(h5_file["assignments"])
+                assigned = map(cls.array_to_bytes, np.array(h5_file["assigned"]))
+                assignments = cls.decode_chars(h5_file["assignments"])
 
             if "unassigned" in h5_file:
-                unassigned = cls.encode_images(h5_file["unassigned"])
+                unassigned = map(cls.array_to_bytes, np.array(h5_file["unassigned"]))
 
-        return dict(zip(assigned, assignments)), set(unassigned)
+        return dict(zip(assigned, assignments)), list(unassigned)
 
     @classmethod
     def save_hdf5(
         cls,
-        assigned_images: dict[bytes, str],
-        unassigned_images: set[bytes],
+        assigned_char_bytes: dict[bytes, str],
+        unassigned_char_bytes: list[bytes],
         outfile: Path,
     ) -> None:
-        """Save images and assignments to an HDF5 file.
+        """Save char bytes and assignments to an HDF5 file.
 
         Arguments:
-            assigned_images: Assigned images
-            unassigned_images: Unassigned images
+            assigned_char_bytes: Assigned images
+            unassigned_char_bytes: Unassigned images
             outfile: Path to HDF5 outfile
         """
         with h5py.File(outfile, "w") as h5_file:
@@ -186,17 +229,19 @@ class AssignmentDataset:
                 del h5_file["assigned"]
             if "assignments" in h5_file:
                 del h5_file["assignments"]
-            if len(assigned_images) > 0:
+            if len(assigned_char_bytes) > 0:
                 h5_file.create_dataset(
                     f"assigned",
-                    data=cls.decode_images(assigned_images.keys()),
+                    data=np.array(
+                        list(map(cls.bytes_to_array, assigned_char_bytes.keys()))
+                    ),
                     dtype=np.uint8,
                     chunks=True,
                     compression="gzip",
                 )
                 h5_file.create_dataset(
                     f"assignments",
-                    data=cls.encode_assignments(assigned_images.values()),
+                    data=cls.encode_chars(assigned_char_bytes.values()),
                     dtype="S4",
                     chunks=True,
                     compression="gzip",
@@ -204,10 +249,10 @@ class AssignmentDataset:
 
             if "unassigned" in h5_file:
                 del h5_file["unassigned"]
-            if len(unassigned_images) > 0:
+            if len(unassigned_char_bytes) > 0:
                 h5_file.create_dataset(
                     f"unassigned",
-                    data=cls.decode_images(unassigned_images),
+                    data=np.array(list(map(cls.bytes_to_array, unassigned_char_bytes))),
                     dtype=np.uint8,
                     chunks=True,
                     compression="gzip",

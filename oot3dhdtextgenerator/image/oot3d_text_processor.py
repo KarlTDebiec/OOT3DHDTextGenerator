@@ -25,7 +25,7 @@ class OOT3DHDTextProcessor(Processor):
         # size: int,
         # offset: tuple[int, int] = (0, 0),
     ):
-        self.assignment_file = validate_output_file(assignment_file, exists_ok=True)
+        self.assignment_file = validate_output_file(assignment_file, may_exist=True)
         self.assignment_dataset = AssignmentDataset(self.assignment_file)
 
         # self.font = font
@@ -33,10 +33,11 @@ class OOT3DHDTextProcessor(Processor):
         # self.offset = offset
 
     def __call__(self, input_image: Image.Image) -> Image.Image:
-        characters = self.assignment_dataset[np.array(input_image)[:, :, 3]]
-        characters = None
-        if characters is None:
+        array = np.array(input_image)[:, :, 3]
+        chars = self.assignment_dataset.get_chars_for_multi_char_array(array)
+        if chars is None:
             raise FileNotFoundError(f"{self}: Image contains unknown characters")
+
         return input_image
 
     def __repr__(self):
@@ -55,8 +56,8 @@ class OOT3DHDTextProcessor(Processor):
     def save_assignment_dataset(self):
         """Save assignment dataset to HDF5 file."""
         self.assignment_dataset.save_hdf5(
-            self.assignment_dataset.assigned_chars,
-            self.assignment_dataset.unassigned_chars,
+            self.assignment_dataset.assigned_char_bytes,
+            self.assignment_dataset.unassigned_char_bytes,
             self.assignment_file,
         )
         info(f"Saved assignments to {self.assignment_file}")

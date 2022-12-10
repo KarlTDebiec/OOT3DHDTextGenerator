@@ -15,6 +15,8 @@ from PIL import Image, ImageDraw, ImageFont
 from oot3dhdtextgenerator.core import LearningDataset
 from oot3dhdtextgenerator.data import hanzi_frequency
 
+# TODO: Expose settings for image font, sizes, offsets, fills, and rotations
+
 
 class LearningDatasetGenerator:
     """Learning dataset generator."""

@@ -5,15 +5,12 @@
 """Character assigner."""
 from pathlib import Path
 
-import numpy as np
 import torch
-from PIL import Image
-from torchvision.transforms import Compose, Normalize, ToTensor
+from torch.utils.data import DataLoader
 
 from oot3dhdtextgenerator.core import AssignmentDataset, Model
 
-# TODO: Load dataset in form supported by model
-# TODO: Make and display model predictions
+# TODO: Don't require n_chars
 # TODO: Create a web GUI
 
 
@@ -38,9 +35,7 @@ class CharAssigner:
             cuda_enabled: Whether to use CUDA
             mps_enabled: Whether to use macOS GPU
         """
-        dataset = AssignmentDataset(assignment_file)
-
-        # Configure model
+        # Determine which device to use
         cuda_enabled = torch.cuda.is_available() and cuda_enabled
         mps_enabled = torch.backends.mps.is_available() and mps_enabled
         if cuda_enabled:
@@ -49,21 +44,30 @@ class CharAssigner:
             device = torch.device("mps")
         else:
             device = torch.device("cpu")
-        model = Model(10)
+
+        # Load assignment data
+        dataset = AssignmentDataset(assignment_file)
+        loader_kwargs = dict(batch_size=len(dataset))
+        if cuda_enabled:
+            loader_kwargs.update(dict(num_workers=1, pin_memory=True, shuffle=True))
+        loader = DataLoader(dataset, **loader_kwargs)
+        data = list(loader)[0]
+        data = data.to(device)
+
+        # Load model
+        model = Model(n_chars)
         state_dict = torch.load(model_infile)
         model.load_state_dict(state_dict)
         model.eval()
         model = model.to(device)
-        yat = dataset.decode_images(dataset.unassigned_chars)
-        transform = Compose([ToTensor(), Normalize((0.1307,), (0.3081,))])
-        eee = transform(yat[0])
 
-        # Assign chars
-        for char_bytes in dataset.unassigned_chars:
-            char_array = np.frombuffer(char_bytes, dtype=np.uint8).reshape((16, 16))
-            char_image = Image.fromarray(char_array)
-            char_image.show()
-            char = input("Character: ")
-            if char != "":
-                dataset.assign(char_bytes, char)
-        pass
+        # Get predictions
+        scores = model(data)
+        scores = scores.detach().cpu().numpy()
+        # for image, score in zip(images, scores):
+        #     Image.fromarray(image).show()
+        #     print(score)
+        #     print(characters[np.argmin(score)])
+        #     char = input("Character: ")
+        #     if char != "":
+        #         project.assign(image, char)

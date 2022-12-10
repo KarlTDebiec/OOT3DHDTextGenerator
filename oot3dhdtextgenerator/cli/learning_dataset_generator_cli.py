@@ -15,6 +15,8 @@ from oot3dhdtextgenerator.common import (
 )
 from oot3dhdtextgenerator.utilities import LearningDatasetGenerator
 
+# TODO: Expose settings for image font, sizes, offsets, fills, and rotations
+
 
 class LearningDatasetGeneratorCli(CommandLineInterface):
     """Learning dataset generator command line interface."""
@@ -40,7 +42,7 @@ class LearningDatasetGeneratorCli(CommandLineInterface):
         arg_groups["input arguments"].add_argument(
             "--n_chars",
             type=int_arg(min_value=10, max_value=9933),
-            default=2000,
+            default=1000,
             help="number of characters to include in dataset, starting from the most "
             "common and ending with the least common (default: %(default)d, max: 9933)",
         )
