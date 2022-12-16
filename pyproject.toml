@@ -37,6 +37,7 @@ h5py = "^3.7.0"
 [tool.poetry.dev-dependencies]
 black = "^22.10.0"
 coverage = "^6.5.0"
+Flask = "^2.2.2"
 isort = "^5.10.1"
 mypy = "^0.991"
 pandas-stubs = "^1.5.2.221124"

@@ -6,9 +6,10 @@
 from pathlib import Path
 
 import torch
+from flask import Flask, render_template
 from torch.utils.data import DataLoader
 
-from oot3dhdtextgenerator.core import AssignmentDataset, Model
+from oot3dhdtextgenerator.core import AssignmentDataset
 
 # TODO: Don't require n_chars
 # TODO: Create a web GUI
@@ -55,15 +56,15 @@ class CharAssigner:
         data = data.to(device)
 
         # Load model
-        model = Model(n_chars)
-        state_dict = torch.load(model_infile)
-        model.load_state_dict(state_dict)
-        model.eval()
-        model = model.to(device)
+        # model = Model(n_chars)
+        # state_dict = torch.load(model_infile)
+        # model.load_state_dict(state_dict)
+        # model.eval()
+        # model = model.to(device)
 
         # Get predictions
-        scores = model(data)
-        scores = scores.detach().cpu().numpy()
+        # scores = model(data)
+        # scores = scores.detach().cpu().numpy()
         # for image, score in zip(images, scores):
         #     Image.fromarray(image).show()
         #     print(score)
@@ -71,3 +72,19 @@ class CharAssigner:
         #     char = input("Character: ")
         #     if char != "":
         #         project.assign(image, char)
+        cls.assign(assignment_dataset=dataset)
+
+    @classmethod
+    def assign(
+        cls,
+        assignment_dataset: AssignmentDataset,
+    ) -> None:
+        app = Flask(__name__, instance_relative_config=True)
+        app.secret_key = "super secret key"
+
+        @app.route("/")
+        def entry_point():
+
+            return render_template("index.html")
+
+        app.run(host="0.0.0.0")
