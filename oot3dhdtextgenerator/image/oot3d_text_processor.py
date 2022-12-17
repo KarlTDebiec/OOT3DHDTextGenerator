@@ -4,8 +4,6 @@
 #  the terms of the BSD license. See the LICENSE file for details.
 """Processes text images."""
 from logging import info
-from pathlib import Path
-from typing import Union
 
 import numpy as np
 from PIL import Image
@@ -20,7 +18,7 @@ class OOT3DHDTextProcessor(Processor):
 
     def __init__(
         self,
-        assignment_file: Union[Path, str],
+        assignment_file: PathLike,
         # font: str,
         # size: int,
         # offset: tuple[int, int] = (0, 0),

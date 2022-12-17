@@ -4,7 +4,7 @@
 #  the terms of the BSD license. See the LICENSE file for details.
 """Learning dataset."""
 from pathlib import Path
-from typing import Callable, Optional, Union
+from typing import Callable, Optional
 
 import h5py
 import numpy as np
@@ -41,7 +41,7 @@ class LearningDataset(VisionDataset):
 
     def __init__(
         self,
-        infile: Union[str, Path],
+        infile: PathLike,
         transform: Optional[Callable] = None,
         target_transform: Optional[Callable] = None,
     ) -> None:
