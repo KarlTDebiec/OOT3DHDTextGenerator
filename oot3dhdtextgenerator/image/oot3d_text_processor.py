@@ -3,10 +3,13 @@
 #  All rights reserved. This software may be modified and distributed under
 #  the terms of the BSD license. See the LICENSE file for details.
 """Processes text images."""
+from __future__ import annotations
+
 from logging import info
 
 import numpy as np
 from PIL import Image
+from pipescaler.common import PathLike
 from pipescaler.core.image import Processor
 
 from oot3dhdtextgenerator.common import validate_output_file
@@ -38,7 +41,7 @@ class OOT3DHDTextProcessor(Processor):
 
         return input_image
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Representation."""
         return f"{self.__class__.__name__}(assignment_file={self.assignment_file})"
 

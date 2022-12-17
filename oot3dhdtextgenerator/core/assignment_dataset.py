@@ -3,6 +3,8 @@
 #  All rights reserved. This software may be modified and distributed under
 #  the terms of the BSD license. See the LICENSE file for details.
 """Assignment project."""
+from __future__ import annotations
+
 from logging import info
 from pathlib import Path
 from typing import Iterable, Optional
@@ -52,7 +54,7 @@ class AssignmentDataset(VisionDataset):
         """Number of images in the dataset."""
         return len(self.unassigned_char_bytes)
 
-    def __str__(self):
+    def __str__(self) -> str:
         """String representation."""
         return f"<{self.__class__.__name__}>"
 
