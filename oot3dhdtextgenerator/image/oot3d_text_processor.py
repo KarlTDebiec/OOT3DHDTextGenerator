@@ -43,7 +43,7 @@ class OOT3DHDTextProcessor(Processor):
 
     def __repr__(self) -> str:
         """Representation."""
-        return f"{self.__class__.__name__}(assignment_file={self.assignment_file})"
+        return f"{self.__class__.__name__}(assignment_file={self.assignment_file!r})"
 
     # def create_image(self, characters: list[str]) -> PipeImage:
     #     hires_image = Image.new("L", (1024, 1024), 0)
