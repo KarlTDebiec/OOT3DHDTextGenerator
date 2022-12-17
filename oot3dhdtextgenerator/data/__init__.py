@@ -20,7 +20,7 @@ def character_to_index(character: str) -> int:
     return characters.index(character)
 
 
-__all__: list[str] = [
+__all__ = [
     "characters",
     "character_to_index",
     "hanzi_frequency",

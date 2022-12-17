@@ -9,7 +9,7 @@ from oot3dhdtextgenerator.utilities.learning_dataset_generator import (
 )
 from oot3dhdtextgenerator.utilities.model_trainer import ModelTrainer
 
-__all__: list[str] = [
+__all__ = [
     "CharAssigner",
     "LearningDatasetGenerator",
     "ModelTrainer",

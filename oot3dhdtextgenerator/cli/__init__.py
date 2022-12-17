@@ -8,7 +8,7 @@ from oot3dhdtextgenerator.cli.learning_dataset_generator_cli import (
 )
 from oot3dhdtextgenerator.cli.model_trainer_cli import ModelTrainerCli
 
-__all__: list[str] = [
+__all__ = [
     "LearningDatasetGeneratorCli",
     "ModelTrainerCli",
 ]

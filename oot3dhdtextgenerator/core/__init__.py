@@ -7,7 +7,7 @@ from oot3dhdtextgenerator.core.assignment_dataset import AssignmentDataset
 from oot3dhdtextgenerator.core.learning_dataset import LearningDataset
 from oot3dhdtextgenerator.core.model import Model
 
-__all__: list[str] = [
+__all__ = [
     "AssignmentDataset",
     "LearningDataset",
     "Model",
