@@ -5,14 +5,9 @@
 """Processes shadow images."""
 from __future__ import annotations
 
-from os import remove
-from os.path import splitext
-from subprocess import Popen
-from typing import Any
-
 import numpy as np
 from PIL import Image
-from pipescaler.image.processors import PotraceProcessor
+from pipescaler.image.operators.processors import PotraceProcessor
 
 
 class OOT3DShadowProcessor(PotraceProcessor):
