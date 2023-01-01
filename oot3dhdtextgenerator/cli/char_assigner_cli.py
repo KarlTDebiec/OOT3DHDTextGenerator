@@ -2,7 +2,7 @@
 #  Copyright 2020-2023 Karl T Debiec
 #  All rights reserved. This software may be modified and distributed under
 #  the terms of the BSD license. See the LICENSE file for details.
-"""Character assigner command line interface."""
+"""Character assigner command-line interface."""
 from argparse import ArgumentParser
 
 from oot3dhdtextgenerator.common import (
@@ -17,7 +17,7 @@ from oot3dhdtextgenerator.utilities import CharAssigner
 
 
 class CharAssignerCli(CommandLineInterface):
-    """Character assigner command line interface."""
+    """Character assigner command-line interface."""
 
     @classmethod
     def add_arguments_to_argparser(cls, parser: ArgumentParser) -> None:
