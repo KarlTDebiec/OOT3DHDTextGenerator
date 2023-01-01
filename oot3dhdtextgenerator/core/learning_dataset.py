@@ -65,9 +65,9 @@ class LearningDataset(VisionDataset):
         image = Image.fromarray(self.images[index])
         target = character_to_index(self.specifications[index]["character"])
 
-        if self.transform is not None:
+        if self.transform:
             image = self.transform(image)
-        if self.target_transform is not None:
+        if self.target_transform:
             target = self.target_transform(target)
 
         return image, target
