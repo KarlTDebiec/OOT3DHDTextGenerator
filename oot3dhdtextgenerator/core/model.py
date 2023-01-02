@@ -3,6 +3,8 @@
 #  All rights reserved. This software may be modified and distributed under
 #  the terms of the BSD license. See the LICENSE file for details.
 """Optical character recognition model."""
+from __future__ import annotations
+
 from torch import Tensor, flatten, log_softmax, max_pool2d, relu
 from torch.nn import Conv2d, Dropout, Flatten, Linear, MaxPool2d, Module
 from torchinfo import summary

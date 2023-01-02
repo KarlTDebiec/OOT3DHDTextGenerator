@@ -4,6 +4,7 @@
 #  the terms of the BSD license. See the LICENSE file for details.
 """Optical character recognition model trainer command-line interface."""
 from argparse import ArgumentParser
+from typing import Any, Type
 
 from oot3dhdtextgenerator.common import (
     CommandLineInterface,
@@ -11,7 +12,6 @@ from oot3dhdtextgenerator.common import (
     input_file_arg,
     int_arg,
     output_file_arg,
-    set_logging_verbosity,
 )
 from oot3dhdtextgenerator.utilities import ModelTrainer
 
@@ -129,13 +129,15 @@ class ModelTrainerCli(CommandLineInterface):
         )
 
     @classmethod
-    def main(cls) -> None:
-        """Execute from command line."""
-        parser = cls.argparser()
-        kwargs = vars(parser.parse_args())
-        set_logging_verbosity(kwargs.pop("verbosity", 1))
+    def main_internal(cls, **kwargs: Any) -> None:
+        """Execute with provided keyword arguments."""
+        utility_cls = cls.utility()
+        utility_cls.run(**kwargs)
 
-        ModelTrainer.run(**kwargs)
+    @classmethod
+    def utility(cls) -> Type[ModelTrainer]:
+        """Type of utility wrapped by command-line interface."""
+        return ModelTrainer
 
 
 if __name__ == "__main__":

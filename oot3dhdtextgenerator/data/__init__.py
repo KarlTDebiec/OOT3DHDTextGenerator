@@ -3,6 +3,8 @@
 #  All rights reserved. This software may be modified and distributed under
 #  the terms of the BSD license. See the LICENSE file for details.
 """Data."""
+from __future__ import annotations
+
 import pandas as pd
 
 from oot3dhdtextgenerator.common import package_root
