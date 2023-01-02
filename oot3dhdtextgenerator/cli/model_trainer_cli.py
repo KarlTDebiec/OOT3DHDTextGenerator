@@ -134,6 +134,7 @@ class ModelTrainerCli(CommandLineInterface):
         parser = cls.argparser()
         kwargs = vars(parser.parse_args())
         set_logging_verbosity(kwargs.pop("verbosity", 1))
+
         ModelTrainer.run(**kwargs)
 
 
