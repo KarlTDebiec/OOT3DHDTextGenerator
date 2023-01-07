@@ -39,9 +39,9 @@ class LearningDatasetGenerator:
             r"C:\Windows\Fonts\simhei.ttf",
         ]
         sizes = [14, 15, 16]
-        offsets = [-2, -1, 0, 1, 2]
-        fills = [215, 225, 235, 245, 255]
-        rotations = [-4, -2, 0, 2, 4]
+        offsets = [-1, 0, 1]
+        fills = [225, 235, 245]
+        rotations = [-2, 0, 2]
         info(
             f"Generating images of "
             f"{n_chars} character{'s' if n_chars > 1 else ''} using "

@@ -3,6 +3,8 @@
 #  All rights reserved. This software may be modified and distributed under
 #  the terms of the BSD license. See the LICENSE file for details.
 """Optical character recognition model trainer command-line interface."""
+from __future__ import annotations
+
 from argparse import ArgumentParser
 from typing import Any, Type
 
@@ -10,7 +12,6 @@ from oot3dhdtextgenerator.common import (
     CommandLineInterface,
     get_arg_groups_by_name,
     input_file_arg,
-    int_arg,
     output_file_arg,
 )
 from oot3dhdtextgenerator.utilities import ModelTrainer
@@ -35,24 +36,16 @@ class ModelTrainerCli(CommandLineInterface):
             "output arguments",
             optional_arguments_name="additional arguments",
         )
-        # Input arguments
-        arg_groups["input arguments"].add_argument(
-            "--n_chars",
-            type=int_arg(min_value=10, max_value=9933),
-            default=1000,
-            help="number of characters included in model, starting from the most "
-            "common and ending with the least common (default: %(default)d, max: 9933)",
-        )
         arg_groups["input arguments"].add_argument(
             "--train-infile",
             type=input_file_arg(),
-            default="train.h5",
+            default="train_100.h5",
             help="train data input file (default: %(default)s)",
         )
         arg_groups["input arguments"].add_argument(
             "--test-infile",
             type=input_file_arg(),
-            default="test.h5",
+            default="test_100.h5",
             help="test data input file (default: %(default)s)",
         )
 

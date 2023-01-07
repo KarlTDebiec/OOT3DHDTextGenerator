@@ -27,7 +27,6 @@ class ModelTrainer:
     def run(
         cls,
         *,
-        n_chars: int,
         train_infile: Path,
         test_infile: Path,
         batch_size: int = 64,
@@ -45,7 +44,6 @@ class ModelTrainer:
         """Execute from command line.
 
         Arguments:
-            n_chars: Number of characters included in model
             train_infile: Train data input file
             test_infile: Test data input file
             batch_size: Batch size for training
@@ -87,6 +85,7 @@ class ModelTrainer:
         test_loader = DataLoader(test_dataset, **test_loader_kwargs)
 
         # Configure model
+        n_chars = len(set(train_dataset.specifications["character"]))
         model = Model(n_chars).to(device)
         optimizer = Adadelta(model.parameters(), lr=lr)
         scheduler = StepLR(optimizer, step_size=1, gamma=gamma)
