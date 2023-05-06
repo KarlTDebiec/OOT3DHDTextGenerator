@@ -6,17 +6,18 @@
 from __future__ import annotations
 
 from logging import info
+from typing import Any
 
 import numpy as np
 from PIL import Image
 from pipescaler.common import PathLike
-from pipescaler.core.image import Processor
+from pipescaler.image.core.operators import ImageProcessor
 
 from oot3dhdtextgenerator.common import validate_output_file
 from oot3dhdtextgenerator.core import AssignmentDataset
 
 
-class OOT3DHDTextProcessor(Processor):
+class OOT3DHDTextProcessor(ImageProcessor):
     """Processes text images."""
 
     def __init__(
@@ -25,7 +26,10 @@ class OOT3DHDTextProcessor(Processor):
         # font: str,
         # size: int,
         # offset: tuple[int, int] = (0, 0),
+        **kwargs: Any,
     ):
+        super().__init__(**kwargs)
+
         self.assignment_file = validate_output_file(assignment_file, may_exist=True)
         self.assignment_dataset = AssignmentDataset(self.assignment_file)
 

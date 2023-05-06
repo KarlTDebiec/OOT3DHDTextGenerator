@@ -83,6 +83,7 @@ class CharAssigner:
     ) -> None:
         app = Flask(__name__, instance_relative_config=True)
         app.secret_key = "super secret key"
+        app.db.model = assignment_dataset
 
         @app.route("/")
         def entry_point():

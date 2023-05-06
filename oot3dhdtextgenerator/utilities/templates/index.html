@@ -12,6 +12,22 @@
     <meta charset="UTF-8">
 </head>
 <body>
+    <h1>Characters to Assign</h1>
+    <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">Image</th>
+          </tr>
+        </thead>
+        <tbody id="unassigned-character" hx-target="closest tr" hx-swap="outerHTML swap:0.5s">
+            {%for bytes in assignment_dataset.unassigned_character_bytes%}
+            <tr>
+                <td>{{bytes}}</td>
+            </tr>
+            {%endfor%}
+        </tbody>
+    </table>
+
     <h1>Book Recommendations</h1>
     <form hx-post="/submit" hx-swap="beforeend" hx-target="#new-book" class="mb-3">
         <input type="text" placeholder="Book Title" name="title" class="form-control mb-3" />
