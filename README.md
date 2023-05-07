@@ -1,6 +1,10 @@
+[![Python: =3.10](https://img.shields.io/badge/python-3.10-green.svg)](https://docs.python.org/3/whatsnew/3.10.html)
+[![Build](https://github.com/KarlTDebiec/OOT3DHDTextGenerator/actions/workflows/build.yml/badge.svg)](https://github.com/KarlTDebiec/OOT3DHDTextGenerator/actions/workflows/build.yml)
 [![Code Style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![License: BSD 3-Clause](https://img.shields.io/badge/license-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 
 ## Description
+
 This script generates high resolution text for The Legend of Zelda Ocarina of Time 3D,
 to be used with the [Citra 3DS emulator](https://citra-emu.org). Citra includes support
 for replacing low resolution textures with high resolution alternatives. In most games,

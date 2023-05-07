@@ -6,14 +6,14 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Callable, Optional
+from typing import Callable
 
 import h5py
 import numpy as np
 from PIL import Image
 from torchvision.datasets import VisionDataset
 
-from oot3dhdtextgenerator.common import validate_input_file
+from oot3dhdtextgenerator.common import PathLike, validate_input_file
 from oot3dhdtextgenerator.data import character_to_index
 
 
@@ -44,8 +44,8 @@ class LearningDataset(VisionDataset):
     def __init__(
         self,
         infile: PathLike,
-        transform: Optional[Callable] = None,
-        target_transform: Optional[Callable] = None,
+        transform: Callable | None = None,
+        target_transform: Callable | None = None,
     ) -> None:
         """Initialize.
 

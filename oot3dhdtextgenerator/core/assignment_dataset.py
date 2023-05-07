@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from logging import info
 from pathlib import Path
-from typing import Iterable, Optional
+from typing import Iterable
 
 import h5py
 import numpy as np
@@ -81,7 +81,7 @@ class AssignmentDataset(VisionDataset):
 
     def get_chars_for_multi_char_array(
         self, multi_char_array: np.ndarray
-    ) -> Optional[str]:
+    ) -> str | None:
         """Get chars for a multi-char array, if all assigned, or None otherwise.
 
         Arguments:
@@ -120,7 +120,7 @@ class AssignmentDataset(VisionDataset):
             return "".join(chars)
         return None
 
-    def get_char_for_char_array(self, char_array: np.ndarray) -> Optional[str]:
+    def get_char_for_char_array(self, char_array: np.ndarray) -> str | None:
         """Get char for a char array, if assigned, or None otherwise.
 
         If char_array is not assigned, it is added to self.unassigned_char_arrays.
