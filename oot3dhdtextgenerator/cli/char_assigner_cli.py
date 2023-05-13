@@ -5,17 +5,17 @@
 from __future__ import annotations
 
 from argparse import ArgumentParser
-from typing import Any, Type
+from typing import Any
 
 from pipescaler.core.cli import UtilityCli
 
+from oot3dhdtextgenerator.apps.char_assigner import app
 from oot3dhdtextgenerator.common import (
     get_arg_groups_by_name,
     input_file_arg,
     int_arg,
     output_file_arg,
 )
-from oot3dhdtextgenerator.utilities import CharAssigner
 
 
 class CharAssignerCli(UtilityCli):
@@ -77,13 +77,7 @@ class CharAssignerCli(UtilityCli):
     @classmethod
     def main_internal(cls, **kwargs: Any) -> None:
         """Execute with provided keyword arguments."""
-        utility = cls.utility()
-        utility.run(**kwargs)
-
-    @classmethod
-    def utility(cls) -> Type[CharAssigner]:
-        """Type of utility wrapped by command-line interface."""
-        return CharAssigner
+        app.run()
 
 
 if __name__ == "__main__":

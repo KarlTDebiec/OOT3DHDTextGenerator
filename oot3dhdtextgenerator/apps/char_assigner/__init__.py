@@ -20,8 +20,7 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db = SQLAlchemy()
 
-from oot3dhdtextgenerator.utilities.char_assigner import models  # noqa: E402
-from oot3dhdtextgenerator.utilities.char_assigner import views  # noqa: E402
+from oot3dhdtextgenerator.apps.char_assigner import views
 
 db.init_app(app)
 

@@ -3,8 +3,8 @@
 
 from flask import render_template, request
 
-from oot3dhdtextgenerator.utilities.char_assigner import app, db
-from oot3dhdtextgenerator.utilities.char_assigner.models import Author, Book
+from oot3dhdtextgenerator.apps.char_assigner import app, db
+from oot3dhdtextgenerator.apps.char_assigner.models import Author, Book
 
 
 @app.route("/", methods=["GET"])
