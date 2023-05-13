@@ -1,7 +1,5 @@
-#!/usr/bin/env python
-#   Copyright (C) 2020 Karl T Debiec
-#   All rights reserved. This software may be modified and distributed under
-#   the terms of the BSD license. See the LICENSE file for details.
+#  Copyright 2020-2023 Karl T Debiec. All rights reserved. This software may be modified
+#  and distributed under the terms of the BSD license. See the LICENSE file for details.
 """Processes shadow images."""
 from __future__ import annotations
 
@@ -29,7 +27,6 @@ class OOT3DShadowProcessor(PotraceProcessor):
         super().__init__(arguments=arguments, invert=invert, scale=scale)
 
     def __call__(self, input_image: Image.Image) -> Image.Image:
-
         # Flatten image and convert to monochrome
         canvas = Image.new("RGBA", input_image.size, (255, 255, 255))
         composite = Image.alpha_composite(canvas, input_image)
