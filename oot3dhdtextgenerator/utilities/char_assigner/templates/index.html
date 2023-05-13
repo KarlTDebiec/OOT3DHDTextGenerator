@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Flask HTMX ALPINE App</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-giJF6kkoqNQ00vy+HMDP7azOuL0xtbfIcaT9wjKHr8RbDVddVHyTfAAsrekwKmP1"
+          crossorigin="anonymous">
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.5.0"></script>
+    <style>
+        body {
+            padding: 20px;
+        }
+
+        table {
+            font-family: arial, sans-serif;
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        tr.htmx-swapping td {
+            opacity: 0;
+            transition: opacity 0.5s ease-out;
+        }
+
+        td, th {
+            border: 1px solid #383737;
+            text-align: left;
+            padding: 8px;
+        }
+
+        tr:nth-child(even) {
+            background-color: #dddddd;
+        }
+    </style>
+</head>
+<body>
+<h1>Book Recommendations</h1>
+<form hx-post="/submit" hx-swap="beforeend" hx-target="#new-book" class="mb-3">
+    <input type="text" placeholder="Book Title" name="title" class="form-control mb-3"/>
+    <input type="text" placeholder="Book Author" name="author"
+           class="form-control mb-3"/>
+    <button type="submit" class="btn btn-primary">Submit</button>
+</form>
+
+<table class="table">
+    <thead>
+    <tr>
+        <th scope="col">Book Title</th>
+        <th scope="col">Book Author</th>
+    </tr>
+    </thead>
+    <tbody id="new-book" hx-target="closest tr" hx-swap="outerHTML swap:0.1s">
+    {%for book in books%}
+    <tr>
+        <td>{{book.Book.title}}</td>
+        <td>{{book.Author.name}}</td>
+        <td>
+            <button class="btn btn-primary"
+                    hx-get="/get-edit-form/{{book.Book.book_id}}">
+                Edit Title
+            </button>
+        </td>
+        <td>
+            <button hx-delete="/delete/{{book.Book.book_id}}" class="btn btn-primary">
+                Delete
+            </button>
+        </td>
+    </tr>
+    {%endfor%}
+    </tbody>
+</table>
+</body>
+</html>

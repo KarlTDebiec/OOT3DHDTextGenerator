@@ -8,8 +8,9 @@ from __future__ import annotations
 from argparse import ArgumentParser
 from typing import Any, Type
 
+from pipescaler.core.cli import UtilityCli
+
 from oot3dhdtextgenerator.common import (
-    CommandLineInterface,
     get_arg_groups_by_name,
     input_file_arg,
     int_arg,
@@ -18,7 +19,7 @@ from oot3dhdtextgenerator.common import (
 from oot3dhdtextgenerator.utilities import CharAssigner
 
 
-class CharAssignerCli(CommandLineInterface):
+class CharAssignerCli(UtilityCli):
     """Character assigner command-line interface."""
 
     @classmethod
@@ -77,8 +78,8 @@ class CharAssignerCli(CommandLineInterface):
     @classmethod
     def main_internal(cls, **kwargs: Any) -> None:
         """Execute with provided keyword arguments."""
-        utility_cls = cls.utility()
-        utility_cls.run(**kwargs)
+        utility = cls.utility()
+        utility.run(**kwargs)
 
     @classmethod
     def utility(cls) -> Type[CharAssigner]:

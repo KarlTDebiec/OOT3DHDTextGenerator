@@ -8,7 +8,6 @@ from __future__ import annotations
 from pathlib import Path
 
 import torch
-from flask import Flask, render_template
 from torch.utils.data import DataLoader
 
 from oot3dhdtextgenerator.core import AssignmentDataset
@@ -75,19 +74,3 @@ class CharAssigner:
         #     if char != "":
         #         project.assign(image, char)
         cls.assign(assignment_dataset=dataset)
-
-    @classmethod
-    def assign(
-        cls,
-        assignment_dataset: AssignmentDataset,
-    ) -> None:
-        app = Flask(__name__, instance_relative_config=True)
-        app.secret_key = "super secret key"
-        app.db.model = assignment_dataset
-
-        @app.route("/")
-        def entry_point():
-
-            return render_template("index.html")
-
-        app.run(host="0.0.0.0")

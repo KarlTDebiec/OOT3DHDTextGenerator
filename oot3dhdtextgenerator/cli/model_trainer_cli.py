@@ -8,8 +8,9 @@ from __future__ import annotations
 from argparse import ArgumentParser
 from typing import Any, Type
 
+from pipescaler.core.cli import UtilityCli
+
 from oot3dhdtextgenerator.common import (
-    CommandLineInterface,
     get_arg_groups_by_name,
     input_file_arg,
     output_file_arg,
@@ -17,7 +18,7 @@ from oot3dhdtextgenerator.common import (
 from oot3dhdtextgenerator.utilities import ModelTrainer
 
 
-class ModelTrainerCli(CommandLineInterface):
+class ModelTrainerCli(UtilityCli):
     """Optical character recognition model trainer command-line interface."""
 
     @classmethod

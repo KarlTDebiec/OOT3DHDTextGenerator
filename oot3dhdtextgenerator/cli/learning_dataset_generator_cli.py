@@ -8,8 +8,9 @@ from __future__ import annotations
 from argparse import ArgumentParser
 from typing import Any, Type
 
+from pipescaler.core.cli import UtilityCli
+
 from oot3dhdtextgenerator.common import (
-    CommandLineInterface,
     float_arg,
     get_arg_groups_by_name,
     int_arg,
@@ -20,7 +21,7 @@ from oot3dhdtextgenerator.utilities import LearningDatasetGenerator
 # TODO: Expose settings for image font, sizes, offsets, fills, and rotations
 
 
-class LearningDatasetGeneratorCli(CommandLineInterface):
+class LearningDatasetGeneratorCli(UtilityCli):
     """Learning dataset generator command-line interface."""
 
     @classmethod
