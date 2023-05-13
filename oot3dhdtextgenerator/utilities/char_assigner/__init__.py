@@ -1,5 +1,6 @@
 #  Copyright 2020-2023 Karl T Debiec. All rights reserved. This software may be modified
 #  and distributed under the terms of the BSD license. See the LICENSE file for details.
+from __future__ import annotations
 
 from os import getenv
 from pathlib import Path
@@ -18,6 +19,9 @@ app.config["SQLALCHEMY_ECHO"] = False
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db = SQLAlchemy()
+
+from oot3dhdtextgenerator.utilities.char_assigner import models  # noqa: E402
+from oot3dhdtextgenerator.utilities.char_assigner import views  # noqa: E402
 
 db.init_app(app)
 

@@ -1,7 +1,7 @@
 #  Copyright 2020-2023 Karl T Debiec. All rights reserved. This software may be modified
 #  and distributed under the terms of the BSD license. See the LICENSE file for details.
 
-from app import db
+from oot3dhdtextgenerator.utilities.char_assigner import db
 
 
 class Author(db.Model):
