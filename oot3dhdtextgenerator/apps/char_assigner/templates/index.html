@@ -42,11 +42,11 @@
 </head>
 <body>
 <h1>Book Recommendations</h1>
-<form hx-post="/submit" hx-swap="beforeend" hx-target="#new-book" class="mb-3">
+<form hx-post="/books" hx-swap="beforeend" hx-target="#new-book" class="mb-3">
     <input type="text" placeholder="Book Title" name="title" class="form-control mb-3"/>
     <input type="text" placeholder="Book Author" name="author"
            class="form-control mb-3"/>
-    <button type="submit" class="btn btn-primary">Submit</button>
+    <button type="submit" class="btn btn-primary">Create</button>
 </form>
 
 <table class="table">
@@ -63,12 +63,12 @@
         <td>{{book.Author.name}}</td>
         <td>
             <button class="btn btn-primary"
-                    hx-get="/get-edit-form/{{book.Book.book_id}}">
+                    hx-get="/books/{{book.Book.book_id}}/edit">
                 Edit Title
             </button>
         </td>
         <td>
-            <button hx-delete="/delete/{{book.Book.book_id}}" class="btn btn-primary">
+            <button hx-delete="/books/{{book.Book.book_id}}" class="btn btn-primary">
                 Delete
             </button>
         </td>
