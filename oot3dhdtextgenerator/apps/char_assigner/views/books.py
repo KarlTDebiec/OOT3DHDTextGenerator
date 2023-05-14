@@ -9,41 +9,30 @@ from oot3dhdtextgenerator.apps.char_assigner.models import Author, Book
 
 @app.route("/books", methods=["POST"])
 def create():
-    global_book_object = Book()
-
     title = request.form.get("title")
     author_name = request.form.get("author")
 
-    author_exists = db.session.query(Author).filter(Author.name == author_name).first()
-    print(author_exists)
-
-    if author_exists:
-        author_id = author_exists.author_id
-        book = Book(author_id=author_id, title=title)
-        db.session.add(book)
-        db.session.commit()
-        global_book_object = book
-    else:
+    author = db.session.query(Author).filter(Author.name == author_name).first()
+    if not author:
         author = Author(name=author_name)
         db.session.add(author)
         db.session.commit()
 
-        book = Book(author_id=author.author_id, title=title)
-        db.session.add(book)
-        db.session.commit()
-        global_book_object = book
+    book = Book(author_id=author.author_id, title=title)
+    db.session.add(book)
+    db.session.commit()
 
     response = f"""
     <tr>
         <td>{title}</td>
         <td>{author_name}</td>
         <td>
-            <button hx-get="/books/{global_book_object.book_id}/edit" class="btn btn-primary" >
+            <button hx-get="/books/{book.book_id}/edit" class="btn btn-primary" >
                 Edit Title
             </button>
         </td>
         <td>
-            <button hx-delete="/books/{global_book_object.book_id}" class="btn btn-primary">
+            <button hx-delete="/books/{book.book_id}" class="btn btn-primary">
                 Delete
             </button>
         </td>
