@@ -7,10 +7,9 @@ from __future__ import annotations
 from argparse import ArgumentParser
 from typing import Any
 
-from pipescaler.core.cli import UtilityCli
-
 from oot3dhdtextgenerator.apps.char_assigner import app
 from oot3dhdtextgenerator.common import (
+    CommandLineInterface,
     get_arg_groups_by_name,
     input_file_arg,
     int_arg,
@@ -18,7 +17,7 @@ from oot3dhdtextgenerator.common import (
 )
 
 
-class CharAssignerCli(UtilityCli):
+class CharAssignerCli(CommandLineInterface):
     """Character assigner command-line interface."""
 
     @classmethod
