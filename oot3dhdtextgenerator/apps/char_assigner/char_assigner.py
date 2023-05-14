@@ -1,41 +1,60 @@
 #  Copyright 2020-2023 Karl T Debiec. All rights reserved. This software may be modified
 #  and distributed under the terms of the BSD license. See the LICENSE file for details.
+"""Character assigner."""
+from __future__ import annotations
 
-from os import getenv
 from pathlib import Path
 from typing import Any
 
+import torch
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
+from torch.utils.data import DataLoader
 
-from oot3dhdtextgenerator.apps.char_assigner.models.author import get_model_author
-from oot3dhdtextgenerator.apps.char_assigner.models.book import get_model_book
-from oot3dhdtextgenerator.apps.char_assigner.routes.books import route_books
 from oot3dhdtextgenerator.apps.char_assigner.routes.index import route_index
+from oot3dhdtextgenerator.core import AssignmentDataset
 
 
 class CharAssigner:
-    def __init__(self, **kwargs: Any) -> None:
+    def __init__(
+        self,
+        n_chars: int,
+        assignment_file: Path,
+        model_infile: Path,
+        cuda_enabled: bool = True,
+        mps_enabled: bool = True,
+    ) -> None:
+        """Run character assigner.
+
+        Arguments:
+            n_chars: Number of characters included in model
+            assignment_file: Assignment HDF5 file
+            model_infile: Model pth file
+            cuda_enabled: Whether to use CUDA
+            mps_enabled: Whether to use macOS GPU
+        """
+        # Determine which device to use
+        cuda_enabled = torch.cuda.is_available() and cuda_enabled
+        mps_enabled = torch.backends.mps.is_available() and mps_enabled
+        if cuda_enabled:
+            device = torch.device("cuda")
+        elif mps_enabled:
+            device = torch.device("mps")
+        else:
+            device = torch.device("cpu")
+
+        # Load assignment data
+        dataset = AssignmentDataset(assignment_file)
+        loader_kwargs = dict(batch_size=len(dataset))
+        if cuda_enabled:
+            loader_kwargs.update(dict(num_workers=1, pin_memory=True, shuffle=True))
+        loader = DataLoader(dataset, **loader_kwargs)
+        data = list(loader)[0]
+        data = data.to(device)
+        self.dataset = dataset
+
         self.app = Flask(__name__)
-        self.persistent_path = Path(
-            getenv("PERSISTANT_STORATE_DIR", Path(__file__).parent)
-        )
-        self.db_path = self.persistent_path / "sqlite.db"
 
-        self.app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{self.db_path}"
-        self.app.config["SQLALCHEMY_ECHO"] = False
-        self.app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-
-        self.db = SQLAlchemy(self.app)
-
-        self.app.Author = get_model_author(self.db)
-        self.app.Book = get_model_book(self.db)
-
-        route_index(self.app, self.db)
-        route_books(self.app, self.db)
-
-        with self.app.app_context():
-            self.db.create_all()
+        route_index(self)
 
     def run(self, **kwargs: Any) -> None:
         self.app.run(**kwargs)

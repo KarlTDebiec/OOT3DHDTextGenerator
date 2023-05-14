@@ -7,7 +7,7 @@ from __future__ import annotations
 from argparse import ArgumentParser
 from typing import Any
 
-from oot3dhdtextgenerator.apps.char_assigner import CharAssigner
+from oot3dhdtextgenerator.apps.char_assigner.char_assigner import CharAssigner
 from oot3dhdtextgenerator.common import (
     CommandLineInterface,
     get_arg_groups_by_name,
@@ -42,7 +42,7 @@ class CharAssignerCli(CommandLineInterface):
             type=int_arg(min_value=10, max_value=9933),
             default=1000,
             help="number of characters included in model, starting from the most "
-                 "common and ending with the least common (default: %(default)d, max: 9933)",
+            "common and ending with the least common (default: %(default)d, max: 9933)",
         )
         arg_groups["input arguments"].add_argument(
             "--assignment-file",

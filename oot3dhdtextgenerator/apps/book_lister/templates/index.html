@@ -41,17 +41,26 @@
     </style>
 </head>
 <body>
-<h1>Characters</h1>
+<h1>Book Recommendations</h1>
+<form hx-post="/books" hx-swap="beforeend" hx-target="#new-book" class="mb-3">
+    <input type="text" placeholder="Book Title" name="title" class="form-control mb-3"/>
+    <input type="text" placeholder="Book Author" name="author"
+           class="form-control mb-3"/>
+    <button type="submit" class="btn btn-primary">Create</button>
+</form>
+
 <table class="table">
     <thead>
     <tr>
-        <th scope="col">Image</th>
-        <th scope="col">Assignment</th>
+        <th scope="col">Book Title</th>
+        <th scope="col">Book Author</th>
     </tr>
     </thead>
-    <tbody hx-target="closest tr" hx-swap="outerHTML swap:0.1s">
-    {% for character in characters %}
-    {% include 'character.html' %}
+    <tbody id="new-book" hx-target="closest tr" hx-swap="outerHTML swap:0.1s">
+    {% for book_and_author in books_and_authors %}
+    {% with book=book_and_author.Book, author=book_and_author.Author %}
+    {% include 'books/book.html' %}
+    {% endwith %}
     {% endfor %}
     </tbody>
 </table>

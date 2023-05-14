@@ -10,9 +10,6 @@ from torch.utils.data import DataLoader
 
 from oot3dhdtextgenerator.core import AssignmentDataset
 
-# TODO: Don't require n_chars
-# TODO: Create a web GUI
-
 
 class CharAssigner:
     """Character assigner"""
