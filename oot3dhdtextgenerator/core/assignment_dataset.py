@@ -146,7 +146,7 @@ class AssignmentDataset(VisionDataset):
 
     @classmethod
     def array_to_bytes(cls, char_array: np.ndarray) -> bytes:
-        """Convert car array to char bytes.
+        """Convert char array to char bytes.
 
         Arguments:
             char_array: Char array

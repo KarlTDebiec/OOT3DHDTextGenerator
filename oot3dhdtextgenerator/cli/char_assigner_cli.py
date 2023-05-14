@@ -76,7 +76,7 @@ class CharAssignerCli(CommandLineInterface):
     @classmethod
     def main_internal(cls, **kwargs: Any) -> None:
         """Execute with provided keyword arguments."""
-        app.run()
+        app.run(port=5001)
 
 
 if __name__ == "__main__":
