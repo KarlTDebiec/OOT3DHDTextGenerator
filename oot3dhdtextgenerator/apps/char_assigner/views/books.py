@@ -9,7 +9,7 @@ from oot3dhdtextgenerator.apps.char_assigner.models import Author, Book
 
 @app.route("/books", methods=["POST"])
 def create():
-    title = request.form.get("title")
+    book_title = request.form.get("title")
     author_name = request.form.get("author")
 
     author = db.session.query(Author).filter(Author.name == author_name).first()
@@ -18,14 +18,14 @@ def create():
         db.session.add(author)
         db.session.commit()
 
-    book = Book(author_id=author.author_id, title=title)
+    book = Book(author_id=author.author_id, title=book_title)
     db.session.add(book)
     db.session.commit()
 
     response = f"""
     <tr>
-        <td>{title}</td>
-        <td>{author_name}</td>
+        <td>{book.title}</td>
+        <td>{author.name}</td>
         <td>
             <button hx-get="/books/{book.book_id}/edit" class="btn btn-primary" >
                 Edit Title
@@ -110,13 +110,12 @@ def update(id):
     )
     db.session.commit()
 
-    title = request.form["title"]
     book = Book.query.get(id)
     author = Author.query.get(book.author_id)
 
     response = f"""
     <tr>
-        <td>{title}</td>
+        <td>{book.title}</td>
         <td>{author.name}</td>
         <td>
             <button hx-get="/books/{id}/edit" class="btn btn-primary">

@@ -8,7 +8,7 @@ from oot3dhdtextgenerator.apps.char_assigner.models import Author, Book
 
 @app.route("/", methods=["GET"])
 def index():
-    books = (
+    books_and_authors = (
         db.session.query(Book, Author).filter(Book.author_id == Author.author_id).all()
     )
-    return render_template("index.html", books=books)
+    return render_template("index.html", books_and_authors=books_and_authors)

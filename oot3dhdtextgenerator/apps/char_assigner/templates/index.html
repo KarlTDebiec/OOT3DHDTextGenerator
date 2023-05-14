@@ -57,23 +57,11 @@
     </tr>
     </thead>
     <tbody id="new-book" hx-target="closest tr" hx-swap="outerHTML swap:0.1s">
-    {%for book in books%}
-    <tr>
-        <td>{{book.Book.title}}</td>
-        <td>{{book.Author.name}}</td>
-        <td>
-            <button class="btn btn-primary"
-                    hx-get="/books/{{book.Book.book_id}}/edit">
-                Edit Title
-            </button>
-        </td>
-        <td>
-            <button hx-delete="/books/{{book.Book.book_id}}" class="btn btn-primary">
-                Delete
-            </button>
-        </td>
-    </tr>
-    {%endfor%}
+    {% for book_and_author in books_and_authors %}
+    {% with book=book_and_author.Book, author=book_and_author.Author %}
+    {% include 'books/book.html' %}
+    {% endwith %}
+    {% endfor %}
     </tbody>
 </table>
 </body>
