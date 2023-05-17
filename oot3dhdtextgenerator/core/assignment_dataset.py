@@ -46,6 +46,15 @@ class AssignmentDataset(VisionDataset):
         char_image = Image.fromarray(char_array)
         char_tensor = self.transform(char_image)
 
+        # char_tensor.min()
+        # Out[1]: tensor(-0.4242)
+        # char_tensor.max()
+        # Out[2]: tensor(2.8215)
+        # char_tensor.mean()
+        # Out[3]: tensor(0.6602)
+        # char_tensor.median()
+        # Out[4]: tensor(-0.2078)
+
         return char_tensor
 
     def __len__(self) -> int:
@@ -56,21 +65,29 @@ class AssignmentDataset(VisionDataset):
         """String representation."""
         return f"<{self.__class__.__name__}>"
 
-    def assign(self, char_array: np.ndarray, char: str) -> None:
+    def assign(self, char_array: np.ndarray, char: str | None) -> None:
         """Assign char to char array.
 
         Arguments:
             char_array: Char array to assign
             char: Char to assign
         """
-        if len(char) != 1:
-            raise ValueError(f"Character {char} must be a single character")
         char_bytes = self.array_to_bytes(char_array)
+
+        if char is None:
+            self.assigned_char_bytes.pop(char_bytes)
+            self.unassigned_char_bytes.append(char_bytes)
+            info(f"Unassigned {char}")
+            return
+
+        if len(char) != 1:
+            raise ValueError(f"Character {char} must be a single character or None")
+
         if char_bytes in self.unassigned_char_bytes:
             self.unassigned_char_bytes.pop(self.unassigned_char_bytes.index(char_bytes))
-            info(f"Assigning {char}")
+            info(f"Assigned {char}")
         else:
-            info(f"Reassigning {self.assigned_char_bytes[char_bytes]} to {char}")
+            info(f"Reassigned {self.assigned_char_bytes[char_bytes]} to {char}")
         self.assigned_char_bytes[char_bytes] = char
 
     def get_chars_for_multi_char_array(
@@ -226,10 +243,16 @@ class AssignmentDataset(VisionDataset):
             if "assignments" in h5_file:
                 del h5_file["assignments"]
             if len(assigned_char_bytes) > 0:
+                sorted_assigned_char_bytes = {
+                    k: v
+                    for k, v in sorted(
+                        assigned_char_bytes.items(), key=lambda item: item[1]
+                    )
+                }
                 h5_file.create_dataset(
                     f"assigned",
                     data=np.array(
-                        list(map(cls.bytes_to_array, assigned_char_bytes.keys()))
+                        list(map(cls.bytes_to_array, sorted_assigned_char_bytes.keys()))
                     ),
                     dtype=np.uint8,
                     chunks=True,
@@ -237,7 +260,7 @@ class AssignmentDataset(VisionDataset):
                 )
                 h5_file.create_dataset(
                     f"assignments",
-                    data=cls.encode_chars(assigned_char_bytes.values()),
+                    data=cls.encode_chars(sorted_assigned_char_bytes.values()),
                     dtype="S4",
                     chunks=True,
                     compression="gzip",

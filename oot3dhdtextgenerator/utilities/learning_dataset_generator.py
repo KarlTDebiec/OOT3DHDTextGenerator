@@ -38,8 +38,8 @@ class LearningDatasetGenerator:
         ]
         sizes = [14, 15, 16]
         offsets = [-1, 0, 1]
-        fills = [225, 235, 245]
-        rotations = [-2, 0, 2]
+        fills = [255]
+        rotations = [-5, 0, 5]
         info(
             f"Generating images of "
             f"{n_chars} character{'s' if n_chars > 1 else ''} using "
@@ -139,6 +139,10 @@ class LearningDatasetGenerator:
         Returns:
             numpy array of character image
         """
+        # info(
+        #     f"Generating image of {char} with font {font}, size {size}, fill {fill}, "
+        #     f"x offset {x_offset}, y offset {y_offset}, and rotation {rotation}"
+        # )
         image = Image.new("L", (16, 16), 0)
         draw = ImageDraw.Draw(image)
         font_type = ImageFont.truetype(font, size)
@@ -148,6 +152,9 @@ class LearningDatasetGenerator:
         image = image.rotate(rotation)
         array = np.array(image)
         array = np.roll(array, (x_offset, y_offset), (0, 1))
+        # image = Image.fromarray(array)
+        # image.show()
+        # input()
 
         return array
 

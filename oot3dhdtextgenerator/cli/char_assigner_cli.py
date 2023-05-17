@@ -40,7 +40,7 @@ class CharAssignerCli(CommandLineInterface):
         arg_groups["input arguments"].add_argument(
             "--n_chars",
             type=int_arg(min_value=10, max_value=9933),
-            default=100,
+            default=10,
             help="number of characters included in model, starting from the most "
             "common and ending with the least common (default: %(default)d, max: 9933)",
         )
@@ -53,7 +53,7 @@ class CharAssignerCli(CommandLineInterface):
         arg_groups["input arguments"].add_argument(
             "--model-infile",
             type=output_file_arg(),
-            default="model_100.pth",
+            default="model_10.pth",
             help="model input file (default: %(default)s)",
         )
 

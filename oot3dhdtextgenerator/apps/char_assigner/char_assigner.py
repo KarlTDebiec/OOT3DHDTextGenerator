@@ -50,8 +50,6 @@ class CharAssigner:
         self.assignment_file = validate_input_file(assignment_file)
         dataset = AssignmentDataset(self.assignment_file)
         self.dataset = dataset
-
-        # Load model
         loader_kwargs = dict(batch_size=len(dataset))
         if cuda_enabled:
             loader_kwargs.update(dict(num_workers=1, pin_memory=True, shuffle=True))
@@ -75,7 +73,7 @@ class CharAssigner:
         i = 0
         for char_bytes, score in zip(dataset.unassigned_char_bytes, scores):
             char_array = dataset.bytes_to_array(char_bytes)
-            predictions = list(np.array(characters)[list(np.argsort(score)[::10])])
+            predictions = list(np.array(characters)[list(np.argsort(score)[-10:])])
             characters_for_frontend.append(Character(i, char_array, None, predictions))
             i += 1
         for char_bytes, assignment in dataset.assigned_char_bytes.items():
