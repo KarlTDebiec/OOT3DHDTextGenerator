@@ -6,6 +6,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import torch
 from flask import Flask
 from torch.utils.data import DataLoader
@@ -13,7 +14,8 @@ from torch.utils.data import DataLoader
 from oot3dhdtextgenerator.apps.char_assigner.character import Character
 from oot3dhdtextgenerator.apps.char_assigner.routes import route
 from oot3dhdtextgenerator.common import validate_input_file
-from oot3dhdtextgenerator.core import AssignmentDataset
+from oot3dhdtextgenerator.core import AssignmentDataset, Model
+from oot3dhdtextgenerator.data import characters
 
 
 class CharAssigner:
@@ -47,26 +49,41 @@ class CharAssigner:
         # Load assignment data
         self.assignment_file = validate_input_file(assignment_file)
         dataset = AssignmentDataset(self.assignment_file)
+        self.dataset = dataset
 
-        characters = []
-        i = 0
-        for char_bytes in dataset.unassigned_char_bytes:
-            char_array = dataset.bytes_to_array(char_bytes)
-            characters.append(Character(i, char_array, None))
-            i += 1
-        for char_bytes, assignment in dataset.assigned_char_bytes.items():
-            char_array = dataset.bytes_to_array(char_bytes)
-            characters.append(Character(i, char_array, assignment))
-            i += 1
-        self.characters = characters
-
+        # Load model
         loader_kwargs = dict(batch_size=len(dataset))
         if cuda_enabled:
             loader_kwargs.update(dict(num_workers=1, pin_memory=True, shuffle=True))
         loader = DataLoader(dataset, **loader_kwargs)
         data = list(loader)[0]
         data = data.to(device)
-        self.dataset = dataset
+
+        # Load model
+        model = Model(n_chars)
+        state_dict = torch.load(model_infile)
+        model.load_state_dict(state_dict)
+        model.eval()
+        model = model.to(device)
+
+        # Get predictions
+        scores = model(data)
+        scores = scores.detach().cpu().numpy()
+
+        # Prepare characters for frontend
+        characters_for_frontend = []
+        i = 0
+        for char_bytes, score in zip(dataset.unassigned_char_bytes, scores):
+            char_array = dataset.bytes_to_array(char_bytes)
+            predictions = list(np.array(characters)[list(np.argsort(score)[::10])])
+            characters_for_frontend.append(Character(i, char_array, None, predictions))
+            i += 1
+        for char_bytes, assignment in dataset.assigned_char_bytes.items():
+            char_array = dataset.bytes_to_array(char_bytes)
+            characters_for_frontend.append(Character(i, char_array, assignment))
+            i += 1
+
+        self.characters = characters_for_frontend
 
         self.app = Flask(__name__)
 

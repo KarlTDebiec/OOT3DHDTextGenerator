@@ -22,6 +22,7 @@
     <td>
         <img src="{{character.image}}">
     </td>
+    {% if character.predictions is not none %}
     {% for prediction in character.predictions %}
     <td>
         <button>
@@ -29,4 +30,9 @@
         </button>
     </td>
     {% endfor %}
+    {% else %}
+    {% for _ in range(10) %}
+        <td></td>
+    {% endfor %}
+    {% endif %}
 </tr>
