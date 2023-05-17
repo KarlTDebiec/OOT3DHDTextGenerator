@@ -269,9 +269,13 @@ class AssignmentDataset(VisionDataset):
             if "unassigned" in h5_file:
                 del h5_file["unassigned"]
             if len(unassigned_char_bytes) > 0:
+                unassigned_arrays = list(map(cls.bytes_to_array, unassigned_char_bytes))
+                sorted_unassigned_arrays = sorted(
+                    unassigned_arrays, key=lambda x: x.sum()
+                )
                 h5_file.create_dataset(
                     f"unassigned",
-                    data=np.array(list(map(cls.bytes_to_array, unassigned_char_bytes))),
+                    data=np.array(sorted_unassigned_arrays),
                     dtype=np.uint8,
                     chunks=True,
                     compression="gzip",
