@@ -10,7 +10,9 @@ import torch
 from flask import Flask
 from torch.utils.data import DataLoader
 
-from oot3dhdtextgenerator.apps.char_assigner.routes.index import route_index
+from oot3dhdtextgenerator.apps.char_assigner.character import Character
+from oot3dhdtextgenerator.apps.char_assigner.routes import route
+from oot3dhdtextgenerator.common import validate_input_file
 from oot3dhdtextgenerator.core import AssignmentDataset
 
 
@@ -43,7 +45,21 @@ class CharAssigner:
             device = torch.device("cpu")
 
         # Load assignment data
-        dataset = AssignmentDataset(assignment_file)
+        self.assignment_file = validate_input_file(assignment_file)
+        dataset = AssignmentDataset(self.assignment_file)
+
+        characters = []
+        i = 0
+        for char_bytes in dataset.unassigned_char_bytes:
+            char_array = dataset.bytes_to_array(char_bytes)
+            characters.append(Character(i, char_array, None))
+            i += 1
+        for char_bytes, assignment in dataset.assigned_char_bytes.items():
+            char_array = dataset.bytes_to_array(char_bytes)
+            characters.append(Character(i, char_array, assignment))
+            i += 1
+        self.characters = characters
+
         loader_kwargs = dict(batch_size=len(dataset))
         if cuda_enabled:
             loader_kwargs.update(dict(num_workers=1, pin_memory=True, shuffle=True))
@@ -54,7 +70,7 @@ class CharAssigner:
 
         self.app = Flask(__name__)
 
-        route_index(self)
+        route(self)
 
     def run(self, **kwargs: Any) -> None:
         self.app.run(**kwargs)

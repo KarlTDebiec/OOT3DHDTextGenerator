@@ -2,25 +2,57 @@
   ~ Copyright 2020-2023 Karl T Debiec. All rights reserved. This software may be modified
   ~ and distributed under the terms of the BSD license. See the LICENSE file for details.
   -->
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Flask HTMX ALPINE App</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/css/bootstrap.min.css"
-          rel="stylesheet"
-          integrity="sha384-giJF6kkoqNQ00vy+HMDP7azOuL0xtbfIcaT9wjKHr8RbDVddVHyTfAAsrekwKmP1"
-          crossorigin="anonymous">
+    <meta charset="utf-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <!-- HTMX -->
     <script src="https://unpkg.com/htmx.org@1.5.0"></script>
     <style>
         body {
-            padding: 20px;
+            /*padding: 0;*/
+        }
+
+        input {
+            border: 2px;
+            font-size: 5vw;
+            height: 100%;
+            padding: 0;
+            text-align: center;
+            width: 100%;
+        }
+
+        img {
+            border: 2px;
+            height: 6vw;
+            image-rendering: pixelated;
+            padding: 0;
+            width: 6vw;
+            vertical-align: middle;
+        }
+
+        button {
+            border: 2px;
+            height: 100%;
+            font-size: 5vw;
+            padding: 0;
+            width: 100%;
         }
 
         table {
-            font-family: arial, sans-serif;
-            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        tr {
+            height: 100%;
+            width: 100%;
+        }
+
+        td {
+            height: 100%;
+            text-align: center;
             width: 100%;
         }
 
@@ -29,24 +61,32 @@
             transition: opacity 0.5s ease-out;
         }
 
-        td, th {
-            border: 1px solid #383737;
-            text-align: left;
-            padding: 8px;
-        }
-
         tr:nth-child(even) {
             background-color: #dddddd;
         }
     </style>
+    <title>Flask HTMX ALPINE App</title>
 </head>
 <body>
 <h1>Characters</h1>
-<table class="table">
+<table class="table" width="100%">
     <thead>
     <tr>
-        <th scope="col">Image</th>
-        <th scope="col">Assignment</th>
+        <th rowspan="2">Assignment</th>
+        <th rowspan="2">Image</th>
+        <th colspan="10">Prediction</th>
+    </tr>
+    <tr>
+        <th>1</th>
+        <th>2</th>
+        <th>3</th>
+        <th>4</th>
+        <th>5</th>
+        <th>6</th>
+        <th>7</th>
+        <th>8</th>
+        <th>9</th>
+        <th>10</th>
     </tr>
     </thead>
     <tbody hx-target="closest tr" hx-swap="outerHTML swap:0.1s">

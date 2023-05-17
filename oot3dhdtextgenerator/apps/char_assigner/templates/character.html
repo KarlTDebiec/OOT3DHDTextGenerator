@@ -3,8 +3,30 @@
   ~ and distributed under the terms of the BSD license. See the LICENSE file for details.
   -->
 <tr>
-    <td style="width: 5%;">
-        <img src="{{ character.image }}" width="400" style="width: 100%; image-rendering: pixelated;">
+    <td>
+        {% if character.assignment is not none %}
+        <input type="text"
+               maxlength="1"
+               name="assignment"
+               hx-put="/characters/{{character.id}}"
+               hx-trigger="blur"
+               value="{{character.assignment}}">
+        {% else %}
+        <input type="text"
+               maxlength="1"
+               name="assignment"
+               hx-put="/characters/{{character.id}}"
+               hx-trigger="blur">
+        {% endif %}
     </td>
-    <td>{{character.assignment}}</td>
+    <td>
+        <img src="{{character.image}}">
+    </td>
+    {% for prediction in character.predictions %}
+    <td>
+        <button>
+            {{prediction}}
+        </button>
+    </td>
+    {% endfor %}
 </tr>

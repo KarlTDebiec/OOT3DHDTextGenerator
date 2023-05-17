@@ -63,18 +63,14 @@ class AssignmentDataset(VisionDataset):
             char_array: Char array to assign
             char: Char to assign
         """
-        char_bytes = self.array_to_bytes(char_array)
-        if char_bytes not in self.unassigned_char_bytes:
-            raise ValueError(f"Character not unassigned")
-        if char_bytes in self.assigned_char_bytes:
-            raise ValueError(
-                "Character already assigned to "
-                f"{self.assigned_char_bytes[char_bytes]}, cannot assign to {char}"
-            )
         if len(char) != 1:
             raise ValueError(f"Character {char} must be a single character")
-
-        self.unassigned_char_bytes.pop(self.unassigned_char_bytes.index(char_bytes))
+        char_bytes = self.array_to_bytes(char_array)
+        if char_bytes in self.unassigned_char_bytes:
+            self.unassigned_char_bytes.pop(self.unassigned_char_bytes.index(char_bytes))
+            info(f"Assigning {char}")
+        else:
+            info(f"Reassigning {self.assigned_char_bytes[char_bytes]} to {char}")
         self.assigned_char_bytes[char_bytes] = char
 
     def get_chars_for_multi_char_array(
@@ -257,3 +253,4 @@ class AssignmentDataset(VisionDataset):
                     chunks=True,
                     compression="gzip",
                 )
+        info(f"Saved AssignmentDataset to {outfile}")
