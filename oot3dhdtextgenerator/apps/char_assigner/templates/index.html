@@ -1,59 +1,44 @@
-<!--
-  ~ Copyright 2020-2023 Karl T Debiec. All rights reserved. This software may be modified
-  ~ and distributed under the terms of the BSD license. See the LICENSE file for details.
-  -->
-<!DOCTYPE html>
-<html lang="en">
+{# Copyright 2020-2023 Karl T Debiec. All rights reserved. This software may be modified
+and distributed under the terms of the BSD license. See the LICENSE file for details. #}
 <head>
     <meta charset="utf-8">
     <meta name="viewport"
           content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <!-- HTMX -->
     <script src="https://unpkg.com/htmx.org@1.5.0"></script>
     <style>
-        body {
-            /*padding: 0;*/
-        }
-
         input {
-            border: 2px;
-            font-size: 5vw;
-            height: 100%;
-            padding: 0;
+            border-style: inset;
+            font-size: 4vw;
             text-align: center;
-            width: 100%;
         }
 
         img {
-            border: 2px;
-            height: 6vw;
+            border-style: solid;
             image-rendering: pixelated;
-            padding: 0;
-            width: 6vw;
-            vertical-align: middle;
         }
 
         button {
-            border: 2px;
-            height: 100%;
-            font-size: 5vw;
-            padding: 0;
-            width: 100%;
+            border-style: outset;
+            font-size: 4vw;
         }
 
         table {
-            table-layout: fixed;
+            border-collapse: collapse;
+            margin-left: auto;
+            margin-right: auto;
         }
 
-        tr {
-            height: 100%;
-            width: 100%;
+        th {
+            max-width: 7.5vw;
+            overflow: hidden;
+            padding-bottom: max(0.5vw, 5px);
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            width: 7.5vw;
         }
 
         td {
-            height: 100%;
-            text-align: center;
-            width: 100%;
+            padding-bottom: max(0.5vw, 5px);
         }
 
         tr.htmx-swapping td {
@@ -61,15 +46,30 @@
             transition: opacity 0.5s ease-out;
         }
 
-        tr:nth-child(even) {
-            background-color: #dddddd;
+        .centered {
+            align-items: center;
+            aspect-ratio: 1;
+            display: flex;
+            justify-content: center;
+        }
+
+        .content {
+            aspect-ratio: 1;
+            border-radius: max(0.4vw, 4px);
+            border-style: inset;
+            border-width: max(0.2vw, 2px);
+            font-size: 4vw;
+            margin: max(0.1vw, 1px);
+            padding: max(0.4vw, 4px);
+            text-align: center;
+            width: 100%;
         }
     </style>
     <title>Flask HTMX ALPINE App</title>
 </head>
 <body>
 <h1>Characters</h1>
-<table class="table" width="100%">
+<table>
     <thead>
     <tr>
         <th rowspan="2">Assignment</th>

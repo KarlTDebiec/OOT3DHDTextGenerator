@@ -1,38 +1,44 @@
-<!--
-  ~ Copyright 2020-2023 Karl T Debiec. All rights reserved. This software may be modified
-  ~ and distributed under the terms of the BSD license. See the LICENSE file for details.
-  -->
+{# Copyright 2020-2023 Karl T Debiec. All rights reserved. This software may be modified
+and distributed under the terms of the BSD license. See the LICENSE file for details. #}
 <tr>
     <td>
-        {% if character.assignment is not none %}
-        <input type="text"
-               maxlength="1"
-               name="assignment"
-               hx-put="/characters/{{character.id}}"
-               hx-trigger="blur"
-               value="{{character.assignment}}">
-        {% else %}
-        <input type="text"
-               maxlength="1"
-               name="assignment"
-               hx-put="/characters/{{character.id}}"
-               hx-trigger="blur">
-        {% endif %}
+        <div class="centered">
+            {% if character.assignment is not none %}
+            <input class="content"
+                   type="text"
+                   maxlength="1"
+                   name="assignment"
+                   hx-put="/characters/{{character.id}}"
+                   hx-trigger="blur"
+                   value="{{character.assignment}}">
+            {% else %}
+            <input class="content"
+                   type="text"
+                   maxlength="1"
+                   name="assignment"
+                   hx-put="/characters/{{character.id}}"
+                   hx-trigger="blur">
+            {% endif %}
+        </div>
     </td>
     <td>
-        <img src="{{character.image}}">
+        <div class="centered">
+            <img class="content" src="{{character.image}}">
+        </div>
     </td>
     {% if character.predictions is not none %}
     {% for prediction in character.predictions %}
     <td>
-        <button>
-            {{prediction}}
-        </button>
+        <div class="centered">
+            <button class="content">
+                {{prediction}}
+            </button>
+        </div>
     </td>
     {% endfor %}
     {% else %}
     {% for _ in range(10) %}
-        <td></td>
+    <td></td>
     {% endfor %}
     {% endif %}
 </tr>
