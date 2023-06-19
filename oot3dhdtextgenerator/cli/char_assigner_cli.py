@@ -7,7 +7,7 @@ from __future__ import annotations
 from argparse import ArgumentParser
 from typing import Any
 
-from oot3dhdtextgenerator.apps.char_assigner.char_assigner import CharAssigner
+from oot3dhdtextgenerator.apps import CharAssigner
 from oot3dhdtextgenerator.common import (
     CommandLineInterface,
     get_arg_groups_by_name,

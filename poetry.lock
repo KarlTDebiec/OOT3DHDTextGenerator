@@ -1536,7 +1536,7 @@ triton = {version = "2.0.0", markers = "sys_platform == \"linux\""}
 type = "git"
 url = "https://github.com/KarlTDebiec/PipeScaler"
 reference = "HEAD"
-resolved_reference = "a3dbc7970e982743796014a5de63c5d79add0d39"
+resolved_reference = "6896448f044a1d2fe43016634f42ca1f92f6434d"
 
 [[package]]
 name = "platformdirs"
@@ -2625,4 +2625,4 @@ resolved_reference = "0352a872e6ef48997d758b20b8a180e6fb3114ae"
 [metadata]
 lock-version = "2.0"
 python-versions = "~3.11"
-content-hash = "ec3c1aaaa511df1a15345fc60fe8e74110de84442a133a177b471c473e34eaf9"
+content-hash = "dbddff74b876c7450c848f2424382030ef2f1a3ef6b8bc26eb668ab5059c13b0"
