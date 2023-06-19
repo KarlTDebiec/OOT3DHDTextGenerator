@@ -11,6 +11,7 @@ from random import sample
 
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
+from pipescaler.core import Utility
 
 from oot3dhdtextgenerator.core import LearningDataset
 from oot3dhdtextgenerator.data import hanzi_frequency
@@ -18,7 +19,7 @@ from oot3dhdtextgenerator.data import hanzi_frequency
 # TODO: Expose settings for image font, sizes, offsets, fills, and rotations
 
 
-class LearningDatasetGenerator:
+class LearningDatasetGenerator(Utility):
     """Learning dataset generator."""
 
     @classmethod

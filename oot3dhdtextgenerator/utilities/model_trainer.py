@@ -7,6 +7,7 @@ from logging import info
 from pathlib import Path
 
 import torch
+from pipescaler.core import Utility
 from torch.nn.functional import nll_loss
 from torch.optim import Adadelta, Optimizer
 from torch.optim.lr_scheduler import StepLR
@@ -18,7 +19,7 @@ from oot3dhdtextgenerator.core import LearningDataset, Model
 # TODO: Load existing model
 
 
-class ModelTrainer:
+class ModelTrainer(Utility):
     """Optical character recognition model trainer."""
 
     @classmethod
