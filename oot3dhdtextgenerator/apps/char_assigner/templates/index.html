@@ -1,0 +1,106 @@
+{# Copyright 2020-2023 Karl T Debiec. All rights reserved. This software may be modified
+and distributed under the terms of the BSD license. See the LICENSE file for details. #}
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <script src="https://unpkg.com/htmx.org@1.5.0"></script>
+    <style>
+
+        button {
+            border-style: outset;
+            font-size: 4vw;
+        }
+
+        form {
+            border-style: none;
+            margin: 0;
+        }
+
+        img {
+            border-style: solid;
+            image-rendering: pixelated;
+        }
+
+        input {
+            border-style: inset;
+            font-size: 4vw;
+            text-align: center;
+        }
+
+        table {
+            border-collapse: collapse;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        td {
+            padding-bottom: max(0.5vw, 5px);
+        }
+
+        th {
+            max-width: 7.5vw;
+            overflow: hidden;
+            padding-bottom: max(0.5vw, 5px);
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            width: 7.5vw;
+        }
+
+
+        tr.htmx-swapping td {
+            opacity: 0;
+            transition: opacity 0.5s ease-out;
+        }
+
+        .centered {
+            align-items: center;
+            aspect-ratio: 1;
+            display: flex;
+            justify-content: center;
+        }
+
+        .content {
+            aspect-ratio: 1;
+            border-radius: max(0.4vw, 4px);
+            border-style: inset;
+            border-width: max(0.2vw, 2px);
+            font-size: 4vw;
+            margin: max(0.1vw, 1px);
+            padding: max(0.4vw, 4px);
+            text-align: center;
+            width: 100%;
+        }
+    </style>
+    <title>Flask HTMX ALPINE App</title>
+</head>
+<body>
+<h1>Characters</h1>
+<table>
+    <thead>
+    <tr>
+        <th rowspan="2">Assignment</th>
+        <th rowspan="2">Image</th>
+        <th colspan="10">Prediction</th>
+    </tr>
+    <tr>
+        <th>1</th>
+        <th>2</th>
+        <th>3</th>
+        <th>4</th>
+        <th>5</th>
+        <th>6</th>
+        <th>7</th>
+        <th>8</th>
+        <th>9</th>
+        <th>10</th>
+    </tr>
+    </thead>
+    <tbody hx-target="closest tr" hx-swap="outerHTML swap:0.1s">
+    {% for character in characters %}
+    {% include 'character.html' %}
+    {% endfor %}
+    </tbody>
+</table>
+</body>
+</html>

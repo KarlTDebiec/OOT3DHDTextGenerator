@@ -1,0 +1,4 @@
+[submodule "oot3dhdtextgenerator/common"]
+    path    = oot3dhdtextgenerator/common
+    url     = https://github.com/KarlTDebiec/common.git
+    branch  = oot3dhdtextgenerator/master
