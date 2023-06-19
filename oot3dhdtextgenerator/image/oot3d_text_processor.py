@@ -7,11 +7,11 @@ from logging import info
 from typing import Any
 
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 from pipescaler.common import PathLike
 from pipescaler.image.core.operators import ImageProcessor
 
-from oot3dhdtextgenerator.common import validate_output_file
+from oot3dhdtextgenerator.common import validate_int, validate_output_file
 from oot3dhdtextgenerator.core import AssignmentDataset
 
 
@@ -21,9 +21,9 @@ class OOT3DHDTextProcessor(ImageProcessor):
     def __init__(
         self,
         assignment_file: PathLike,
-        # font: str,
-        # size: int,
-        # offset: tuple[int, int] = (0, 0),
+        font: str = r"C:\Windows\Fonts\simhei.ttf",
+        size: int = 48,
+        offset: tuple[int, int] = (0, 0),
         **kwargs: Any,
     ):
         super().__init__(**kwargs)
@@ -31,30 +31,53 @@ class OOT3DHDTextProcessor(ImageProcessor):
         self.assignment_file = validate_output_file(assignment_file, may_exist=True)
         self.assignment_dataset = AssignmentDataset(self.assignment_file)
 
-        # self.font = font
-        # self.size = validate_int(size, 1)
-        # self.offset = offset
+        self.font = ImageFont.truetype(font, validate_int(size, 1))
+        self.size = validate_int(size, 1)
+        self.offset = offset
 
     def __call__(self, input_image: Image.Image) -> Image.Image:
         array = np.array(input_image)[:, :, 3]
         chars = self.assignment_dataset.get_chars_for_multi_char_array(array)
         if chars is None:
             raise FileNotFoundError(f"{self}: Image contains unknown characters")
+        output_image = self.create_image(input_image, chars)
 
-        return input_image
+        return output_image
 
     def __repr__(self) -> str:
         """Representation."""
         return f"{self.__class__.__name__}(assignment_file={self.assignment_file!r})"
 
-    # def create_image(self, characters: list[str]) -> PipeImage:
-    #     hires_image = Image.new("L", (1024, 1024), 0)
-    #     draw = ImageDraw.Draw(hires_image)
-    #     x = self.offset[0]
-    #     y = self.offset[1]
-    #     for character in characters:
-    #         draw.text((x, y), character, font=self.font, fill=255, align="center")
-    #         x += self.size
+    def create_image(self, input_image, characters: list[str]) -> Image.Image:
+        """Create image from characters.
+
+        Arguments:
+            input_image (Image.Image): Input image
+            characters (list[str]): Characters to draw
+        Returns:
+            Image.Image: Output image
+        """
+        output_image_alpha = Image.new(
+            "L", (input_image.size[0] * 4, input_image.size[1] * 4), 0
+        )
+        draw = ImageDraw.Draw(output_image_alpha)
+        x = self.offset[0]
+        y = self.offset[1]
+        for i, character in enumerate(characters, 1):
+            draw.text((x, y), character, font=self.font, fill=255, align="center")
+            if i % 16 == 0:
+                y += 64
+                x = self.offset[0]
+            else:
+                x += 64
+
+        output_array = np.zeros(
+            (input_image.size[0] * 4, input_image.size[1] * 4, 4), dtype=np.uint8
+        )
+        output_array[:, :, 3] = np.array(output_image_alpha)
+        output_image = Image.fromarray(output_array, mode="RGBA")
+
+        return output_image
 
     def save_assignment_dataset(self):
         """Save assignment dataset to HDF5 file."""

@@ -70,15 +70,6 @@ class LearningDataset(VisionDataset):
         if self.target_transform:
             target = self.target_transform(target)
 
-        # image.min()
-        # Out[2]: tensor(-0.4242)
-        # image.max()
-        # Out[3]: tensor(2.7197)
-        # image.mean()
-        # Out[4]: tensor(0.3201)
-        # image.median()
-        # Out[5]: tensor(-0.4242)
-
         return image, target
 
     def __len__(self) -> int:

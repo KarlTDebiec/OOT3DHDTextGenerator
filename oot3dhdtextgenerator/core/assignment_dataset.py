@@ -100,26 +100,23 @@ class AssignmentDataset(VisionDataset):
         # Extract each character and check if it is assigned
         all_chars_assigned = True
         chars = []
-        breaking = False
         for x in range(0, multi_char_array.shape[0], self.char_array_shape[0]):
             for y in range(0, multi_char_array.shape[1], self.char_array_shape[1]):
                 char_array = multi_char_array[
                     x : x + self.char_array_shape[0], y : y + self.char_array_shape[1]
                 ]
                 if char_array.sum() == 0:
-                    breaking = True
-                    break
+                    chars.append(" ")
+                    continue
                 char = self.get_char_for_char_array(char_array)
                 if char is None:
                     all_chars_assigned = False
                 else:
                     chars.append(char)
-            if breaking:
-                break
 
         # Return assignments, if all characters are assigned, or None otherwise
         if all_chars_assigned:
-            return "".join(chars)
+            return "".join(chars).rstrip()
         return None
 
     def get_char_for_char_array(self, char_array: np.ndarray) -> str | None:
