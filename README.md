@@ -46,12 +46,11 @@ and limits the usefulness of the script for these localizations. It is still ful
 functional, but in practice a relatively small portion of displayed text will be high
 resolution.
 
-**Fortunately**, the Chinese localization, for which this script was originally designed
-to be used, clears the text image between usages, making it viable to generate a high
-resolution text package for this language. A simplified Chinese high resolution text
-package covering most of the game text has been created and is available on the
-[releases page](https://github.com/KarlTDebiec/OOT3DHDTextGenerator/releases/). The
-script may be run while playing to capture any additional text missing from the package.
+**Fortunately**, the Chinese localization, for which this package was originally
+designed to be used, clears the text image between usages, making it viable to generate
+a high resolution text package for this language. A simplified Chinese high resolution
+text package covering most of the game text has been created and is available on the
+[releases page](https://github.com/KarlTDebiec/OOT3DHDTextGenerator/releases/).
 
 ## License
 

@@ -3,7 +3,7 @@
 """Assignment project."""
 from __future__ import annotations
 
-from logging import info
+from logging import info, debug
 from pathlib import Path
 from typing import Iterable
 
@@ -138,11 +138,13 @@ class AssignmentDataset(VisionDataset):
         char_bytes = self.array_to_bytes(char_array)
         if char_bytes in self.assigned_char_bytes:
             char = self.assigned_char_bytes[char_bytes]
-            info(f"Assigned character {char} retrieved")
+            debug(f"Assigned character {char} retrieved")
             return char
         elif char_bytes not in self.unassigned_char_bytes:
             self.unassigned_char_bytes.append(char_bytes)
-            info(f"Unassigned character added, {len(self.unassigned_char_bytes)} total")
+            debug(
+                f"Unassigned character added, {len(self.unassigned_char_bytes)} total"
+            )
         return None
 
     @classmethod
