@@ -46,15 +46,6 @@ class AssignmentDataset(VisionDataset):
         char_image = Image.fromarray(char_array)
         char_tensor = self.transform(char_image)
 
-        # char_tensor.min()
-        # Out[1]: tensor(-0.4242)
-        # char_tensor.max()
-        # Out[2]: tensor(2.8215)
-        # char_tensor.mean()
-        # Out[3]: tensor(0.6602)
-        # char_tensor.median()
-        # Out[4]: tensor(-0.2078)
-
         return char_tensor
 
     def __len__(self) -> int:
