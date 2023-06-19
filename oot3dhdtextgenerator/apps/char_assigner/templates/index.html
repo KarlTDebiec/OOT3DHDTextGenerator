@@ -6,10 +6,15 @@ and distributed under the terms of the BSD license. See the LICENSE file for det
           content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <script src="https://unpkg.com/htmx.org@1.5.0"></script>
     <style>
-        input {
-            border-style: inset;
+
+        button {
+            border-style: outset;
             font-size: 4vw;
-            text-align: center;
+        }
+
+        form {
+            border-style: none;
+            margin: 0;
         }
 
         img {
@@ -17,15 +22,20 @@ and distributed under the terms of the BSD license. See the LICENSE file for det
             image-rendering: pixelated;
         }
 
-        button {
-            border-style: outset;
+        input {
+            border-style: inset;
             font-size: 4vw;
+            text-align: center;
         }
 
         table {
             border-collapse: collapse;
             margin-left: auto;
             margin-right: auto;
+        }
+
+        td {
+            padding-bottom: max(0.5vw, 5px);
         }
 
         th {
@@ -37,9 +47,6 @@ and distributed under the terms of the BSD license. See the LICENSE file for det
             width: 7.5vw;
         }
 
-        td {
-            padding-bottom: max(0.5vw, 5px);
-        }
 
         tr.htmx-swapping td {
             opacity: 0;

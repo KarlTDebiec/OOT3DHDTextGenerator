@@ -39,13 +39,13 @@ class ModelTrainerCli(UtilityCli):
         arg_groups["input arguments"].add_argument(
             "--train-infile",
             type=input_file_arg(),
-            default="train_10.h5",
+            default="train_9933.h5",
             help="train data input file (default: %(default)s)",
         )
         arg_groups["input arguments"].add_argument(
             "--test-infile",
             type=input_file_arg(),
-            default="test_10.h5",
+            default="test_9933.h5",
             help="test data input file (default: %(default)s)",
         )
 
@@ -53,13 +53,13 @@ class ModelTrainerCli(UtilityCli):
         arg_groups["operation arguments"].add_argument(
             "--batch-size",
             type=int,
-            default=10,
+            default=1000,
             help="batch size for training (default: %(default)d)",
         )
         arg_groups["operation arguments"].add_argument(
             "--test-batch-size",
             type=int,
-            default=100,
+            default=10000,
             help="batch size for testing (default: %(default)d)",
         )
         arg_groups["operation arguments"].add_argument(
@@ -111,13 +111,13 @@ class ModelTrainerCli(UtilityCli):
         arg_groups["output arguments"].add_argument(
             "--log-interval",
             type=int,
-            default=10,
+            default=1,
             help="training status logging interval (default: %(default)d)",
         )
         arg_groups["output arguments"].add_argument(
             "--model-outfile",
             type=output_file_arg(),
-            default="model_10.pth",
+            default="model_9933.pth",
             help="model output file (default: %(default)s)",
         )
 

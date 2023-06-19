@@ -8,9 +8,9 @@ and distributed under the terms of the BSD license. See the LICENSE file for det
                    type="text"
                    maxlength="1"
                    name="assignment"
+                   value="{{character.assignment}}"
                    hx-put="/characters/{{character.id}}"
-                   hx-trigger="blur"
-                   value="{{character.assignment}}">
+                   hx-trigger="blur">
             {% else %}
             <input class="content"
                    type="text"
@@ -29,11 +29,15 @@ and distributed under the terms of the BSD license. See the LICENSE file for det
     {% if character.predictions is not none %}
     {% for prediction in character.predictions %}
     <td>
-        <div class="centered">
-            <button class="content">
+        <form class="centered" hx-post="/your-url" hx-put="true">
+            <input type="hidden" name="assignment" value="{{prediction}}">
+            <button class="content"
+                    type="submit"
+                    hx-put="/characters/{{character.id}}"
+                    hx-trigger="click">
                 {{prediction}}
             </button>
-        </div>
+        </form>
     </td>
     {% endfor %}
     {% else %}

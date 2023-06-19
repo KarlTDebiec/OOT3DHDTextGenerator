@@ -44,7 +44,7 @@ class LearningDatasetGeneratorCli(UtilityCli):
         arg_groups["input arguments"].add_argument(
             "--n_chars",
             type=int_arg(min_value=10, max_value=9933),
-            default=10,
+            default=9933,
             help="number of characters to include in dataset, starting from the most "
             "common and ending with the least common (default: %(default)d, max: 9933)",
         )
@@ -62,13 +62,13 @@ class LearningDatasetGeneratorCli(UtilityCli):
         arg_groups["output arguments"].add_argument(
             "--train_outfile",
             type=output_file_arg(),
-            default="train_10.h5",
+            default="train_9933.h5",
             help="train output file (default: %(default)s)",
         )
         arg_groups["output arguments"].add_argument(
             "--test_outfile",
             type=output_file_arg(),
-            default="test_10.h5",
+            default="test_9933.h5",
             help="test output file (default: %(default)s)",
         )
 
