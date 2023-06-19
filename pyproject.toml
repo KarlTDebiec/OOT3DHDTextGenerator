@@ -33,6 +33,7 @@ Flask = "^2.2.2"
 pipescaler = {git = "https://github.com/KarlTDebiec/PipeScaler"}
 h5py = "^3.7.0"
 torchvision = "^0.15.2"
+torchinfo = "^1.8.0"
 
 [tool.poetry.dev-dependencies]
 black = "^23.3.0"
