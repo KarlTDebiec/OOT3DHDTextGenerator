@@ -12,8 +12,7 @@ from oot3dhdtextgenerator.common import (
     CommandLineInterface,
     get_arg_groups_by_name,
     input_file_arg,
-    int_arg,
-    output_file_arg,
+    int_arg, validate_input_file,
 )
 
 
@@ -52,8 +51,8 @@ class CharAssignerCli(CommandLineInterface):
         )
         arg_groups["input arguments"].add_argument(
             "--model-infile",
-            type=output_file_arg(),
-            default="model_9933.pth",
+            type=input_file_arg(must_exist=False),
+            default="model_{n_chars}.pth",
             help="model input file (default: %(default)s)",
         )
 
@@ -76,6 +75,9 @@ class CharAssignerCli(CommandLineInterface):
     @classmethod
     def main_internal(cls, **kwargs: Any) -> None:
         """Execute with provided keyword arguments."""
+        kwargs["model_infile"] = validate_input_file(
+            str(kwargs["model_infile"]).format(**kwargs)
+        )
         char_assigner = CharAssigner(**kwargs)
         char_assigner.run(port=5001)
 
