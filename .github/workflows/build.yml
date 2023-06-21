@@ -41,6 +41,20 @@ jobs:
       - name: Build wheel
         run: |
           poetry build
+      - name: Identify changes
+        id: files
+        uses: tj-actions/changed-files@v35
+      - name: List changes
+        run: |
+          for file in ${{ steps.files.outputs.all_changed_files }}; do
+            echo "$file" >> modified_files.txt
+          done
+      - name: pytest
+        run: |
+          export PACKAGE_ROOT=${GITHUB_WORKSPACE}/oot3dhdtextgenerator
+          cd ${GITHUB_WORKSPACE}/test
+          poetry run pytest -v --cov=oot3dhdtextgenerator --cov-report term . | tee pytest.txt
+          cd ${GITHUB_WORKSPACE}
 
   macOS:
     runs-on: macos-latest
@@ -77,6 +91,11 @@ jobs:
       - name: Build wheel
         run: |
           poetry build
+      - name: pytest
+        run: |
+          export PACKAGE_ROOT=${GITHUB_WORKSPACE}/oot3dhdtextgenerator
+          cd ${GITHUB_WORKSPACE}/test
+          poetry run pytest -v --cov=oot3dhdtextgenerator --cov-report term .
 
   Windows:
     runs-on: windows-latest
@@ -116,3 +135,10 @@ jobs:
         shell: bash
         run: |
           poetry build
+      - name: pytest
+        shell: bash
+        run: |
+          source $VENV
+          export PACKAGE_ROOT=${GITHUB_WORKSPACE}/oot3dhdtextgenerator
+          cd ${GITHUB_WORKSPACE}/test
+          pytest -v --cov=oot3dhdtextgenerator --cov-report term .
