@@ -5,14 +5,17 @@
 from __future__ import annotations
 
 from argparse import ArgumentParser
-from typing import Type
+from typing import Any, Type
 
 from pipescaler.core.cli import UtilityCli
 
 from oot3dhdtextgenerator.common import (
     get_arg_groups_by_name,
     input_file_arg,
+    int_arg,
     output_file_arg,
+    validate_input_file,
+    validate_output_file,
 )
 from oot3dhdtextgenerator.utilities import ModelTrainer
 
@@ -36,16 +39,25 @@ class ModelTrainerCli(UtilityCli):
             "output arguments",
             optional_arguments_name="additional arguments",
         )
+
+        # Input arguments
+        arg_groups["input arguments"].add_argument(
+            "--n_chars",
+            type=int_arg(min_value=10, max_value=9933),
+            default=9933,
+            help="number of unique hanzi to include in dataset, starting from the most "
+            "common and ending with the least common (default: %(default)d, max: 9933)",
+        )
         arg_groups["input arguments"].add_argument(
             "--train-infile",
-            type=input_file_arg(),
-            default="train_9933.h5",
+            type=input_file_arg(must_exist=False),
+            default="train_{n_chars}.h5",
             help="train data input file (default: %(default)s)",
         )
         arg_groups["input arguments"].add_argument(
             "--test-infile",
-            type=input_file_arg(),
-            default="test_9933.h5",
+            type=input_file_arg(must_exist=False),
+            default="test_{n_chars}.h5",
             help="test data input file (default: %(default)s)",
         )
 
@@ -65,7 +77,7 @@ class ModelTrainerCli(UtilityCli):
         arg_groups["operation arguments"].add_argument(
             "--epochs",
             type=int,
-            default=2,
+            default=10,
             help="number of epochs to train (default: %(default)d)",
         )
         arg_groups["operation arguments"].add_argument(
@@ -117,9 +129,32 @@ class ModelTrainerCli(UtilityCli):
         arg_groups["output arguments"].add_argument(
             "--model-outfile",
             type=output_file_arg(),
-            default="model_9933.pth",
+            default="model_{n_chars}.pth",
             help="model output file (default: %(default)s)",
         )
+
+    @classmethod
+    def main_internal(cls, **kwargs: Any) -> None:
+        """Execute with provided keyword arguments.
+
+        May be overridden to distribute keyword arguments between initialization of the
+        utility and the call to its run method.
+
+        Arguments:
+            **kwargs: Keyword arguments
+        """
+        utility_cls = cls.utility()
+        kwargs["train_infile"] = validate_input_file(
+            str(kwargs["train_infile"]).format(**kwargs)
+        )
+        kwargs["test_infile"] = validate_input_file(
+            str(kwargs["test_infile"]).format(**kwargs)
+        )
+        kwargs["model_outfile"] = validate_output_file(
+            str(kwargs["model_outfile"]).format(**kwargs)
+        )
+        kwargs.pop("n_chars")
+        utility_cls.run(**kwargs)
 
     @classmethod
     def utility(cls) -> Type[ModelTrainer]:

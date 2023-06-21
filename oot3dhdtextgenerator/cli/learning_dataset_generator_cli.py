@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from argparse import ArgumentParser
-from typing import Type
+from typing import Any, Type
 
 from pipescaler.core.cli import UtilityCli
 
@@ -14,6 +14,7 @@ from oot3dhdtextgenerator.common import (
     get_arg_groups_by_name,
     int_arg,
     output_file_arg,
+    validate_output_file,
 )
 from oot3dhdtextgenerator.utilities import LearningDatasetGenerator
 
@@ -45,7 +46,7 @@ class LearningDatasetGeneratorCli(UtilityCli):
             "--n_chars",
             type=int_arg(min_value=10, max_value=9933),
             default=9933,
-            help="number of characters to include in dataset, starting from the most "
+            help="number of unique hanzi to include in dataset, starting from the most "
             "common and ending with the least common (default: %(default)d, max: 9933)",
         )
 
@@ -62,15 +63,34 @@ class LearningDatasetGeneratorCli(UtilityCli):
         arg_groups["output arguments"].add_argument(
             "--train_outfile",
             type=output_file_arg(),
-            default="train_9933.h5",
+            default="train_{n_chars}.h5",
             help="train output file (default: %(default)s)",
         )
         arg_groups["output arguments"].add_argument(
             "--test_outfile",
             type=output_file_arg(),
-            default="test_9933.h5",
+            default="test_{n_chars}.h5",
             help="test output file (default: %(default)s)",
         )
+
+    @classmethod
+    def main_internal(cls, **kwargs: Any) -> None:
+        """Execute with provided keyword arguments.
+
+        May be overridden to distribute keyword arguments between initialization of the
+        utility and the call to its run method.
+
+        Arguments:
+            **kwargs: Keyword arguments
+        """
+        utility_cls = cls.utility()
+        kwargs["train_outfile"] = validate_output_file(
+            str(kwargs["train_outfile"]).format(**kwargs)
+        )
+        kwargs["test_outfile"] = validate_output_file(
+            str(kwargs["test_outfile"]).format(**kwargs)
+        )
+        utility_cls.run(**kwargs)
 
     @classmethod
     def utility(cls) -> Type[LearningDatasetGenerator]:
