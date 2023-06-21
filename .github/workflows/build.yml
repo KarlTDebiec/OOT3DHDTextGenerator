@@ -43,7 +43,7 @@ jobs:
           poetry build
       - name: Identify changes
         id: files
-        uses: tj-actions/changed-files@v35
+        uses: tj-actions/changed-files@v36
       - name: List changes
         run: |
           for file in ${{ steps.files.outputs.all_changed_files }}; do
@@ -54,7 +54,6 @@ jobs:
           export PACKAGE_ROOT=${GITHUB_WORKSPACE}/oot3dhdtextgenerator
           cd ${GITHUB_WORKSPACE}/test
           poetry run pytest -v --cov=oot3dhdtextgenerator --cov-report term . | tee pytest.txt
-          cd ${GITHUB_WORKSPACE}
 
   macOS:
     runs-on: macos-latest
