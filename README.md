@@ -1,11 +1,11 @@
-[![Python: =3.10](https://img.shields.io/badge/python-3.10-green.svg)](https://docs.python.org/3/whatsnew/3.10.html)
+[![Python: =3.11](https://img.shields.io/badge/python-3.11-green.svg)](https://docs.python.org/3/whatsnew/3.11.html)
 [![Build](https://github.com/KarlTDebiec/OOT3DHDTextGenerator/actions/workflows/build.yml/badge.svg)](https://github.com/KarlTDebiec/OOT3DHDTextGenerator/actions/workflows/build.yml)
 [![Code Style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![License: BSD 3-Clause](https://img.shields.io/badge/license-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 
 ## Description
 
-This script generates high resolution text for The Legend of Zelda Ocarina of Time 3D,
+This package generates high resolution text for The Legend of Zelda Ocarina of Time 3D,
 to be used with the [Citra 3DS emulator](https://citra-emu.org). Citra includes support
 for replacing low resolution textures with high resolution alternatives. In most games,
 this functionality makes it straightforward to obtain high resolution text by replacing
@@ -19,7 +19,7 @@ around this behavior by:
 3. Writing new high resolution text images to the load directory from which Citra loads
    replacement textures
 
-The script scans for text images as the game is played. The first time a text string is
+The package scans for text images as the game is played. The first time a text string is
 displayed it will be low resolution, but the next time that same string is reloaded for
 display it will be replaced with a high resolution version. Playing through the complete
 game should therefore yield a set of high resolution text images that cover most
@@ -42,7 +42,7 @@ the second will include string A's 15 unique characters followed by string B's 1
 through 20th characters. Thus, the text image of a string depends on the contents of the
 strings viewed previously, vastly increasing the number of potential text images. This
 is difficult to work around without modifying either the internals of the game or Citra,
-and limits the usefulness of the script for these localizations. It is still fully
+and limits the usefulness of the package for these localizations. It is still fully
 functional, but in practice a relatively small portion of displayed text will be high
 resolution.
 
