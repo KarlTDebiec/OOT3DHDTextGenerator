@@ -57,7 +57,7 @@ jobs:
           tool: prospector
           tool_infile: .github/outputs/prospector.json
           files_to_annotate_infile: .github/outputs/all_changed_and_modified_files.json
-      - name: pydocstyle # Run separately because prospector does not honor pyproject.toml
+      - name: Run pydocstyle # Run separately because prospector does not honor pyproject.toml
         run: |
           cd ${GITHUB_WORKSPACE}
           poetry run pydocstyle . | tee ${GITHUB_WORKSPACE}/.github/outputs/pydocstyle.txt || echo
@@ -67,7 +67,7 @@ jobs:
           tool: pydocstyle
           tool_infile: .github/outputs/pydocstyle.txt
           files_to_annotate_infile: .github/outputs/all_changed_and_modified_files.json
-      - name: mypy
+      - name: Run mypy
         run: |
           cd ${GITHUB_WORKSPACE}
           poetry run mypy . | tee ${GITHUB_WORKSPACE}/.github/outputs/mypy.txt || echo
@@ -77,7 +77,7 @@ jobs:
           tool: mypy
           tool_infile: .github/outputs/mypy.txt
           files_to_annotate_infile: .github/outputs/all_changed_and_modified_files.json
-      - name: pytest
+      - name: Test with pytest
         run: |
           export PACKAGE_ROOT=${GITHUB_WORKSPACE}/oot3dhdtextgenerator
           cd ${GITHUB_WORKSPACE}/test
@@ -89,89 +89,89 @@ jobs:
           tool_infile: .github/outputs/pytest.txt
           files_to_annotate_infile: .github/outputs/all_changed_and_modified_files.json
 
-#   macOS:
-#     runs-on: macos-latest
-#     if: github.event.pull_request.draft == false
-#     steps:
-#       - name: Checkout
-#         uses: actions/checkout@v3
-#         with:
-#           submodules: true
-#       - name: Set up Python 3.11
-#         uses: actions/setup-python@v4
-#         with:
-#           python-version: "3.11"
-#       - name: Install Poetry
-#         uses: snok/install-poetry@v1.3.3
-#         with:
-#           version: 1.3.2
-#           virtualenvs-create: true
-#           virtualenvs-in-project: true
-#           installer-parallel: true
-#       - name: Load cached virtual environment
-#         id: cached-poetry-dependencies
-#         uses: actions/cache@v3
-#         with:
-#           path: .venv
-#           key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
-#       - name: Install dependencies
-#         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-#         run: |
-#           poetry install --no-interaction --no-root
-#       - name: Install package
-#         run: |
-#           poetry install --no-interaction
-#       - name: Build wheel
-#         run: |
-#           poetry build
-#       - name: pytest
-#         run: |
-#           export PACKAGE_ROOT=${GITHUB_WORKSPACE}/oot3dhdtextgenerator
-#           cd ${GITHUB_WORKSPACE}/test
-#           poetry run pytest -v --cov=oot3dhdtextgenerator --cov-report term .
-#
-#   Windows:
-#     runs-on: windows-latest
-#     if: github.event.pull_request.draft == false
-#     steps:
-#       - name: Checkout
-#         uses: actions/checkout@v3
-#         with:
-#           submodules: true
-#       - name: Set up Python 3.11
-#         uses: actions/setup-python@v4
-#         with:
-#           python-version: "3.11"
-#       - name: Install Poetry
-#         uses: snok/install-poetry@v1.3.3
-#         with:
-#           version: 1.3.2
-#           virtualenvs-create: true
-#           virtualenvs-in-project: true
-#           installer-parallel: true
-#       - name: Load cached virtual environment
-#         id: cached-poetry-dependencies
-#         uses: actions/cache@v3
-#         with:
-#           path: .venv
-#           key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
-#       - name: Install dependencies
-#         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-#         shell: bash
-#         run: |
-#           poetry install --no-interaction --no-root
-#       - name: Install package
-#         shell: bash
-#         run: |
-#           poetry install --no-interaction
-#       - name: Build wheel
-#         shell: bash
-#         run: |
-#           poetry build
-#       - name: pytest
-#         shell: bash
-#         run: |
-#           source $VENV
-#           export PACKAGE_ROOT=${GITHUB_WORKSPACE}/oot3dhdtextgenerator
-#           cd ${GITHUB_WORKSPACE}/test
-#           pytest -v --cov=oot3dhdtextgenerator --cov-report term .
+  macOS:
+    runs-on: macos-latest
+    if: github.event.pull_request.draft == false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+      - name: Install Poetry
+        uses: snok/install-poetry@v1.3.3
+        with:
+          version: 1.3.2
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+          installer-parallel: true
+      - name: Load cached virtual environment
+        id: cached-poetry-dependencies
+        uses: actions/cache@v3
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
+      - name: Install dependencies
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        run: |
+          poetry install --no-interaction --no-root
+      - name: Install package
+        run: |
+          poetry install --no-interaction
+      - name: Build wheel
+        run: |
+          poetry build
+      - name: Test with pytest
+        run: |
+          export PACKAGE_ROOT=${GITHUB_WORKSPACE}/oot3dhdtextgenerator
+          cd ${GITHUB_WORKSPACE}/test
+          poetry run pytest -v --cov=oot3dhdtextgenerator --cov-report term .
+
+  Windows:
+    runs-on: windows-latest
+    if: github.event.pull_request.draft == false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+      - name: Install Poetry
+        uses: snok/install-poetry@v1.3.3
+        with:
+          version: 1.3.2
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+          installer-parallel: true
+      - name: Load cached virtual environment
+        id: cached-poetry-dependencies
+        uses: actions/cache@v3
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
+      - name: Install dependencies
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          poetry install --no-interaction --no-root
+      - name: Install package
+        shell: bash
+        run: |
+          poetry install --no-interaction
+      - name: Build wheel
+        shell: bash
+        run: |
+          poetry build
+      - name: Test with pytest
+        shell: bash
+        run: |
+          source $VENV
+          export PACKAGE_ROOT=${GITHUB_WORKSPACE}/oot3dhdtextgenerator
+          cd ${GITHUB_WORKSPACE}/test
+          pytest -v --cov=oot3dhdtextgenerator --cov-report term .
