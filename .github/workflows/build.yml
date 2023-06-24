@@ -58,7 +58,7 @@ jobs:
         with:
           tool: prospector
           tool_infile: .github/outputs/prospector.json
-          files_to_annotate_infile: .github/outputs/all_changed_and_modified_files.json
+#           files_to_annotate_infile: .github/outputs/all_changed_and_modified_files.json
 
       - name: pydocstyle # Run separately because prospector does not honor pyproject.toml
         run: |
@@ -69,7 +69,7 @@ jobs:
         with:
           tool: pydocstyle
           tool_infile: .github/outputs/pydocstyle.txt
-          files_to_annotate_infile: .github/outputs/all_changed_and_modified_files.json
+#           files_to_annotate_infile: .github/outputs/all_changed_and_modified_files.json
 
       - name: mypy
         run: |
@@ -80,7 +80,7 @@ jobs:
         with:
           tool: mypy
           tool_infile: .github/outputs/mypy.txt
-          files_to_annotate_infile: .github/outputs/all_changed_and_modified_files.json
+#           files_to_annotate_infile: .github/outputs/all_changed_and_modified_files.json
 
       - name: pytest
         run: |
@@ -92,7 +92,7 @@ jobs:
         with:
           tool: pytest
           tool_infile: .github/outputs/pytest.txt
-          files_to_annotate_infile: .github/outputs/all_changed_and_modified_files.json
+#           files_to_annotate_infile: .github/outputs/all_changed_and_modified_files.json
 
 #   macOS:
 #     runs-on: macos-latest
