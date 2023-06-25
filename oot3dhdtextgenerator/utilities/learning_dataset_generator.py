@@ -16,8 +16,6 @@ from pipescaler.core import Utility
 from oot3dhdtextgenerator.core import LearningDataset
 from oot3dhdtextgenerator.data import hanzi_frequency
 
-# TODO: Expose settings for image font, sizes, offsets, fills, and rotations
-
 
 class LearningDatasetGenerator(Utility):
     """Learning dataset generator."""
@@ -120,6 +118,7 @@ class LearningDatasetGenerator(Utility):
     @staticmethod
     def generate_character_image(
         char: str,
+        *,
         font: str = r"C:\Windows\Fonts\simhei.ttf",
         size: int = 12,
         fill: int = 0,

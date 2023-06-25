@@ -13,12 +13,12 @@ from PIL.ImageOps import invert
 class Character:
     def __init__(
         self,
-        id: int,
+        character_id: int,
         array: np.ndarray,
         assignment: str | None = None,
         predictions: list[str] | None = None,
     ) -> None:
-        self.id = id
+        self.id = character_id
         self.array = array
         self.assignment = assignment
         self._image = None

@@ -16,8 +16,6 @@ from torchvision.transforms import Compose, Normalize, ToTensor
 
 from oot3dhdtextgenerator.core import LearningDataset, Model
 
-# TODO: Load existing model
-
 
 class ModelTrainer(Utility):
     """Optical character recognition model trainer."""

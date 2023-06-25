@@ -3,7 +3,7 @@
 """Assignment project."""
 from __future__ import annotations
 
-from logging import info, debug
+from logging import debug, info
 from pathlib import Path
 from typing import Iterable
 
@@ -140,11 +140,13 @@ class AssignmentDataset(VisionDataset):
             char = self.assigned_char_bytes[char_bytes]
             debug(f"Assigned character {char} retrieved")
             return char
-        elif char_bytes not in self.unassigned_char_bytes:
+
+        if char_bytes not in self.unassigned_char_bytes:
             self.unassigned_char_bytes.append(char_bytes)
             debug(
                 f"Unassigned character added, {len(self.unassigned_char_bytes)} total"
             )
+
         return None
 
     @classmethod
@@ -233,14 +235,11 @@ class AssignmentDataset(VisionDataset):
             if "assignments" in h5_file:
                 del h5_file["assignments"]
             if len(assigned_char_bytes) > 0:
-                sorted_assigned_char_bytes = {
-                    k: v
-                    for k, v in sorted(
-                        assigned_char_bytes.items(), key=lambda item: item[1]
-                    )
-                }
+                sorted_assigned_char_bytes = dict(
+                    sorted(assigned_char_bytes.items(), key=lambda item: item[1])
+                )
                 h5_file.create_dataset(
-                    f"assigned",
+                    "assigned",
                     data=np.array(
                         list(map(cls.bytes_to_array, sorted_assigned_char_bytes.keys()))
                     ),
@@ -249,7 +248,7 @@ class AssignmentDataset(VisionDataset):
                     compression="gzip",
                 )
                 h5_file.create_dataset(
-                    f"assignments",
+                    "assignments",
                     data=cls.encode_chars(sorted_assigned_char_bytes.values()),
                     dtype="S4",
                     chunks=True,
@@ -264,7 +263,7 @@ class AssignmentDataset(VisionDataset):
                     unassigned_arrays, key=lambda x: x.sum()
                 )
                 h5_file.create_dataset(
-                    f"unassigned",
+                    "unassigned",
                     data=np.array(sorted_unassigned_arrays),
                     dtype=np.uint8,
                     chunks=True,

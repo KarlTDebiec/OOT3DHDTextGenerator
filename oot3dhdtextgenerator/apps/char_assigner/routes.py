@@ -11,11 +11,11 @@ def route(char_assigner):
         return render_template("index.html", characters=char_assigner.characters)
 
     @char_assigner.app.route("/characters/<int:id>", methods=["PUT"])
-    def update_character(id):
+    def update_character(character_id):
         assignment = request.form["assignment"]
         if assignment == "":
             assignment = None
-        character = char_assigner.characters[id]
+        character = char_assigner.characters[character_id]
         if character.assignment != assignment:
             character.assignment = assignment
             char_assigner.dataset.assign(character.array, assignment)
