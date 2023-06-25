@@ -19,6 +19,14 @@ python_version = "3.11"
 warn_return_any = true
 warn_unused_configs = true
 
+[[tool.mypy.overrides]]
+module = "h5py.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "torchvision.*"
+ignore_missing_imports = true
+
 [tool.poetry]
 name = "oot3dhdtextgenerator"
 version = "0.2.0"
