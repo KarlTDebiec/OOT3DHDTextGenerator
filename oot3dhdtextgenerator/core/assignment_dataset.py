@@ -30,7 +30,8 @@ class AssignmentDataset(VisionDataset):
         transform = Compose([ToTensor(), Normalize((0.1307,), (0.3081,))])
         super().__init__(str(infile.parent), transform=transform)
 
-        assigned_char_bytes, unassigned_char_bytes = {}, []
+        assigned_char_bytes: dict[bytes, str] = {}
+        unassigned_char_bytes: list[bytes] = []
         if infile.exists():
             assigned_char_bytes, unassigned_char_bytes = self.load_hdf5(infile)
 

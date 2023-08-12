@@ -39,10 +39,9 @@ class CharAssigner:
         """
         # Determine which device to use
         cuda_enabled = torch.cuda.is_available() and cuda_enabled
-        mps_enabled = torch.backends.mps.is_available() and mps_enabled
         if cuda_enabled:
             device = torch.device("cuda")
-        elif mps_enabled:
+        elif torch.backends.mps.is_available() and mps_enabled:
             device = torch.device("mps")
         else:
             device = torch.device("cpu")
@@ -50,21 +49,20 @@ class CharAssigner:
         # Load assignment data
         self.assignment_file = validate_input_file(assignment_file)
         self.dataset = AssignmentDataset(self.assignment_file)
-        loader_kwargs = dict(batch_size=len(self.dataset), shuffle=False)
+        loader_kwargs = {"batch_size": len(self.dataset), "shuffle": False}
         if cuda_enabled:
-            loader_kwargs.update(dict(num_workers=1, pin_memory=True))
+            loader_kwargs.update({"num_workers": 1, "pin_memory": True})
         data = list(DataLoader(self.dataset, **loader_kwargs))[0]
         data = data.to(device)
 
         # Load model
         model = Model(n_chars)
-        state_dict = torch.load(model_infile)
-        model.load_state_dict(state_dict)
+        model.load_state_dict(torch.load(model_infile))
         model.eval()
         model = model.to(device)
 
         # Get predictions
-        scores = model(data)
+        scores = model(data)  # pylint: disable=not-callable
         scores = scores.detach().cpu().numpy()
 
         # Prepare characters for frontend

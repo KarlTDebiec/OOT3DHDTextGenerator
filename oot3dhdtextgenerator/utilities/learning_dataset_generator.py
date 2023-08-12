@@ -48,17 +48,19 @@ class LearningDatasetGenerator(Utility):
             f"{len(fills)} fill{'s' if len(fills) > 1 else ''}, and "
             f"{len(rotations)} rotation{'s' if len(rotations) > 1 else ''}"
         )
-        combinations = product(
-            characters,
-            fonts,
-            sizes,
-            offsets,
-            offsets,
-            fills,
-            rotations,
-        )
         specifications = np.array(
-            list(combinations), dtype=LearningDataset.specification_dtypes
+            list(
+                product(
+                    characters,
+                    fonts,
+                    sizes,
+                    offsets,
+                    offsets,
+                    fills,
+                    rotations,
+                )
+            ),
+            dtype=LearningDataset.specification_dtypes,
         )
         n_images = len(specifications)
         info(f"Generating {n_images} images total")

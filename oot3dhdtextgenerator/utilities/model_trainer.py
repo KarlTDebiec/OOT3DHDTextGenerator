@@ -57,11 +57,10 @@ class ModelTrainer(Utility):
         """
         # Determine which device to use
         cuda_enabled = torch.cuda.is_available() and cuda_enabled
-        mps_enabled = torch.backends.mps.is_available() and mps_enabled
         torch.manual_seed(seed)
         if cuda_enabled:
             device = torch.device("cuda")
-        elif mps_enabled:
+        elif torch.backends.mps.is_available() and mps_enabled:
             device = torch.device("mps")
         else:
             device = torch.device("cpu")
