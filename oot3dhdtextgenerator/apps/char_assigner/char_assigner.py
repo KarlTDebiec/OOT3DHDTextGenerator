@@ -15,7 +15,6 @@ from oot3dhdtextgenerator.apps.char_assigner.character import Character
 from oot3dhdtextgenerator.apps.char_assigner.routes import route
 from oot3dhdtextgenerator.common import validate_input_file
 from oot3dhdtextgenerator.core import AssignmentDataset, Model
-from oot3dhdtextgenerator.data import characters
 
 
 class CharAssigner:
@@ -66,17 +65,7 @@ class CharAssigner:
         scores = scores.detach().cpu().numpy()
 
         # Prepare characters for frontend
-        self.characters = []
-        i = 0
-        for char_bytes, score in zip(self.dataset.unassigned_char_bytes, scores):
-            char_array = self.dataset.bytes_to_array(char_bytes)
-            predictions = np.array(characters)[list(np.argsort(score))[::-1]]
-            self.characters.append(Character(i, char_array, None, predictions[:10]))
-            i += 1
-        for char_bytes, assignment in self.dataset.assigned_char_bytes.items():
-            char_array = self.dataset.bytes_to_array(char_bytes)
-            self.characters.append(Character(i, char_array, assignment))
-            i += 1
+        self.characters = self.get_characters(self.dataset, scores)
 
         self.app = Flask(__name__)
 
@@ -84,3 +73,29 @@ class CharAssigner:
 
     def run(self, **kwargs: Any) -> None:
         self.app.run(**kwargs)
+
+    @staticmethod
+    def get_characters(
+        dataset: AssignmentDataset, scores: np.ndarray
+    ) -> list[Character]:
+        """Get characters.
+
+        Arguments:
+            dataset: Assignment dataset
+            scores: Scores
+        Returns:
+            List of characters
+        """
+        characters = []
+        i = 0
+        for char_bytes, score in zip(dataset.unassigned_char_bytes, scores):
+            char_array = dataset.bytes_to_array(char_bytes)
+            predictions = np.array(characters)[list(np.argsort(score))[::-1]]
+            characters.append(Character(i, char_array, None, predictions[:10]))
+            i += 1
+        for char_bytes, assignment in dataset.assigned_char_bytes.items():
+            char_array = dataset.bytes_to_array(char_bytes)
+            characters.append(Character(i, char_array, assignment))
+            i += 1
+
+        return characters
