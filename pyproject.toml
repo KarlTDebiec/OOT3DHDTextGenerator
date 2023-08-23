@@ -37,7 +37,7 @@ include = ["pipescaler/data/**"]
 
 [tool.poetry.dependencies]
 python = "~3.11"
-Flask = "^2.2.2"
+Flask = "^2.3.3"
 pipescaler = {git = "https://github.com/KarlTDebiec/PipeScaler"}
 h5py = "^3.9.0"
 nvidia-cublas-cu11 = { version = "11.10.3.66", platform = 'linux' }
@@ -58,9 +58,9 @@ triton = { version = "2.0.0", platform = 'linux' }
 
 [tool.poetry.dev-dependencies]
 black = "^23.7.0"
-coverage = "^7.2.7"
+coverage = "^7.3.0"
 isort = "^5.12.0"
-mypy = "^1.5.0"
+mypy = "^1.5.1"
 pandas-stubs = "^2.0.1.230605"
 prospector = "^1.10.2"
 pytest = "^7.4.0"
