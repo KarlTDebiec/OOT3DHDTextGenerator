@@ -45,7 +45,7 @@ class AssignmentDataset(VisionDataset):
         char_bytes = self.unassigned_char_bytes[index]
         char_array = self.bytes_to_array(char_bytes)
         char_image = Image.fromarray(char_array)
-        char_tensor = self.transform(char_image)
+        char_tensor: Tensor = self.transform(char_image)
 
         return char_tensor
 
@@ -162,7 +162,7 @@ class AssignmentDataset(VisionDataset):
         return char_array.tobytes()
 
     @classmethod
-    def bytes_to_array(cls, char_bytes: Iterable[bytes]) -> np.ndarray:
+    def bytes_to_array(cls, char_bytes: bytes) -> np.ndarray:
         """Convert char bytes to char array.
 
         Arguments:
@@ -203,8 +203,9 @@ class AssignmentDataset(VisionDataset):
         Returns:
             Assigned and unassigned char bytes
         """
-        assigned, assignments = [], []
-        unassigned = []
+        assigned: Iterable[bytes] = []
+        assignments: list[str] = []
+        unassigned: Iterable[bytes] = []
 
         with h5py.File(infile, "r") as h5_file:
             if "assigned" in h5_file and "assignments" in h5_file:
