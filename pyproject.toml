@@ -58,7 +58,7 @@ prospector = "^1.10.2"
 pytest = "^7.4.2"
 pytest-cov = "^4.1.0"
 pytest-xdist = "^3.3.1"
-types-Pillow = "^10.0.0.2"
+types-Pillow = "^10.0.0.3"
 
 [tool.pydocstyle]
 convention='google'
