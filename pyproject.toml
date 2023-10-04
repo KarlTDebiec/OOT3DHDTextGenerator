@@ -29,7 +29,7 @@ include = ["pipescaler/data/**"]
 
 [tool.poetry.dependencies]
 python = "~3.11"
-Flask = "^2.3.3"
+Flask = "^3.0.0"
 pipescaler = {git = "https://github.com/KarlTDebiec/PipeScaler"}
 h5py = "^3.9.0"
 nvidia-cublas-cu11 = { version = "11.10.3.66", platform = 'linux' }
