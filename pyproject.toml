@@ -31,7 +31,7 @@ include = ["pipescaler/data/**"]
 python = "~3.11"
 Flask = "^3.0.0"
 pipescaler = {git = "https://github.com/KarlTDebiec/PipeScaler"}
-h5py = "^3.9.0"
+h5py = "^3.10.0"
 nvidia-cublas-cu11 = { version = "11.10.3.66", platform = 'linux' }
 nvidia-cuda-cupti-cu11 = { version = "11.7.101", platform = 'linux' }
 nvidia-cuda-nvrtc-cu11 = { version = "11.7.99", platform = 'linux' }
