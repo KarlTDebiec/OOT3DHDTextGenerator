@@ -50,7 +50,7 @@ triton = { version = "2.0.0", platform = 'linux' }
 
 [tool.poetry.dev-dependencies]
 black = "^24.4.2"
-coverage = "^7.4.4"
+coverage = "^7.5.0"
 isort = "^5.13.2"
 mypy = "^1.10.0"
 pandas-stubs = "^2.0.1.230605"
