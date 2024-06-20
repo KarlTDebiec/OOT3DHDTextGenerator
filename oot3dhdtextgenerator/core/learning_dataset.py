@@ -174,7 +174,7 @@ class LearningDataset(VisionDataset):
             if "images" in h5_file:
                 del h5_file["images"]
             h5_file.create_dataset(
-                f"images",
+                "images",
                 data=images,
                 dtype=np.uint8,
                 chunks=True,
@@ -184,7 +184,7 @@ class LearningDataset(VisionDataset):
             if "specifications" in h5_file:
                 del h5_file["specifications"]
             h5_file.create_dataset(
-                f"specifications",
+                "specifications",
                 data=cls.encode_specifications(specifications),
                 dtype=cls.encoded_specification_dtypes,
                 chunks=True,
