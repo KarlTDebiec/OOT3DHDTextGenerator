@@ -52,7 +52,7 @@ triton = { version = "2.0.0", platform = 'linux' }
 black = "^24.8.0"
 coverage = "^7.6.1"
 isort = "^5.13.2"
-mypy = "^1.11.1"
+mypy = "^1.11.2"
 pandas-stubs = "^2.2.2.240807"
 prospector = "^1.10.3"
 pytest = "^8.3.2"
