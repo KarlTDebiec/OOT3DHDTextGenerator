@@ -119,7 +119,7 @@ class LearningDatasetGenerator(Utility):
         info(f"Saved {test_images.shape[0]} character images to {test_outfile}")
 
     @staticmethod
-    def generate_character_image(  # noqa: PLR0913
+    def generate_character_image(
         char: str,
         *,
         font: str = r"C:\Windows\Fonts\simhei.ttf",
