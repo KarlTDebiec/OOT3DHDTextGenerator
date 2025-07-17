@@ -1,6 +1,7 @@
 #  Copyright 2020-2025 Karl T Debiec. All rights reserved. This software may be modified
 #  and distributed under the terms of the BSD license. See the LICENSE file for details.
 """Character assigner."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -13,7 +14,7 @@ from torch.utils.data import DataLoader
 
 from oot3dhdtextgenerator.apps.char_assigner.character import Character
 from oot3dhdtextgenerator.apps.char_assigner.routes import route
-from oot3dhdtextgenerator.common import validate_input_file
+from oot3dhdtextgenerator.common.validation import validate_input_file
 from oot3dhdtextgenerator.core import AssignmentDataset, Model
 
 

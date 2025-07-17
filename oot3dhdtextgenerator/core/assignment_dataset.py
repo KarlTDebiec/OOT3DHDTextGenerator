@@ -1,11 +1,12 @@
 #  Copyright 2020-2025 Karl T Debiec. All rights reserved. This software may be modified
 #  and distributed under the terms of the BSD license. See the LICENSE file for details.
 """Assignment project."""
+
 from __future__ import annotations
 
+from collections.abc import Iterable
 from logging import debug, info
 from pathlib import Path
-from typing import Iterable
 
 import h5py
 import numpy as np
@@ -14,7 +15,7 @@ from torch import Tensor
 from torchvision.datasets import VisionDataset
 from torchvision.transforms import Compose, Normalize, ToTensor
 
-from oot3dhdtextgenerator.common import validate_input_file
+from oot3dhdtextgenerator.common.validation import validate_input_file
 
 
 class AssignmentDataset(VisionDataset):

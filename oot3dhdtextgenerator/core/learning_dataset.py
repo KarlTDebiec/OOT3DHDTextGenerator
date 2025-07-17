@@ -1,17 +1,19 @@
 #  Copyright 2020-2025 Karl T Debiec. All rights reserved. This software may be modified
 #  and distributed under the terms of the BSD license. See the LICENSE file for details.
 """Learning dataset."""
+
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
 
 import h5py
 import numpy as np
 from PIL import Image
 from torchvision.datasets import VisionDataset
 
-from oot3dhdtextgenerator.common import PathLike, validate_input_file
+from oot3dhdtextgenerator.common.typing import PathLike
+from oot3dhdtextgenerator.common.validation import validate_input_file
 from oot3dhdtextgenerator.data import character_to_index
 
 

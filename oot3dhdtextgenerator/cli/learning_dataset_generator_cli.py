@@ -2,20 +2,21 @@
 #  Copyright 2020-2025 Karl T Debiec. All rights reserved. This software may be modified
 #  and distributed under the terms of the BSD license. See the LICENSE file for details.
 """Learning dataset generator command-line interface."""
+
 from __future__ import annotations
 
 from argparse import ArgumentParser
-from typing import Any, Type
+from typing import Any
 
 from pipescaler.core.cli import UtilityCli
 
-from oot3dhdtextgenerator.common import (
+from oot3dhdtextgenerator.common.argument_parsing import (
     float_arg,
     get_arg_groups_by_name,
     int_arg,
     output_file_arg,
-    validate_output_file,
 )
+from oot3dhdtextgenerator.common.validation import validate_output_file
 from oot3dhdtextgenerator.utilities import LearningDatasetGenerator
 
 # TODO: Expose settings for image font, sizes, offsets, fills, and rotations
@@ -93,7 +94,7 @@ class LearningDatasetGeneratorCli(UtilityCli):
         utility_cls.run(**kwargs)
 
     @classmethod
-    def utility(cls) -> Type[LearningDatasetGenerator]:
+    def utility(cls) -> type[LearningDatasetGenerator]:
         """Type of utility wrapped by command-line interface."""
         return LearningDatasetGenerator
 
