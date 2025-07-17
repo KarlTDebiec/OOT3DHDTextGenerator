@@ -145,6 +145,17 @@ jobs:
           enable-cache: true
           cache-dependency-glob: "uv.lock"
 
+      - name: Install system dependencies
+        shell: powershell
+        run: |
+          iwr -Uri http://potrace.sourceforge.net/download/1.16/potrace-1.16.win64.zip -OutFile potrace.zip
+          Expand-Archive -Path potrace.zip -DestinationPath potrace
+          $exePath = "$(Get-Location)\potrace\potrace-1.16.win64"
+          echo "$exePath" | Out-File -FilePath $env:GITHUB_PATH -Append
+          iwr -Uri https://github.com/microsoft/DirectXTex/releases/download/nov2021/texconv.exe -OutFile texconv.exe
+          Move-Item texconv.exe .\potrace\
+          echo "$(Get-Location)\potrace" | Out-File -FilePath $env:GITHUB_PATH -Append
+
       - name: Install dependencies
         run: uv sync --all-extras --dev
 
