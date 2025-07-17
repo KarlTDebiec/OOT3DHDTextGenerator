@@ -1,6 +1,7 @@
-#  Copyright 2020-2023 Karl T Debiec. All rights reserved. This software may be modified
+#  Copyright 2020-2025 Karl T Debiec. All rights reserved. This software may be modified
 #  and distributed under the terms of the BSD license. See the LICENSE file for details.
 """Optical character recognition model trainer."""
+
 from __future__ import annotations
 
 from logging import info
@@ -15,8 +16,6 @@ from torch.utils.data import DataLoader
 from torchvision.transforms import Compose, Normalize, ToTensor
 
 from oot3dhdtextgenerator.core import LearningDataset, Model
-
-# TODO: Load existing model
 
 
 class ModelTrainer(Utility):
@@ -59,11 +58,10 @@ class ModelTrainer(Utility):
         """
         # Determine which device to use
         cuda_enabled = torch.cuda.is_available() and cuda_enabled
-        mps_enabled = torch.backends.mps.is_available() and mps_enabled
         torch.manual_seed(seed)
         if cuda_enabled:
             device = torch.device("cuda")
-        elif mps_enabled:
+        elif torch.backends.mps.is_available() and mps_enabled:
             device = torch.device("mps")
         else:
             device = torch.device("cpu")

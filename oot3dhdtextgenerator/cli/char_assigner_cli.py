@@ -1,19 +1,21 @@
 #!/usr/bin/env python
-#  Copyright 2020-2023 Karl T Debiec. All rights reserved. This software may be modified
+#  Copyright 2020-2025 Karl T Debiec. All rights reserved. This software may be modified
 #  and distributed under the terms of the BSD license. See the LICENSE file for details.
 """Character assigner command-line interface."""
+
 from __future__ import annotations
 
 from argparse import ArgumentParser
 from typing import Any
 
 from oot3dhdtextgenerator.apps import CharAssigner
-from oot3dhdtextgenerator.common import (
-    CommandLineInterface,
+from oot3dhdtextgenerator.common import CommandLineInterface
+from oot3dhdtextgenerator.common.argument_parsing import (
     get_arg_groups_by_name,
     input_file_arg,
-    int_arg, validate_input_file,
+    int_arg,
 )
+from oot3dhdtextgenerator.common.validation import validate_input_file
 
 
 class CharAssignerCli(CommandLineInterface):

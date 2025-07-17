@@ -1,6 +1,7 @@
-#  Copyright 2020-2023 Karl T Debiec. All rights reserved. This software may be modified
+#  Copyright 2020-2025 Karl T Debiec. All rights reserved. This software may be modified
 #  and distributed under the terms of the BSD license. See the LICENSE file for details.
 """Processes text images."""
+
 from __future__ import annotations
 
 from logging import info
@@ -8,10 +9,10 @@ from typing import Any
 
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
-from pipescaler.common import PathLike
 from pipescaler.image.core.operators import ImageProcessor
 
-from oot3dhdtextgenerator.common import validate_int, validate_output_file
+from oot3dhdtextgenerator.common.typing import PathLike
+from oot3dhdtextgenerator.common.validation import validate_int, validate_output_file
 from oot3dhdtextgenerator.core import AssignmentDataset
 
 

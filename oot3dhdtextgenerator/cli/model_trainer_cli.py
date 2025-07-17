@@ -1,19 +1,22 @@
 #!/usr/bin/env python
-#  Copyright 2020-2023 Karl T Debiec. All rights reserved. This software may be modified
+#  Copyright 2020-2025 Karl T Debiec. All rights reserved. This software may be modified
 #  and distributed under the terms of the BSD license. See the LICENSE file for details.
 """Optical character recognition model trainer command-line interface."""
+
 from __future__ import annotations
 
 from argparse import ArgumentParser
-from typing import Any, Type
+from typing import Any
 
 from pipescaler.core.cli import UtilityCli
 
-from oot3dhdtextgenerator.common import (
+from oot3dhdtextgenerator.common.argument_parsing import (
     get_arg_groups_by_name,
     input_file_arg,
     int_arg,
     output_file_arg,
+)
+from oot3dhdtextgenerator.common.validation import (
     validate_input_file,
     validate_output_file,
 )
@@ -157,7 +160,7 @@ class ModelTrainerCli(UtilityCli):
         utility_cls.run(**kwargs)
 
     @classmethod
-    def utility(cls) -> Type[ModelTrainer]:
+    def utility(cls) -> type[ModelTrainer]:
         """Type of utility wrapped by command-line interface."""
         return ModelTrainer
 
