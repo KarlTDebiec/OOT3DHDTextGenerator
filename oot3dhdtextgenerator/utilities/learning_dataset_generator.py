@@ -119,7 +119,7 @@ class LearningDatasetGenerator(Utility):
         info(f"Saved {test_images.shape[0]} character images to {test_outfile}")
 
     @staticmethod
-    def generate_character_image(
+    def generate_character_image(  # noqa: PLR0913
         char: str,
         *,
         font: str = r"C:\Windows\Fonts\simhei.ttf",
@@ -180,8 +180,8 @@ class LearningDatasetGenerator(Utility):
         train_index_set = set()
         for character in set(specifications["character"]):
             indexes = set(np.where(specifications["character"] == character)[0])
-            n_test = int(len(indexes) * (1.0 - test_proportion))
-            train_index_set |= set(sample(list(indexes), n_test))
+            n_train = int(len(indexes) * (1.0 - test_proportion))
+            train_index_set |= set(sample(list(indexes), n_train))
         test_index_set = set(range(images.shape[0])) - train_index_set
 
         train_indexes = sorted(train_index_set)
