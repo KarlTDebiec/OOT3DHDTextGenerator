@@ -37,9 +37,9 @@ include = ["pipescaler/data/**"]
 
 [tool.poetry.dependencies]
 python = "~3.11"
-Flask = "^2.3.3"
+Flask = "^3.0.3"
 pipescaler = {git = "https://github.com/KarlTDebiec/PipeScaler"}
-h5py = "^3.9.0"
+h5py = "^3.12.1"
 nvidia-cublas-cu11 = { version = "11.10.3.66", platform = 'linux' }
 nvidia-cuda-cupti-cu11 = { version = "11.7.101", platform = 'linux' }
 nvidia-cuda-nvrtc-cu11 = { version = "11.7.99", platform = 'linux' }
@@ -57,16 +57,16 @@ torchvision = "^0.15.2"
 triton = { version = "2.0.0", platform = 'linux' }
 
 [tool.poetry.dev-dependencies]
-black = "^23.9.1"
-coverage = "^7.3.1"
-isort = "^5.12.0"
-mypy = "^1.5.1"
-pandas-stubs = "^2.0.1.230605"
-prospector = "^1.10.2"
-pytest = "^7.4.2"
-pytest-cov = "^4.1.0"
-pytest-xdist = "^3.3.1"
-types-Pillow = "^10.0.0.3"
+black = "^24.10.0"
+coverage = "^7.6.4"
+isort = "^5.13.2"
+mypy = "^1.13.0"
+pandas-stubs = "^2.2.3.241009"
+prospector = "^1.13.0"
+pytest = "^8.3.3"
+pytest-cov = "^6.0.0"
+pytest-xdist = "^3.6.1"
+types-Pillow = "^10.2.0.20240822"
 
 [tool.pydocstyle]
 convention='google'
