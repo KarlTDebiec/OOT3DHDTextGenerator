@@ -1,201 +1,61 @@
-[build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+[project]
+name = "oot3dhdtextgenerator"
+version = "0.1.0"
+description = ""
+authors = [
+    { name = "Karl Debiec", email = "karl.t.debiec@gmail.com" }
+]
+license = "BSD-3-Clause"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "flask>=3.1.1",
+    "Pillow>=11.0.0",
+]
+
+[dependency-groups]
+dev = [
+    "pandas-stubs>=2.2.3.241009",
+    "pyright>=1.1.396",
+    "pytest>=8.3.4",
+    "pytest-cov>=6.0.0",
+    "pytest-xdist>=3.6.1",
+    "ruff>=0.9.10",
+    "types-Pillow>=10.2.0.20240822",
+]
 
 [tool.black]
-line-length=88
-target-version=['py311']
-
-[tool.coverage.run]
-data_file='coverage.coverage'
-concurrency='multiprocessing'
-parallel='True'
+line-length = 88
+target-version = ['py313']
 
 [tool.isort]
-profile='black'
+profile = 'black'
 
-[tool.mypy]
-python_version = "3.11"
-warn_return_any = true
-warn_unused_configs = true
+[tool.ruff]
+line-length = 88
 
-[[tool.mypy.overrides]]
-module = "h5py.*"
-ignore_missing_imports = true
+[tool.ruff.lint]
+select = [
+    "D", # pydocstyle
+    "E", # pycodestyle
+    "F", # pyflakes
+    "I", # isort
+    "N", # pep8-naming
+    "NPY", # numpy-specific rules
+    "PERF", # perflint
+    "PL", # pylint
+    "UP", # pyupgrade
+    "W", # pycodestyle
+]
+ignore = [
+    "D410", # Missing blank line after section
+    "D411", # Missing blank line before section
+    "PLR2004" # Magic value used in comparison
+]
 
-[[tool.mypy.overrides]]
-module = "torchvision.*"
-ignore_missing_imports = true
+[tool.ruff.lint.pydocstyle]
+convention = 'google'
 
-[tool.poetry]
-name = "oot3dhdtextgenerator"
-version = "0.2.0"
-description = ""
-authors = ["Karl T Debiec <karl.t.debiec@gmail.com>"]
-license = "BSD"
-include = ["pipescaler/data/**"]
+[tool.setuptools]
+packages = { find = { include = ["oot3dhdtextgenerator*"] } }
 
-[tool.poetry.dependencies]
-python = "~3.11"
-Flask = "^3.0.3"
-pipescaler = {git = "https://github.com/KarlTDebiec/PipeScaler"}
-h5py = "^3.12.1"
-nvidia-cublas-cu11 = { version = "11.10.3.66", platform = 'linux' }
-nvidia-cuda-cupti-cu11 = { version = "11.7.101", platform = 'linux' }
-nvidia-cuda-nvrtc-cu11 = { version = "11.7.99", platform = 'linux' }
-nvidia-cuda-runtime-cu11 = { version = "11.7.99", platform = 'linux' }
-nvidia-cudnn-cu11 = { version = "8.5.0.96", platform = 'linux' }
-nvidia-cufft-cu11 = { version = "10.9.0.58", platform = 'linux' }
-nvidia-curand-cu11 = { version = "10.2.10.91", platform = 'linux' }
-nvidia-cusolver-cu11 = { version = "11.4.0.1", platform = 'linux' }
-nvidia-cusparse-cu11 = { version = "11.7.4.91", platform = 'linux' }
-nvidia-nccl-cu11 = { version = "2.14.3", platform = 'linux' }
-nvidia-nvtx-cu11 = { version = "11.7.91", platform = 'linux' }
-torch = "^2.0.1"
-torchinfo = "^1.8.0"
-torchvision = "^0.15.2"
-triton = { version = "2.0.0", platform = 'linux' }
-
-[tool.poetry.dev-dependencies]
-black = "^24.10.0"
-coverage = "^7.6.4"
-isort = "^5.13.2"
-mypy = "^1.13.0"
-pandas-stubs = "^2.2.3.241009"
-prospector = "^1.13.0"
-pytest = "^8.3.3"
-pytest-cov = "^6.0.0"
-pytest-xdist = "^3.6.1"
-types-Pillow = "^10.2.0.20240822"
-
-[tool.pydocstyle]
-convention='google'
-
-[tool.pylint.main]
-fail-under=10.0
-ignore=['CVS']
-jobs=1
-limit-inference-results=100
-persistent=['yes']
-py-version="3.11"
-suggestion-mode=['yes']
-unsafe-load-any-extension=['no']
-
-[tool.pylint.messages_control]
-disable=['raw-checker-failed', 'bad-inline-option', 'locally-disabled', 'file-ignored',
-    'suppressed-message', 'useless-suppression', 'deprecated-pragma',
-    'use-symbolic-message-instead', 'C0330', 'C0326']
-enable=['c-extension-no-member']
-
-[tool.pylint.reports]
-evaluation=['10.0 - ((float(5 * error + warning + refactor + convention) / statement) * 10)']
-output-format=['text']
-reports=['no']
-score=['yes']
-
-[tool.pylint.refactoring]
-max-nested-blocks=5
-never-returning-functions=['sys.exit', 'argparse.parse_error']
-
-[tool.pylint.basic]
-argument-naming-style=['snake_case']
-attr-naming-style=['snake_case']
-bad-names=['foo', 'bar', 'baz', 'toto', 'tutu', 'tata']
-class-attribute-naming-style=['any']
-class-const-naming-style=['UPPER_CASE']
-class-naming-style=['PascalCase']
-const-naming-style=['UPPER_CASE']
-docstring-min-length=-1
-function-naming-style=['snake_case']
-good-names=['i', 'j', 'k', 'ex', 'Run', '_']
-include-naming-hint=['no']
-inlinevar-naming-style=['any']
-method-naming-style=['snake_case']
-module-naming-style=['snake_case']
-no-docstring-rgx=['^_']
-property-classes=['abc.abstractproperty']
-variable-naming-style=['snake_case']
-
-[tool.pylint.format]
-ignore-long-lines=['^\s*(# )?<?https?://\S+>?$']
-indent-after-paren=4
-indent-string='    '
-max-line-length=88
-max-module-lines=1000
-single-line-class-stmt=['no']
-single-line-if-stmt=['no']
-
-[tool.pylint.logging]
-logging-format-style=['old']
-logging-modules=['logging']
-
-[tool.pylint.miscellaneous]
-notes=['FIXME', 'XXX', 'TODO']
-
-[tool.pylint.similarities]
-ignore-comments=['yes']
-ignore-docstrings=['yes']
-ignore-imports=['no']
-ignore-signatures=['no']
-min-similarity-lines=4
-
-[tool.pylint.spelling]
-max-spelling-suggestions=4
-spelling-ignore-comment-directives=['fmt: on', 'fmt: off', 'noqa:', 'noqa', 'nosec',
-    'isort:skip', 'mypy:']
-spelling-store-unknown-words=['no']
-
-[tool.pylint.string]
-check-quote-consistency=['no']
-check-str-concat-over-line-jumps=['no']
-
-[tool.pylint.typecheck]
-contextmanager-decorators=['contextlib.contextmanager']
-ignore-mixin-members=['yes']
-ignore-none=['yes']
-ignore-on-opaque-inference=['yes']
-ignored-classes=['optparse.Values', 'thread._local', '_thread._local']
-missing-member-hint=['yes']
-missing-member-hint-distance=1
-missing-member-max-choices=1
-mixin-class-rgx=['.*[Mm]ixin']
-
-[tool.pylint.variables]
-allow-global-unused-variables=['yes']
-callbacks=['cb_', '_cb']
-dummy-variables-rgx=['_+$|(_[a-zA-Z0-9_]*[a-zA-Z0-9]+?$)|dummy|^ignored_|^unused_']
-ignored-argument-names=['_.*|^ignored_|^unused_|kwargs']
-init-import=['no']
-redefining-builtins-modules=['six.moves', 'past.builtins', 'future.builtins', 'builtins',
-    'io']
-
-[tool.pylint.classes]
-check-protected-access-in-special-methods=['no']
-defining-attr-methods=['__init__', '__new__', 'setUp', '__post_init__']
-exclude-protected=['_asdict', '_fields', '_replace', '_source', '_make']
-valid-classmethod-first-arg=['cls']
-valid-metaclass-classmethod-first-arg=['cls']
-
-[tool.pylint.design]
-max-args=5
-max-attributes=7
-max-bool-expr=5
-max-branches=12
-max-locals=15
-max-parents=7
-max-public-methods=20
-max-returns=6
-max-statements=50
-min-public-methods=2
-
-[tool.pylint.imports]
-allow-wildcard-with-all=['no']
-analyse-fallback-blocks=['no']
-known-third-party=['enchant']
-
-[tool.pylint.exceptions]
-overgeneral-exceptions=['BaseException', 'Exception']
-
-[tool.pytest.ini_options]
-log_cli=true
-log_cli_level="WARNING"
