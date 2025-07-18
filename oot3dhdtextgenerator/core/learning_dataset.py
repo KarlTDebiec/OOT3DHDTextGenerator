@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 import h5py
 import numpy as np
@@ -54,15 +55,17 @@ class LearningDataset(VisionDataset):
             transform: Transform to apply to images
             target_transform: Transform to apply to targets
         """
-        infile = validate_input_file(infile)
+        self.infile = validate_input_file(infile)
+        self.transform = transform
+        self.target_transform = target_transform
         super().__init__(
-            str(infile.parent),
+            str(self.infile.parent),
             transform=transform,
             target_transform=target_transform,
         )
-        self.images, self.specifications = self.load_hdf5(infile)
+        self.images, self.specifications = self.load_hdf5(self.infile)
 
-    def __getitem__(self, index: int) -> tuple[np.ndarray, int]:
+    def __getitem__(self, index: int) -> tuple[Any, int]:
         """Get image and target at index."""
         image = Image.fromarray(self.images[index])
         target = character_to_index(self.specifications[index]["character"])
@@ -77,6 +80,14 @@ class LearningDataset(VisionDataset):
     def __len__(self) -> int:
         """Number of images in the dataset."""
         return len(self.images)
+
+    def __repr__(self) -> str:
+        """Representation."""
+        return (
+            f"{self.__class__.__name__}("
+            f"Path({self.infile!r}), transform={self.transform!r}, "
+            f"target_transform={self.target_transform!r})"
+        )
 
     @classmethod
     def decode_specification(cls, encoded_specifications: np.ndarray) -> np.ndarray:

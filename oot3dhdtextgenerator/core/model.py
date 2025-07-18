@@ -19,6 +19,7 @@ class Model(Module):
             n_chars: Number of characters in dataset
         """
         super().__init__()
+        self.n_chars = n_chars
 
         self.conv1 = Conv2d(1, 64, kernel_size=2, stride=1, padding="same")
         self.conv2 = Conv2d(64, 128, kernel_size=2, stride=1, padding="same")
@@ -31,6 +32,10 @@ class Model(Module):
         summary(self.maxpool, input_size=(1, 128, 8, 8))
         summary(Flatten(), input_size=(1, 128, 4, 4))
         summary(self.fc1, input_size=(1, 128 * 4 * 4))
+
+    def __repr__(self) -> str:
+        """Representation."""
+        return f"{self.__class__.__name__}({self.n_chars!r})"
 
     def forward(self, x: Tensor) -> Tensor:
         """Forward pass of the model.
