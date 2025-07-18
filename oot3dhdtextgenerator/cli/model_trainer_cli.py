@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from argparse import ArgumentParser
+from argparse import ArgumentParser, BooleanOptionalAction
 from typing import Any
 
 from pipescaler.core.cli import UtilityCli
@@ -102,18 +102,18 @@ class ModelTrainerCli(UtilityCli):
             help="random seed (default: %(default)d)",
         )
         arg_groups["operation arguments"].add_argument(
-            "--disable-cuda",
+            "--cuda",
             dest="cuda_enabled",
-            action="store_false",
+            action=BooleanOptionalAction,
             default=True,
-            help="disable CUDA",
+            help="enable or disable CUDA",
         )
         arg_groups["operation arguments"].add_argument(
-            "--disable-mps",
+            "--mps",
             dest="mps_enabled",
-            action="store_false",
+            action=BooleanOptionalAction,
             default=True,
-            help="disable macOS GPU",
+            help="enable or disable macOS GPU",
         )
         arg_groups["operation arguments"].add_argument(
             "--dry-run",

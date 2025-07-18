@@ -5,6 +5,8 @@
 from __future__ import annotations
 
 from base64 import b64encode
+from dataclasses import dataclass
+from functools import cached_property
 from io import BytesIO
 
 import numpy as np
@@ -12,47 +14,27 @@ from PIL import Image
 from PIL.ImageOps import invert
 
 
+@dataclass(slots=True)
 class Character:
     """Character and its associated metadata."""
 
-    def __init__(
-        self,
-        character_id: int,
-        array: np.ndarray,
-        assignment: str | None = None,
-        predictions: list[str] | None = None,
-    ) -> None:
-        """Initialize.
+    id: int
+    array: np.ndarray
+    assignment: str | None = None
+    predictions: list[str] | None = None
 
-        Arguments:
-            character_id: Integer identifier for the character.
-            array: Array representation of the character image.
-            assignment: Assigned value, if any.
-            predictions: Potential assignments, if any.
-        Returns:
-            None
-        """
-        self.id = character_id
-        self.array = array
-        self.assignment = assignment
-        self._image = None
-        self.predictions = predictions
-
-    @property
+    @cached_property
     def image(self) -> str:
         """Base64 encoded PNG representation of the character.
 
         Returns:
             Base64 encoded image string.
         """
-        if self._image is None:
-            image = Image.fromarray(self.array)
-            image = invert(image)
+        image = Image.fromarray(self.array)
+        image = invert(image)
 
-            image_io = BytesIO()
-            image.save(image_io, format="PNG")
-            b64_image = b64encode(image_io.getvalue()).decode("ascii")
+        image_io = BytesIO()
+        image.save(image_io, format="PNG")
+        b64_image = b64encode(image_io.getvalue()).decode("ascii")
 
-            self._image = f"data:image/png;base64,{b64_image}"
-
-        return self._image
+        return f"data:image/png;base64,{b64_image}"
