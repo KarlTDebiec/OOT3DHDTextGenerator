@@ -21,22 +21,38 @@ class OOT3DHDTextProcessor(ImageProcessor):
 
     def __init__(
         self,
-        assignment_file: PathLike,
+        assignment_path: PathLike,
         font: str = r"C:\Windows\Fonts\simhei.ttf",
         size: int = 48,
         offset: tuple[int, int] = (0, 0),
         **kwargs: Any,
-    ):
+    ) -> None:
+        """Initialize the processor.
+
+        Arguments:
+            assignment_path: Assignment dataset path
+            font: Font name
+            size: Font size
+            offset: Starting offset
+            **kwargs: Additional keyword arguments
+        """
         super().__init__(**kwargs)
 
-        self.assignment_file = validate_output_file(assignment_file, may_exist=True)
-        self.assignment_dataset = AssignmentDataset(self.assignment_file)
+        self.assignment_path = validate_output_file(assignment_path, may_exist=True)
+        self.assignment_dataset = AssignmentDataset(self.assignment_path)
 
         self.font = ImageFont.truetype(font, validate_int(size, 1))
         self.size = validate_int(size, 1)
         self.offset = offset
 
     def __call__(self, input_image: Image.Image) -> Image.Image:
+        """Process an image.
+
+        Arguments:
+            input_image: Input image
+        Returns:
+            Processed image
+        """
         array = np.array(input_image)[:, :, 3]
         chars = self.assignment_dataset.get_chars_for_multi_char_array(array)
         if chars is None:
@@ -47,7 +63,7 @@ class OOT3DHDTextProcessor(ImageProcessor):
 
     def __repr__(self) -> str:
         """Representation."""
-        return f"{self.__class__.__name__}(assignment_file={self.assignment_file!r})"
+        return f"{self.__class__.__name__}(assignment_path={self.assignment_path!r})"
 
     def create_image(self, input_image, characters: list[str]) -> Image.Image:
         """Create image from characters.
@@ -85,9 +101,9 @@ class OOT3DHDTextProcessor(ImageProcessor):
         self.assignment_dataset.save_hdf5(
             self.assignment_dataset.assigned_char_bytes,
             self.assignment_dataset.unassigned_char_bytes,
-            self.assignment_file,
+            self.assignment_path,
         )
-        info(f"Saved assignments to {self.assignment_file}")
+        info(f"Saved assignments to {self.assignment_path}")
 
     @classmethod
     def help_markdown(cls) -> str:

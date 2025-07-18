@@ -63,12 +63,14 @@ class LearningDatasetGeneratorCli(UtilityCli):
         # Output arguments
         arg_groups["output arguments"].add_argument(
             "--train_outfile",
+            dest="train_out_path",
             type=output_file_arg(),
             default="train_{n_chars}.h5",
             help="train output file (default: %(default)s)",
         )
         arg_groups["output arguments"].add_argument(
             "--test_outfile",
+            dest="test_out_path",
             type=output_file_arg(),
             default="test_{n_chars}.h5",
             help="test output file (default: %(default)s)",
@@ -85,11 +87,11 @@ class LearningDatasetGeneratorCli(UtilityCli):
             **kwargs: Keyword arguments
         """
         utility_cls = cls.utility()
-        kwargs["train_outfile"] = validate_output_file(
-            str(kwargs["train_outfile"]).format(**kwargs)
+        kwargs["train_out_path"] = validate_output_file(
+            str(kwargs["train_out_path"]).format(**kwargs)
         )
-        kwargs["test_outfile"] = validate_output_file(
-            str(kwargs["test_outfile"]).format(**kwargs)
+        kwargs["test_out_path"] = validate_output_file(
+            str(kwargs["test_out_path"]).format(**kwargs)
         )
         utility_cls.run(**kwargs)
 

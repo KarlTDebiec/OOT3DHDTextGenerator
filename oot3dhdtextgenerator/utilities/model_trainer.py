@@ -22,11 +22,11 @@ class ModelTrainer(Utility):
     """Optical character recognition model trainer."""
 
     @classmethod
-    def run(
+    def run(  # noqa: PLR0913
         cls,
         *,
-        train_infile: Path,
-        test_infile: Path,
+        train_in_path: Path,
+        test_in_path: Path,
         batch_size: int = 64,
         test_batch_size: int = 1000,
         epochs: int = 1,
@@ -37,13 +37,13 @@ class ModelTrainer(Utility):
         dry_run: bool = False,
         seed: int = 1,
         log_interval: int = 10,
-        model_outfile: Path,
+        model_out_path: Path,
     ) -> None:
         """Execute from command line.
 
         Arguments:
-            train_infile: Train data input file
-            test_infile: Test data input file
+            train_in_path: Train data input file
+            test_in_path: Test data input file
             batch_size: Batch size for training
             test_batch_size: Batch size for testing
             epochs: Number of epochs to train
@@ -54,7 +54,7 @@ class ModelTrainer(Utility):
             dry_run: Whether to check a single pass
             seed: Random seed
             log_interval: Training status logging interval
-            model_outfile: Model output file
+            model_out_path: Model output file
         """
         # Determine which device to use
         cuda_enabled = torch.cuda.is_available() and cuda_enabled
@@ -76,9 +76,9 @@ class ModelTrainer(Utility):
 
         # Load training and test data
         transform = Compose([ToTensor(), Normalize((0.1307,), (0.3081,))])
-        train_dataset = LearningDataset(train_infile, transform=transform)
+        train_dataset = LearningDataset(train_in_path, transform=transform)
         train_loader = DataLoader(train_dataset, **train_loader_kwargs)
-        test_dataset = LearningDataset(test_infile, transform=transform)
+        test_dataset = LearningDataset(test_in_path, transform=transform)
         test_loader = DataLoader(test_dataset, **test_loader_kwargs)
 
         # Configure model
@@ -102,8 +102,8 @@ class ModelTrainer(Utility):
             scheduler.step()
 
         # Save model
-        torch.save(model.state_dict(), model_outfile)
-        info(f"{cls}: Model saved to {model_outfile}")
+        torch.save(model.state_dict(), model_out_path)
+        info(f"{cls}: Model saved to {model_out_path}")
 
     @staticmethod
     def test(model: Model, device: torch.device, loader: DataLoader) -> None:
@@ -119,7 +119,7 @@ class ModelTrainer(Utility):
         correct = 0
         with torch.no_grad():
             for data, target in loader:
-                data, target = data.to(device), target.to(device)
+                data, target = data.to(device), target.to(device)  # noqa: PLW2901
                 output = model(data)
                 test_loss += nll_loss(output, target, reduction="sum").item()
                 pred = output.argmax(dim=1, keepdim=True)
@@ -132,7 +132,7 @@ class ModelTrainer(Utility):
         )
 
     @staticmethod
-    def train(
+    def train(  # noqa: PLR0913
         model: Model,
         device: torch.device,
         loader: DataLoader,
@@ -155,7 +155,7 @@ class ModelTrainer(Utility):
         """
         model.train()
         for batch_idx, (data, target) in enumerate(loader):
-            data, target = data.to(device), target.to(device)
+            data, target = data.to(device), target.to(device)  # noqa: PLW2901
             optimizer.zero_grad()
             output = model(data)
             loss = nll_loss(output, target)

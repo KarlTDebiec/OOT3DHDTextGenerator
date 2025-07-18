@@ -26,7 +26,7 @@ def route(char_assigner):
             char_assigner.dataset.save_hdf5(
                 char_assigner.dataset.assigned_char_bytes,
                 char_assigner.dataset.unassigned_char_bytes,
-                char_assigner.assignment_file,
+                char_assigner.assignment_path,
             )
 
         return render_template("character.html", character=character)

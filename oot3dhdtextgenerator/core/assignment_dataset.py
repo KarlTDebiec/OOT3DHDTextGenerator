@@ -24,17 +24,17 @@ class AssignmentDataset(VisionDataset):
     multi_char_array_shapes = ((128, 256), (128, 512), (256, 256))
     char_array_shape = (16, 16)
 
-    def __init__(self, infile: Path) -> None:
+    def __init__(self, in_path: Path) -> None:
         """Initialize."""
-        infile = validate_input_file(infile, must_exist=False)
+        in_path = validate_input_file(in_path, must_exist=False)
 
         transform = Compose([ToTensor(), Normalize((0.1307,), (0.3081,))])
-        super().__init__(str(infile.parent), transform=transform)
+        super().__init__(str(in_path.parent), transform=transform)
 
         assigned_char_bytes: dict[bytes, str] = {}
         unassigned_char_bytes: list[bytes] = []
-        if infile.exists():
-            assigned_char_bytes, unassigned_char_bytes = self.load_hdf5(infile)
+        if in_path.exists():
+            assigned_char_bytes, unassigned_char_bytes = self.load_hdf5(in_path)
 
         self.assigned_char_bytes = assigned_char_bytes
         """Dictionary whose keys are char bytes and values are char strs"""
@@ -196,11 +196,11 @@ class AssignmentDataset(VisionDataset):
         return [assignment.encode("utf-8") for assignment in chars]
 
     @classmethod
-    def load_hdf5(cls, infile: Path) -> tuple[dict[bytes, str], list[bytes]]:
+    def load_hdf5(cls, in_path: Path) -> tuple[dict[bytes, str], list[bytes]]:
         """Load char arrays and assignments from an HDF5 file.
 
         Arguments:
-            infile: Path to HDF5 file
+            in_path: Path to HDF5 file
         Returns:
             Assigned and unassigned char bytes
         """
@@ -208,7 +208,7 @@ class AssignmentDataset(VisionDataset):
         assignments: list[str] = []
         unassigned: Iterable[bytes] = []
 
-        with h5py.File(infile, "r") as h5_file:
+        with h5py.File(in_path, "r") as h5_file:
             if "assigned" in h5_file and "assignments" in h5_file:
                 assigned = map(cls.array_to_bytes, np.array(h5_file["assigned"]))
                 assignments = cls.decode_chars(h5_file["assignments"])
@@ -223,16 +223,16 @@ class AssignmentDataset(VisionDataset):
         cls,
         assigned_char_bytes: dict[bytes, str],
         unassigned_char_bytes: list[bytes],
-        outfile: Path,
+        out_path: Path,
     ) -> None:
         """Save char bytes and assignments to an HDF5 file.
 
         Arguments:
             assigned_char_bytes: Assigned images
             unassigned_char_bytes: Unassigned images
-            outfile: Path to HDF5 outfile
+            out_path: Path to HDF5 outfile
         """
-        with h5py.File(outfile, "w") as h5_file:
+        with h5py.File(out_path, "w") as h5_file:
             if "assigned" in h5_file:
                 del h5_file["assigned"]
             if "assignments" in h5_file:
@@ -272,4 +272,4 @@ class AssignmentDataset(VisionDataset):
                     chunks=True,
                     compression="gzip",
                 )
-        info(f"Saved AssignmentDataset to {outfile}")
+        info(f"Saved AssignmentDataset to {out_path}")

@@ -47,12 +47,14 @@ class CharAssignerCli(CommandLineInterface):
         )
         arg_groups["input arguments"].add_argument(
             "--assignment-file",
+            dest="assignment_path",
             type=input_file_arg(),
             default="assignment.h5",
             help="assignment input and output file (default: %(default)s)",
         )
         arg_groups["input arguments"].add_argument(
             "--model-infile",
+            dest="model_in_path",
             type=input_file_arg(must_exist=False),
             default="model_{n_chars}.pth",
             help="model input file (default: %(default)s)",
@@ -77,8 +79,8 @@ class CharAssignerCli(CommandLineInterface):
     @classmethod
     def main_internal(cls, **kwargs: Any) -> None:
         """Execute with provided keyword arguments."""
-        kwargs["model_infile"] = validate_input_file(
-            str(kwargs["model_infile"]).format(**kwargs)
+        kwargs["model_in_path"] = validate_input_file(
+            str(kwargs["model_in_path"]).format(**kwargs)
         )
         char_assigner = CharAssigner(**kwargs)
         char_assigner.run(port=5001)

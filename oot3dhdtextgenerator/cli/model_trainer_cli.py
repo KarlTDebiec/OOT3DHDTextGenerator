@@ -53,12 +53,14 @@ class ModelTrainerCli(UtilityCli):
         )
         arg_groups["input arguments"].add_argument(
             "--train-infile",
+            dest="train_in_path",
             type=input_file_arg(must_exist=False),
             default="train_{n_chars}.h5",
             help="train data input file (default: %(default)s)",
         )
         arg_groups["input arguments"].add_argument(
             "--test-infile",
+            dest="test_in_path",
             type=input_file_arg(must_exist=False),
             default="test_{n_chars}.h5",
             help="test data input file (default: %(default)s)",
@@ -131,6 +133,7 @@ class ModelTrainerCli(UtilityCli):
         )
         arg_groups["output arguments"].add_argument(
             "--model-outfile",
+            dest="model_out_path",
             type=output_file_arg(),
             default="model_{n_chars}.pth",
             help="model output file (default: %(default)s)",
@@ -147,14 +150,14 @@ class ModelTrainerCli(UtilityCli):
             **kwargs: Keyword arguments
         """
         utility_cls = cls.utility()
-        kwargs["train_infile"] = validate_input_file(
-            str(kwargs["train_infile"]).format(**kwargs)
+        kwargs["train_in_path"] = validate_input_file(
+            str(kwargs["train_in_path"]).format(**kwargs)
         )
-        kwargs["test_infile"] = validate_input_file(
-            str(kwargs["test_infile"]).format(**kwargs)
+        kwargs["test_in_path"] = validate_input_file(
+            str(kwargs["test_in_path"]).format(**kwargs)
         )
-        kwargs["model_outfile"] = validate_output_file(
-            str(kwargs["model_outfile"]).format(**kwargs)
+        kwargs["model_out_path"] = validate_output_file(
+            str(kwargs["model_out_path"]).format(**kwargs)
         )
         kwargs.pop("n_chars")
         utility_cls.run(**kwargs)

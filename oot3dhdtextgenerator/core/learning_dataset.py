@@ -43,24 +43,24 @@ class LearningDataset(VisionDataset):
 
     def __init__(
         self,
-        infile: PathLike,
+        in_path: PathLike,
         transform: Callable | None = None,
         target_transform: Callable | None = None,
     ) -> None:
         """Initialize.
 
         Arguments:
-            infile: Path to HDF5 file
+            in_path: Path to HDF5 file
             transform: Transform to apply to images
             target_transform: Transform to apply to targets
         """
-        infile = validate_input_file(infile)
+        in_path = validate_input_file(in_path)
         super().__init__(
-            str(infile.parent),
+            str(in_path.parent),
             transform=transform,
             target_transform=target_transform,
         )
-        self.images, self.specifications = self.load_hdf5(infile)
+        self.images, self.specifications = self.load_hdf5(in_path)
 
     def __getitem__(self, index: int) -> tuple[np.ndarray, int]:
         """Get image and target at index."""
@@ -135,21 +135,21 @@ class LearningDataset(VisionDataset):
     @classmethod
     def load_hdf5(
         cls,
-        infile: Path,
+        in_path: Path,
     ) -> tuple[np.ndarray, np.ndarray]:
         """Load images and specifications from an HDF5 file.
 
         Arguments:
-            infile: Path to HDF5 infile
+            in_path: Path to HDF5 infile
         Returns:
             Train images, train specifications, test images, and test specifications
         Raises:
-            ValueError: If infile does not contain images and specifications
+            ValueError: If in_path does not contain images and specifications
         """
-        with h5py.File(infile, "r") as h5_file:
+        with h5py.File(in_path, "r") as h5_file:
             if "images" not in h5_file or "specifications" not in h5_file:
                 raise ValueError(
-                    f"HDF5{infile} does not contain images and specifications"
+                    f"HDF5{in_path} does not contain images and specifications"
                 )
 
             images = np.array(h5_file["images"])
@@ -163,16 +163,16 @@ class LearningDataset(VisionDataset):
         cls,
         images: np.ndarray,
         specifications: np.ndarray,
-        outfile: Path,
+        out_path: Path,
     ) -> None:
         """Save images and specifications to an HDF5 file.
 
         Arguments:
             images: Train images
             specifications: Train image specifications
-            outfile: Path to HDF5 outfile
+            out_path: Path to HDF5 outfile
         """
-        with h5py.File(outfile, "w") as h5_file:
+        with h5py.File(out_path, "w") as h5_file:
             if "images" in h5_file:
                 del h5_file["images"]
             h5_file.create_dataset(
