@@ -44,7 +44,7 @@ class LearningDatasetGeneratorCli(UtilityCli):
 
         # Input arguments
         arg_groups["input arguments"].add_argument(
-            "--n_chars",
+            "--n-chars",
             type=int_arg(min_value=10, max_value=9933),
             default=9933,
             help="number of unique hanzi to include in dataset, starting from the most "
@@ -53,7 +53,7 @@ class LearningDatasetGeneratorCli(UtilityCli):
 
         # Operation arguments
         arg_groups["operation arguments"].add_argument(
-            "--test_proportion",
+            "--test-proportion",
             default=0.1,
             type=float_arg(min_value=0, max_value=1),
             help="proportion of dataset to be set aside for testing "
@@ -62,13 +62,15 @@ class LearningDatasetGeneratorCli(UtilityCli):
 
         # Output arguments
         arg_groups["output arguments"].add_argument(
-            "--train_outfile",
+            "--train-output-file",
+            dest="train_output_path",
             type=output_file_arg(),
             default="train_{n_chars}.h5",
             help="train output file (default: %(default)s)",
         )
         arg_groups["output arguments"].add_argument(
-            "--test_outfile",
+            "--test-output-file",
+            dest="test_output_path",
             type=output_file_arg(),
             default="test_{n_chars}.h5",
             help="test output file (default: %(default)s)",
@@ -85,11 +87,11 @@ class LearningDatasetGeneratorCli(UtilityCli):
             **kwargs: Keyword arguments
         """
         utility_cls = cls.utility()
-        kwargs["train_outfile"] = validate_output_file(
-            str(kwargs["train_outfile"]).format(**kwargs)
+        kwargs["train_output_path"] = validate_output_file(
+            str(kwargs["train_output_path"]).format(**kwargs)
         )
-        kwargs["test_outfile"] = validate_output_file(
-            str(kwargs["test_outfile"]).format(**kwargs)
+        kwargs["test_output_path"] = validate_output_file(
+            str(kwargs["test_output_path"]).format(**kwargs)
         )
         utility_cls.run(**kwargs)
 

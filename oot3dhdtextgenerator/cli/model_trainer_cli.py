@@ -45,20 +45,22 @@ class ModelTrainerCli(UtilityCli):
 
         # Input arguments
         arg_groups["input arguments"].add_argument(
-            "--n_chars",
+            "--n-chars",
             type=int_arg(min_value=10, max_value=9933),
             default=9933,
             help="number of unique hanzi to include in dataset, starting from the most "
             "common and ending with the least common (default: %(default)d, max: 9933)",
         )
         arg_groups["input arguments"].add_argument(
-            "--train-infile",
+            "--train-input-file",
+            dest="train_input_path",
             type=input_file_arg(must_exist=False),
             default="train_{n_chars}.h5",
             help="train data input file (default: %(default)s)",
         )
         arg_groups["input arguments"].add_argument(
-            "--test-infile",
+            "--test-input-file",
+            dest="test_input_path",
             type=input_file_arg(must_exist=False),
             default="test_{n_chars}.h5",
             help="test data input file (default: %(default)s)",
@@ -130,7 +132,8 @@ class ModelTrainerCli(UtilityCli):
             help="training status logging interval (default: %(default)d)",
         )
         arg_groups["output arguments"].add_argument(
-            "--model-outfile",
+            "--model-output-file",
+            dest="model_output_path",
             type=output_file_arg(),
             default="model_{n_chars}.pth",
             help="model output file (default: %(default)s)",
@@ -147,14 +150,14 @@ class ModelTrainerCli(UtilityCli):
             **kwargs: Keyword arguments
         """
         utility_cls = cls.utility()
-        kwargs["train_infile"] = validate_input_file(
-            str(kwargs["train_infile"]).format(**kwargs)
+        kwargs["train_input_path"] = validate_input_file(
+            str(kwargs["train_input_path"]).format(**kwargs)
         )
-        kwargs["test_infile"] = validate_input_file(
-            str(kwargs["test_infile"]).format(**kwargs)
+        kwargs["test_input_path"] = validate_input_file(
+            str(kwargs["test_input_path"]).format(**kwargs)
         )
-        kwargs["model_outfile"] = validate_output_file(
-            str(kwargs["model_outfile"]).format(**kwargs)
+        kwargs["model_output_path"] = validate_output_file(
+            str(kwargs["model_output_path"]).format(**kwargs)
         )
         kwargs.pop("n_chars")
         utility_cls.run(**kwargs)
