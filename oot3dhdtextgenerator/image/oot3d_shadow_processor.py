@@ -8,6 +8,8 @@ import numpy as np
 from PIL import Image
 from pipescaler.image.operators.processors import PotraceProcessor
 
+from oot3dhdtextgenerator.image.typing import RGBA
+
 
 class OOT3DShadowProcessor(PotraceProcessor):
     """Processes shadow images."""
@@ -28,8 +30,9 @@ class OOT3DShadowProcessor(PotraceProcessor):
         super().__init__(arguments=arguments, invert=invert, scale=scale)
 
     def __call__(self, input_image: Image.Image) -> Image.Image:
+        """Process shadow image and return traced output."""
         # Flatten image and convert to monochrome
-        canvas = Image.new("RGBA", input_image.size, (255, 255, 255))
+        canvas = Image.new(RGBA, input_image.size, (255, 255, 255))
         composite = Image.alpha_composite(canvas, input_image)
         monochrome_image = composite.point(lambda p: p > 240 and 255)
 
@@ -56,12 +59,12 @@ class OOT3DShadowProcessor(PotraceProcessor):
     def inputs(cls) -> dict[str, tuple[str, ...]]:
         """Inputs to this operator."""
         return {
-            "input": ("RGBA",),
+            "input": (RGBA,),
         }
 
     @classmethod
     def outputs(cls) -> dict[str, tuple[str, ...]]:
         """Outputs of this operator."""
         return {
-            "output": ("RGBA",),
+            "output": (RGBA,),
         }

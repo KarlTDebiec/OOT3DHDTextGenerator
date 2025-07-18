@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from logging import info
 from typing import Any
 
@@ -14,6 +15,7 @@ from pipescaler.image.core.operators import ImageProcessor
 from oot3dhdtextgenerator.common.typing import PathLike
 from oot3dhdtextgenerator.common.validation import validate_int, validate_output_file
 from oot3dhdtextgenerator.core import AssignmentDataset
+from oot3dhdtextgenerator.image.typing import RGBA
 
 
 class OOT3DHDTextProcessor(ImageProcessor):
@@ -27,6 +29,7 @@ class OOT3DHDTextProcessor(ImageProcessor):
         offset: tuple[int, int] = (0, 0),
         **kwargs: Any,
     ):
+        """Initialize the processor."""
         super().__init__(**kwargs)
 
         self.assignment_file = validate_output_file(assignment_file, may_exist=True)
@@ -37,6 +40,7 @@ class OOT3DHDTextProcessor(ImageProcessor):
         self.offset = offset
 
     def __call__(self, input_image: Image.Image) -> Image.Image:
+        """Process image and create HD text image."""
         array = np.array(input_image)[:, :, 3]
         chars = self.assignment_dataset.get_chars_for_multi_char_array(array)
         if chars is None:
@@ -49,12 +53,12 @@ class OOT3DHDTextProcessor(ImageProcessor):
         """Representation."""
         return f"{self.__class__.__name__}(assignment_file={self.assignment_file!r})"
 
-    def create_image(self, input_image, characters: list[str]) -> Image.Image:
+    def create_image(self, input_image, characters: Sequence[str]) -> Image.Image:
         """Create image from characters.
 
         Arguments:
             input_image (Image.Image): Input image
-            characters (list[str]): Characters to draw
+            characters (Sequence[str]): Characters to draw
         Returns:
             Image.Image: Output image
         """
@@ -76,7 +80,7 @@ class OOT3DHDTextProcessor(ImageProcessor):
             (input_image.size[0] * 4, input_image.size[1] * 4, 4), dtype=np.uint8
         )
         output_array[:, :, 3] = np.array(output_image_alpha)
-        output_image = Image.fromarray(output_array, mode="RGBA")
+        output_image = Image.fromarray(output_array, mode=RGBA)
 
         return output_image
 
@@ -98,12 +102,12 @@ class OOT3DHDTextProcessor(ImageProcessor):
     def inputs(cls) -> dict[str, tuple[str, ...]]:
         """Inputs to this operator."""
         return {
-            "input": ("RGBA",),
+            "input": (RGBA,),
         }
 
     @classmethod
     def outputs(cls) -> dict[str, tuple[str, ...]]:
         """Outputs of this operator."""
         return {
-            "output": ("RGBA",),
+            "output": (RGBA,),
         }
