@@ -4,8 +4,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Sized
 from logging import info
 from pathlib import Path
+from typing import Any, cast
 
 import torch
 from pipescaler.core import Utility
@@ -21,8 +23,12 @@ from oot3dhdtextgenerator.core import LearningDataset, Model
 class ModelTrainer(Utility):
     """Optical character recognition model trainer."""
 
+    def __repr__(self) -> str:
+        """Representation."""
+        return f"{self.__class__.__name__}()"
+
     @classmethod
-    def run(
+    def run(  # noqa: PLR0913
         cls,
         *,
         train_infile: Path,
@@ -67,8 +73,8 @@ class ModelTrainer(Utility):
             device = torch.device("cpu")
 
         # Set up training and test settings
-        train_loader_kwargs = {"batch_size": batch_size}
-        test_loader_kwargs = {"batch_size": test_batch_size}
+        train_loader_kwargs: dict[str, Any] = {"batch_size": batch_size}
+        test_loader_kwargs: dict[str, Any] = {"batch_size": test_batch_size}
         if cuda_enabled:
             cuda_kwargs = {"num_workers": 1, "pin_memory": True, "shuffle": True}
             train_loader_kwargs.update(cuda_kwargs)
@@ -118,21 +124,21 @@ class ModelTrainer(Utility):
         test_loss = 0
         correct = 0
         with torch.no_grad():
-            for data, target in loader:
-                data, target = data.to(device), target.to(device)
+            for data_batch, target_batch in loader:
+                data, target = data_batch.to(device), target_batch.to(device)
                 output = model(data)
                 test_loss += nll_loss(output, target, reduction="sum").item()
                 pred = output.argmax(dim=1, keepdim=True)
                 correct += pred.eq(target.view_as(pred)).sum().item()
-        test_loss /= len(loader.dataset)
+        test_loss /= len(cast(Sized, loader.dataset))
         info(
             f"Test set: Average loss: {test_loss:.4f}, "
-            f"Accuracy: {correct}/{len(loader.dataset)} "
-            f"({100.0 * correct / len(loader.dataset):.0f}%)\n"
+            f"Accuracy: {correct}/{len(cast(Sized, loader.dataset))} "
+            f"({100.0 * correct / len(cast(Sized, loader.dataset)):.0f}%)\n"
         )
 
     @staticmethod
-    def train(
+    def train(  # noqa: PLR0913
         model: Model,
         device: torch.device,
         loader: DataLoader,
@@ -154,8 +160,8 @@ class ModelTrainer(Utility):
             dry_run: Whether to check a single pass
         """
         model.train()
-        for batch_idx, (data, target) in enumerate(loader):
-            data, target = data.to(device), target.to(device)
+        for batch_idx, (data_batch, target_batch) in enumerate(loader):
+            data, target = data_batch.to(device), target_batch.to(device)
             optimizer.zero_grad()
             output = model(data)
             loss = nll_loss(output, target)
@@ -164,7 +170,7 @@ class ModelTrainer(Utility):
             if batch_idx % log_interval == 0:
                 info(
                     f"Train epoch {epoch} "
-                    f"[{batch_idx * len(data)}/{len(loader.dataset)} "
+                    f"[{batch_idx * len(data)}/{len(cast(Sized, loader.dataset))} "
                     f"({100.0 * batch_idx / len(loader):.0f}%)] "
                     f"Loss: {loss.item():.6f}"
                 )

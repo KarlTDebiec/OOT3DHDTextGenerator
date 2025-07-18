@@ -21,6 +21,10 @@ from oot3dhdtextgenerator.data import hanzi_frequency
 class LearningDatasetGenerator(Utility):
     """Learning dataset generator."""
 
+    def __repr__(self) -> str:
+        """Representation."""
+        return f"{self.__class__.__name__}()"
+
     @classmethod
     def generate_character_images(
         cls, n_chars: int = 10
@@ -119,7 +123,7 @@ class LearningDatasetGenerator(Utility):
         info(f"Saved {test_images.shape[0]} character images to {test_outfile}")
 
     @staticmethod
-    def generate_character_image(
+    def generate_character_image(  # noqa: PLR0913
         char: str,
         *,
         font: str = r"C:\Windows\Fonts\simhei.ttf",

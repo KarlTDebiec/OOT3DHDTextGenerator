@@ -38,6 +38,14 @@ class Character:
         self._image = None
         self.predictions = predictions
 
+    def __repr__(self) -> str:
+        """Representation."""
+        array_repr = f"np.array({self.array.tolist()!r}, dtype=np.uint8)"
+        return (
+            f"{self.__class__.__name__}("
+            f"{self.id!r}, {array_repr}, {self.assignment!r}, {self.predictions!r})"
+        )
+
     @property
     def image(self) -> str:
         """Base64 encoded PNG representation of the character.

@@ -19,6 +19,8 @@ from oot3dhdtextgenerator.core import AssignmentDataset, Model
 
 
 class CharAssigner:
+    """Assign characters using a trained model."""
+
     def __init__(
         self,
         n_chars: int,
@@ -38,7 +40,13 @@ class CharAssigner:
             mps_enabled: Whether to use macOS GPU
         """
         # Determine which device to use
-        cuda_enabled = torch.cuda.is_available() and cuda_enabled
+        self.n_chars = n_chars
+        self.assignment_file = validate_input_file(assignment_file)
+        self.model_infile = model_infile
+        self.cuda_enabled = torch.cuda.is_available() and cuda_enabled
+        self.mps_enabled = mps_enabled
+
+        cuda_enabled = self.cuda_enabled
         if cuda_enabled:
             device = torch.device("cuda")
         elif torch.backends.mps.is_available() and mps_enabled:
@@ -47,7 +55,6 @@ class CharAssigner:
             device = torch.device("cpu")
 
         # Load assignment data
-        self.assignment_file = validate_input_file(assignment_file)
         self.dataset = AssignmentDataset(self.assignment_file)
         loader_kwargs = {"batch_size": len(self.dataset), "shuffle": False}
         if cuda_enabled:
@@ -72,7 +79,19 @@ class CharAssigner:
 
         route(self)
 
+    def __repr__(self) -> str:
+        """Representation."""
+        return (
+            f"{self.__class__.__name__}("
+            f"{self.n_chars!r}, "
+            f"Path({self.assignment_file!r}), "
+            f"Path({self.model_infile!r}), "
+            f"cuda_enabled={self.cuda_enabled!r}, "
+            f"mps_enabled={self.mps_enabled!r})"
+        )
+
     def run(self, **kwargs: Any) -> None:
+        """Run the Flask application."""
         self.app.run(**kwargs)
 
     @staticmethod
@@ -91,8 +110,12 @@ class CharAssigner:
         i = 0
         for char_bytes, score in zip(dataset.unassigned_char_bytes, scores):
             char_array = dataset.bytes_to_array(char_bytes)
-            predictions = np.array(characters)[list(np.argsort(score))[::-1]]
-            characters.append(Character(i, char_array, None, predictions[:10]))
+            pred_chars = [
+                c.assignment
+                for c in np.array(characters)[list(np.argsort(score))[::-1]]
+            ]
+            pred_chars = [p for p in pred_chars if p is not None][:10]
+            characters.append(Character(i, char_array, None, pred_chars))
             i += 1
         for char_bytes, assignment in dataset.assigned_char_bytes.items():
             char_array = dataset.bytes_to_array(char_bytes)

@@ -26,15 +26,15 @@ class AssignmentDataset(VisionDataset):
 
     def __init__(self, infile: Path) -> None:
         """Initialize."""
-        infile = validate_input_file(infile, must_exist=False)
+        self.infile = validate_input_file(infile, must_exist=False)
 
         transform = Compose([ToTensor(), Normalize((0.1307,), (0.3081,))])
-        super().__init__(str(infile.parent), transform=transform)
+        super().__init__(str(self.infile.parent), transform=transform)
 
         assigned_char_bytes: dict[bytes, str] = {}
         unassigned_char_bytes: list[bytes] = []
-        if infile.exists():
-            assigned_char_bytes, unassigned_char_bytes = self.load_hdf5(infile)
+        if self.infile.exists():
+            assigned_char_bytes, unassigned_char_bytes = self.load_hdf5(self.infile)
 
         self.assigned_char_bytes = assigned_char_bytes
         """Dictionary whose keys are char bytes and values are char strs"""
@@ -46,6 +46,7 @@ class AssignmentDataset(VisionDataset):
         char_bytes = self.unassigned_char_bytes[index]
         char_array = self.bytes_to_array(char_bytes)
         char_image = Image.fromarray(char_array)
+        assert self.transform is not None
         char_tensor: Tensor = self.transform(char_image)
 
         return char_tensor
@@ -57,6 +58,10 @@ class AssignmentDataset(VisionDataset):
     def __str__(self) -> str:
         """String representation."""
         return f"<{self.__class__.__name__}>"
+
+    def __repr__(self) -> str:
+        """Representation."""
+        return f"{self.__class__.__name__}(Path({self.infile!r}))"
 
     def assign(self, char_array: np.ndarray, char: str | None) -> None:
         """Assign char to char array.
@@ -211,7 +216,7 @@ class AssignmentDataset(VisionDataset):
         with h5py.File(infile, "r") as h5_file:
             if "assigned" in h5_file and "assignments" in h5_file:
                 assigned = map(cls.array_to_bytes, np.array(h5_file["assigned"]))
-                assignments = cls.decode_chars(h5_file["assignments"])
+                assignments = cls.decode_chars(np.array(h5_file["assignments"]))
 
             if "unassigned" in h5_file:
                 unassigned = map(cls.array_to_bytes, np.array(h5_file["unassigned"]))
