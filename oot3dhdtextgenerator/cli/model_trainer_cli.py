@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 from argparse import ArgumentParser
-from typing import Any
+from typing import Any, override
 
 from pipescaler.core.cli import UtilityCli
 
@@ -27,6 +27,7 @@ class ModelTrainerCli(UtilityCli):
     """Optical character recognition model trainer command-line interface."""
 
     @classmethod
+    @override
     def add_arguments_to_argparser(cls, parser: ArgumentParser) -> None:
         """Add arguments to a nascent argument parser.
 
@@ -140,7 +141,14 @@ class ModelTrainerCli(UtilityCli):
         )
 
     @classmethod
-    def main_internal(cls, **kwargs: Any) -> None:
+    @override
+    def utility(cls) -> type[ModelTrainer]:
+        """Type of utility wrapped by command-line interface."""
+        return ModelTrainer
+
+    @classmethod
+    @override
+    def _main(cls, **kwargs: Any) -> None:
         """Execute with provided keyword arguments.
 
         May be overridden to distribute keyword arguments between initialization of the
@@ -161,11 +169,6 @@ class ModelTrainerCli(UtilityCli):
         )
         kwargs.pop("n_chars")
         utility_cls.run(**kwargs)
-
-    @classmethod
-    def utility(cls) -> type[ModelTrainer]:
-        """Type of utility wrapped by command-line interface."""
-        return ModelTrainer
 
 
 if __name__ == "__main__":
