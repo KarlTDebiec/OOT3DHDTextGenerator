@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 from argparse import ArgumentParser
-from typing import Any
+from typing import Any, override
 
 from oot3dhdtextgenerator.apps import CharAssigner
 from oot3dhdtextgenerator.common import CommandLineInterface
@@ -22,6 +22,7 @@ class CharAssignerCli(CommandLineInterface):
     """Character assigner command-line interface."""
 
     @classmethod
+    @override
     def add_arguments_to_argparser(cls, parser: ArgumentParser) -> None:
         """Add arguments to a nascent argument parser.
 
@@ -39,7 +40,7 @@ class CharAssignerCli(CommandLineInterface):
 
         # Input arguments
         arg_groups["input arguments"].add_argument(
-            "--n_chars",
+            "--n-chars",
             type=int_arg(min_value=10, max_value=9933),
             default=9933,
             help="number of characters included in model, starting from the most "
@@ -47,12 +48,14 @@ class CharAssignerCli(CommandLineInterface):
         )
         arg_groups["input arguments"].add_argument(
             "--assignment-file",
+            dest="assignment_path",
             type=input_file_arg(),
             default="assignment.h5",
             help="assignment input and output file (default: %(default)s)",
         )
         arg_groups["input arguments"].add_argument(
-            "--model-infile",
+            "--model-input-file",
+            dest="model_input_path",
             type=input_file_arg(must_exist=False),
             default="model_{n_chars}.pth",
             help="model input file (default: %(default)s)",
@@ -75,10 +78,11 @@ class CharAssignerCli(CommandLineInterface):
         )
 
     @classmethod
-    def main_internal(cls, **kwargs: Any) -> None:
+    @override
+    def _main(cls, **kwargs: Any) -> None:
         """Execute with provided keyword arguments."""
-        kwargs["model_infile"] = validate_input_file(
-            str(kwargs["model_infile"]).format(**kwargs)
+        kwargs["model_input_path"] = validate_input_file(
+            str(kwargs["model_input_path"]).format(**kwargs)
         )
         char_assigner = CharAssigner(**kwargs)
         char_assigner.run(port=5001)

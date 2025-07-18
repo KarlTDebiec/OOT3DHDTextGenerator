@@ -19,11 +19,13 @@ from oot3dhdtextgenerator.core import AssignmentDataset, Model
 
 
 class CharAssigner:
+    """Character assigner."""
+
     def __init__(
         self,
         n_chars: int,
-        assignment_file: Path,
-        model_infile: Path,
+        assignment_path: Path,
+        model_input_path: Path,
         *,
         cuda_enabled: bool = True,
         mps_enabled: bool = True,
@@ -32,8 +34,8 @@ class CharAssigner:
 
         Arguments:
             n_chars: Number of characters included in model
-            assignment_file: Assignment HDF5 file
-            model_infile: Model pth file
+            assignment_path: Assignment HDF5 file
+            model_input_path: Model pth file
             cuda_enabled: Whether to use CUDA
             mps_enabled: Whether to use macOS GPU
         """
@@ -47,8 +49,8 @@ class CharAssigner:
             device = torch.device("cpu")
 
         # Load assignment data
-        self.assignment_file = validate_input_file(assignment_file)
-        self.dataset = AssignmentDataset(self.assignment_file)
+        self.assignment_path = validate_input_file(assignment_path)
+        self.dataset = AssignmentDataset(self.assignment_path)
         loader_kwargs = {"batch_size": len(self.dataset), "shuffle": False}
         if cuda_enabled:
             loader_kwargs.update({"num_workers": 1, "pin_memory": True})
@@ -57,7 +59,7 @@ class CharAssigner:
 
         # Load model
         model = Model(n_chars)
-        model.load_state_dict(torch.load(model_infile))
+        model.load_state_dict(torch.load(model_input_path))
         model.eval()
         model = model.to(device)
 

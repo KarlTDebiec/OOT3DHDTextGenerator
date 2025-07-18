@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 from argparse import ArgumentParser
-from typing import Any
+from typing import Any, override
 
 from pipescaler.core.cli import UtilityCli
 
@@ -26,6 +26,7 @@ class LearningDatasetGeneratorCli(UtilityCli):
     """Learning dataset generator command-line interface."""
 
     @classmethod
+    @override
     def add_arguments_to_argparser(cls, parser: ArgumentParser) -> None:
         """Add arguments to a nascent argument parser.
 
@@ -44,7 +45,7 @@ class LearningDatasetGeneratorCli(UtilityCli):
 
         # Input arguments
         arg_groups["input arguments"].add_argument(
-            "--n_chars",
+            "--n-chars",
             type=int_arg(min_value=10, max_value=9933),
             default=9933,
             help="number of unique hanzi to include in dataset, starting from the most "
@@ -53,7 +54,7 @@ class LearningDatasetGeneratorCli(UtilityCli):
 
         # Operation arguments
         arg_groups["operation arguments"].add_argument(
-            "--test_proportion",
+            "--test-proportion",
             default=0.1,
             type=float_arg(min_value=0, max_value=1),
             help="proportion of dataset to be set aside for testing "
@@ -62,20 +63,29 @@ class LearningDatasetGeneratorCli(UtilityCli):
 
         # Output arguments
         arg_groups["output arguments"].add_argument(
-            "--train_outfile",
+            "--train-output-file",
+            dest="train_output_path",
             type=output_file_arg(),
             default="train_{n_chars}.h5",
             help="train output file (default: %(default)s)",
         )
         arg_groups["output arguments"].add_argument(
-            "--test_outfile",
+            "--test-output-file",
+            dest="test_output_path",
             type=output_file_arg(),
             default="test_{n_chars}.h5",
             help="test output file (default: %(default)s)",
         )
 
     @classmethod
-    def main_internal(cls, **kwargs: Any) -> None:
+    @override
+    def utility(cls) -> type[LearningDatasetGenerator]:
+        """Type of utility wrapped by command-line interface."""
+        return LearningDatasetGenerator
+
+    @classmethod
+    @override
+    def _main(cls, **kwargs: Any) -> None:
         """Execute with provided keyword arguments.
 
         May be overridden to distribute keyword arguments between initialization of the
@@ -85,18 +95,13 @@ class LearningDatasetGeneratorCli(UtilityCli):
             **kwargs: Keyword arguments
         """
         utility_cls = cls.utility()
-        kwargs["train_outfile"] = validate_output_file(
-            str(kwargs["train_outfile"]).format(**kwargs)
+        kwargs["train_output_path"] = validate_output_file(
+            str(kwargs["train_output_path"]).format(**kwargs)
         )
-        kwargs["test_outfile"] = validate_output_file(
-            str(kwargs["test_outfile"]).format(**kwargs)
+        kwargs["test_output_path"] = validate_output_file(
+            str(kwargs["test_output_path"]).format(**kwargs)
         )
         utility_cls.run(**kwargs)
-
-    @classmethod
-    def utility(cls) -> type[LearningDatasetGenerator]:
-        """Type of utility wrapped by command-line interface."""
-        return LearningDatasetGenerator
 
 
 if __name__ == "__main__":
