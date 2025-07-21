@@ -16,7 +16,7 @@ from oot3dhdtextgenerator.common.argument_parsing import (
     int_arg,
     output_file_arg,
 )
-from oot3dhdtextgenerator.common.validation import validate_output_file
+from oot3dhdtextgenerator.common.validation import val_output_path
 from oot3dhdtextgenerator.utilities import LearningDatasetGenerator
 
 # TODO: Expose settings for image font, sizes, offsets, fills, and rotations
@@ -95,10 +95,10 @@ class LearningDatasetGeneratorCli(UtilityCli):
             **kwargs: Keyword arguments
         """
         utility_cls = cls.utility()
-        kwargs["train_output_path"] = validate_output_file(
+        kwargs["train_output_path"] = val_output_path(
             str(kwargs["train_output_path"]).format(**kwargs)
         )
-        kwargs["test_output_path"] = validate_output_file(
+        kwargs["test_output_path"] = val_output_path(
             str(kwargs["test_output_path"]).format(**kwargs)
         )
         utility_cls.run(**kwargs)

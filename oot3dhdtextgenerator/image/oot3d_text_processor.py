@@ -12,7 +12,7 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 from pipescaler.image.core.operators import ImageProcessor
 
-from oot3dhdtextgenerator.common.validation import validate_int, validate_output_file
+from oot3dhdtextgenerator.common.validation import val_int, val_output_path
 from oot3dhdtextgenerator.core import AssignmentDataset
 
 
@@ -29,11 +29,11 @@ class OOT3DHDTextProcessor(ImageProcessor):
     ):
         super().__init__(**kwargs)
 
-        self.assignment_path = validate_output_file(assignment_path, may_exist=True)
+        self.assignment_path = val_output_path(assignment_path, may_exist=True)
         self.assignment_dataset = AssignmentDataset(self.assignment_path)
 
-        self.font = ImageFont.truetype(font, validate_int(size, 1))
-        self.size = validate_int(size, 1)
+        self.font = ImageFont.truetype(font, val_int(size, 1))
+        self.size = val_int(size, 1)
         self.offset = offset
 
     def __call__(self, input_image: Image.Image) -> Image.Image:

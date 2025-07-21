@@ -12,7 +12,7 @@ import numpy as np
 from PIL import Image
 from torchvision.datasets import VisionDataset
 
-from oot3dhdtextgenerator.common.validation import validate_input_file
+from oot3dhdtextgenerator.common.validation import val_input_path
 from oot3dhdtextgenerator.data import character_to_index
 
 
@@ -53,7 +53,7 @@ class LearningDataset(VisionDataset):
             transform: Transform to apply to images
             target_transform: Transform to apply to targets
         """
-        input_path = validate_input_file(input_path)
+        input_path = val_input_path(input_path)
         super().__init__(
             str(input_path.parent),
             transform=transform,

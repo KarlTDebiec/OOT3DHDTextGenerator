@@ -17,8 +17,8 @@ from oot3dhdtextgenerator.common.argument_parsing import (
     output_file_arg,
 )
 from oot3dhdtextgenerator.common.validation import (
-    validate_input_file,
-    validate_output_file,
+    val_input_path,
+    val_output_path,
 )
 from oot3dhdtextgenerator.utilities import ModelTrainer
 
@@ -158,13 +158,13 @@ class ModelTrainerCli(UtilityCli):
             **kwargs: Keyword arguments
         """
         utility_cls = cls.utility()
-        kwargs["train_input_path"] = validate_input_file(
+        kwargs["train_input_path"] = val_input_path(
             str(kwargs["train_input_path"]).format(**kwargs)
         )
-        kwargs["test_input_path"] = validate_input_file(
+        kwargs["test_input_path"] = val_input_path(
             str(kwargs["test_input_path"]).format(**kwargs)
         )
-        kwargs["model_output_path"] = validate_output_file(
+        kwargs["model_output_path"] = val_output_path(
             str(kwargs["model_output_path"]).format(**kwargs)
         )
         kwargs.pop("n_chars")
