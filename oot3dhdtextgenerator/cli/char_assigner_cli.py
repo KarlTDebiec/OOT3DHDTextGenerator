@@ -15,7 +15,7 @@ from oot3dhdtextgenerator.common.argument_parsing import (
     input_file_arg,
     int_arg,
 )
-from oot3dhdtextgenerator.common.validation import validate_input_file
+from oot3dhdtextgenerator.common.validation import val_input_path
 
 
 class CharAssignerCli(CommandLineInterface):
@@ -81,7 +81,7 @@ class CharAssignerCli(CommandLineInterface):
     @override
     def _main(cls, **kwargs: Any) -> None:
         """Execute with provided keyword arguments."""
-        kwargs["model_input_path"] = validate_input_file(
+        kwargs["model_input_path"] = val_input_path(
             str(kwargs["model_input_path"]).format(**kwargs)
         )
         char_assigner = CharAssigner(**kwargs)

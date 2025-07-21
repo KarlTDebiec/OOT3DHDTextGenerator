@@ -14,7 +14,7 @@ from torch.utils.data import DataLoader
 
 from oot3dhdtextgenerator.apps.char_assigner.character import Character
 from oot3dhdtextgenerator.apps.char_assigner.routes import route
-from oot3dhdtextgenerator.common.validation import validate_input_file
+from oot3dhdtextgenerator.common.validation import val_input_path
 from oot3dhdtextgenerator.core import AssignmentDataset, Model
 
 
@@ -49,7 +49,7 @@ class CharAssigner:
             device = torch.device("cpu")
 
         # Load assignment data
-        self.assignment_path = validate_input_file(assignment_path)
+        self.assignment_path = val_input_path(assignment_path)
         self.dataset = AssignmentDataset(self.assignment_path)
         loader_kwargs = {"batch_size": len(self.dataset), "shuffle": False}
         if cuda_enabled:

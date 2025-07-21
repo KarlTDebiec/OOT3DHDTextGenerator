@@ -15,7 +15,7 @@ from torch import Tensor
 from torchvision.datasets import VisionDataset
 from torchvision.transforms import Compose, Normalize, ToTensor
 
-from oot3dhdtextgenerator.common.validation import validate_input_file
+from oot3dhdtextgenerator.common.validation import val_input_path
 
 
 class AssignmentDataset(VisionDataset):
@@ -26,7 +26,7 @@ class AssignmentDataset(VisionDataset):
 
     def __init__(self, input_path: Path) -> None:
         """Initialize."""
-        input_path = validate_input_file(input_path, must_exist=False)
+        input_path = val_input_path(input_path, must_exist=False)
 
         transform = Compose([ToTensor(), Normalize((0.1307,), (0.3081,))])
         super().__init__(str(input_path.parent), transform=transform)
