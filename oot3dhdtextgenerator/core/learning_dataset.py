@@ -45,7 +45,7 @@ class LearningDataset(VisionDataset):
         input_path: Path | str,
         transform: Callable | None = None,
         target_transform: Callable | None = None,
-    ) -> None:
+    ):
         """Initialize.
 
         Arguments:
@@ -163,7 +163,7 @@ class LearningDataset(VisionDataset):
         images: np.ndarray,
         specifications: np.ndarray,
         output_path: Path,
-    ) -> None:
+    ):
         """Save images and specifications to an HDF5 file.
 
         Arguments:

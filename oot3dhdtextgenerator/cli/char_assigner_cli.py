@@ -23,7 +23,7 @@ class CharAssignerCli(CommandLineInterface):
 
     @classmethod
     @override
-    def add_arguments_to_argparser(cls, parser: ArgumentParser) -> None:
+    def add_arguments_to_argparser(cls, parser: ArgumentParser):
         """Add arguments to a nascent argument parser.
 
         Arguments:
@@ -79,7 +79,7 @@ class CharAssignerCli(CommandLineInterface):
 
     @classmethod
     @override
-    def _main(cls, **kwargs: Any) -> None:
+    def _main(cls, **kwargs: Any):
         """Execute with provided keyword arguments."""
         kwargs["model_input_path"] = val_input_path(
             str(kwargs["model_input_path"]).format(**kwargs)

@@ -28,7 +28,7 @@ from oot3dhdtextgenerator.common.testing import run_cli_with_args
         (ModelTrainerCli),
     ],
 )
-def test_help(command: type[CommandLineInterface]) -> None:
+def test_help(command: type[CommandLineInterface]):
     stdout = StringIO()
     stderr = StringIO()
     try:

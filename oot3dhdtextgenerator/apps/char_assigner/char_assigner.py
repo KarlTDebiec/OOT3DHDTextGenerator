@@ -29,7 +29,7 @@ class CharAssigner:
         *,
         cuda_enabled: bool = True,
         mps_enabled: bool = True,
-    ) -> None:
+    ):
         """Run character assigner.
 
         Arguments:
@@ -74,7 +74,7 @@ class CharAssigner:
 
         route(self)
 
-    def run(self, **kwargs: Any) -> None:
+    def run(self, **kwargs: Any):
         self.app.run(**kwargs)
 
     @staticmethod

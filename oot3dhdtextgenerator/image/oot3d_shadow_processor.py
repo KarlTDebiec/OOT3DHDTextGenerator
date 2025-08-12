@@ -17,7 +17,7 @@ class OOT3DShadowProcessor(PotraceProcessor):
         arguments: str = "-b svg -k 0.3 -a 1.34 -O 0.2",
         invert: bool = False,
         scale: float = 4.0,
-    ) -> None:
+    ):
         """Initialize.
 
         Arguments:

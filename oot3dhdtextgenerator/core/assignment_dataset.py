@@ -24,7 +24,7 @@ class AssignmentDataset(VisionDataset):
     multi_char_array_shapes = ((128, 256), (128, 512), (256, 256))
     char_array_shape = (16, 16)
 
-    def __init__(self, input_path: Path) -> None:
+    def __init__(self, input_path: Path):
         """Initialize."""
         input_path = val_input_path(input_path, must_exist=False)
 
@@ -58,7 +58,7 @@ class AssignmentDataset(VisionDataset):
         """String representation."""
         return f"<{self.__class__.__name__}>"
 
-    def assign(self, char_array: np.ndarray, char: str | None) -> None:
+    def assign(self, char_array: np.ndarray, char: str | None):
         """Assign char to char array.
 
         Arguments:
@@ -224,7 +224,7 @@ class AssignmentDataset(VisionDataset):
         assigned_char_bytes: dict[bytes, str],
         unassigned_char_bytes: list[bytes],
         output_path: Path,
-    ) -> None:
+    ):
         """Save char bytes and assignments to an HDF5 file.
 
         Arguments:

@@ -12,7 +12,7 @@ from torchinfo import summary
 class Model(Module):
     """Optical character recognition model."""
 
-    def __init__(self, n_chars: int) -> None:
+    def __init__(self, n_chars: int):
         """Initialize.
 
         Arguments:

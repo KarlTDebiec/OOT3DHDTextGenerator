@@ -91,7 +91,7 @@ class LearningDatasetGenerator(Utility):
         test_proportion: float,
         train_output_file: Path,
         test_output_file: Path,
-    ) -> None:
+    ):
         """Execute.
 
         Arguments:

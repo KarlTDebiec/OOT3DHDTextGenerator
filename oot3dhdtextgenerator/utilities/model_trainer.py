@@ -38,7 +38,7 @@ class ModelTrainer(Utility):
         seed: int = 1,
         log_interval: int = 10,
         model_output_path: Path,
-    ) -> None:
+    ):
         """Execute from command line.
 
         Arguments:
@@ -106,7 +106,7 @@ class ModelTrainer(Utility):
         info(f"{cls}: Model saved to {model_output_path}")
 
     @staticmethod
-    def test(model: Model, device: torch.device, loader: DataLoader) -> None:
+    def test(model: Model, device: torch.device, loader: DataLoader):
         """Test model against test data.
 
         Arguments:

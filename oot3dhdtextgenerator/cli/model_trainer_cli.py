@@ -28,7 +28,7 @@ class ModelTrainerCli(UtilityCli):
 
     @classmethod
     @override
-    def add_arguments_to_argparser(cls, parser: ArgumentParser) -> None:
+    def add_arguments_to_argparser(cls, parser: ArgumentParser):
         """Add arguments to a nascent argument parser.
 
         Arguments:
@@ -148,7 +148,7 @@ class ModelTrainerCli(UtilityCli):
 
     @classmethod
     @override
-    def _main(cls, **kwargs: Any) -> None:
+    def _main(cls, **kwargs: Any):
         """Execute with provided keyword arguments.
 
         May be overridden to distribute keyword arguments between initialization of the
