@@ -36,7 +36,7 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libcairo2-dev pngquant potrace
+          sudo apt-get install -y libcairo2-dev pngquant potrace llvm-14 llvm-14-dev
 
       - name: Install package dependencies
         run: uv sync --all-extras --dev
@@ -98,7 +98,7 @@ jobs:
 
       - name: Install system dependencies
         run: |
-          brew install cairo pngquant potrace
+          brew install cairo pngquant potrace llvm@14
 
       - name: Set up uv with cache
         uses: astral-sh/setup-uv@v5
@@ -148,6 +148,7 @@ jobs:
       - name: Install system dependencies
         shell: powershell
         run: |
+          choco install llvm --version=14.0.6 -y
           iwr -Uri http://potrace.sourceforge.net/download/1.16/potrace-1.16.win64.zip -OutFile potrace.zip
           Expand-Archive -Path potrace.zip -DestinationPath potrace
           $exePath = "$(Get-Location)\potrace\potrace-1.16.win64"
