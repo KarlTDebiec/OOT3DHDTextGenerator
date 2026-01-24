@@ -564,22 +564,22 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "flask", specifier = ">=3.1.1" },
+    { name = "flask", specifier = ">=3.1.2" },
     { name = "h5py", specifier = ">=3.14.0" },
-    { name = "pillow", specifier = ">=11.0.0" },
+    { name = "pillow", specifier = ">=12.1.0" },
     { name = "pipescaler", git = "https://github.com/KarlTDebiec/PipeScaler.git" },
-    { name = "torch", specifier = ">=2.7.1" },
+    { name = "torch", specifier = ">=2.10.0" },
     { name = "torchinfo", specifier = ">=1.8.0" },
-    { name = "torchvision", specifier = ">=0.22.1" },
+    { name = "torchvision", specifier = ">=0.25.0" },
 ]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "pyright", specifier = ">=1.1.396" },
-    { name = "pytest", specifier = ">=8.3.4" },
-    { name = "pytest-cov", specifier = ">=6.0.0" },
-    { name = "pytest-xdist", specifier = ">=3.6.1" },
-    { name = "ruff", specifier = ">=0.9.10" },
+    { name = "pyright", specifier = ">=1.1.403" },
+    { name = "pytest", specifier = ">=8.4.1" },
+    { name = "pytest-cov", specifier = ">=7.0.0" },
+    { name = "pytest-xdist", specifier = ">=3.8.0" },
+    { name = "ruff", specifier = ">=0.12.3" },
     { name = "ty", specifier = ">=0.0.13" },
     { name = "types-pillow", specifier = ">=10.2.0.20240822" },
 ]
