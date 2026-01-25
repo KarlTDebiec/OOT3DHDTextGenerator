@@ -9,22 +9,23 @@ license = "BSD-3-Clause"
 readme = "README.md"
 requires-python = ">=3.13,<3.14"
 dependencies = [
-    "flask>=3.1.1",
+    "flask>=3.1.2",
     "h5py>=3.14.0",
-    "Pillow>=11.0.0",
-    "torch>=2.7.1",
+    "Pillow>=12.1.0",
+    "torch>=2.10.0",
     "torchinfo>=1.8.0",
-    "torchvision>=0.22.1",
+    "torchvision>=0.25.0",
     "pipescaler @ git+https://github.com/KarlTDebiec/PipeScaler.git"
 ]
 
 [dependency-groups]
 dev = [
-    "pyright>=1.1.396",
-    "pytest>=8.3.4",
-    "pytest-cov>=6.0.0",
-    "pytest-xdist>=3.6.1",
-    "ruff>=0.9.10",
+    "pyright>=1.1.403",
+    "pytest>=8.4.1",
+    "pytest-cov>=7.0.0",
+    "pytest-xdist>=3.8.0",
+    "ruff>=0.12.3",
+    "ty>=0.0.13",
     "types-Pillow>=10.2.0.20240822",
 ]
 
