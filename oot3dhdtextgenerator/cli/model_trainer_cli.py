@@ -12,7 +12,6 @@ from pipescaler.core.cli import UtilityCli
 
 from oot3dhdtextgenerator.common.argument_parsing import (
     get_arg_groups_by_name,
-    input_file_arg,
     int_arg,
     output_file_arg,
 )
@@ -55,14 +54,14 @@ class ModelTrainerCli(UtilityCli):
         arg_groups["input arguments"].add_argument(
             "--train-input-file",
             dest="train_input_path",
-            type=input_file_arg(must_exist=False),
+            type=str,
             default="train_{n_chars}.h5",
             help="train data input file (default: %(default)s)",
         )
         arg_groups["input arguments"].add_argument(
             "--test-input-file",
             dest="test_input_path",
-            type=input_file_arg(must_exist=False),
+            type=str,
             default="test_{n_chars}.h5",
             help="test data input file (default: %(default)s)",
         )
