@@ -1,11 +1,11 @@
-#  Copyright 2020-2026 Karl T Debiec. All rights reserved. This software may be modified
+#  Copyright 2017-2026 Karl T Debiec. All rights reserved. This software may be modified
 #  and distributed under the terms of the BSD license. See the LICENSE file for details.
 """General-purpose validation functions not tied to a particular project."""
 
 from __future__ import annotations
 
 from collections.abc import Collection, Iterable
-from logging import info
+from logging import getLogger
 from os.path import defpath, expanduser, expandvars
 from pathlib import Path
 from platform import system
@@ -19,6 +19,19 @@ from .exception import (
     NotAFileError,
     UnsupportedPlatformError,
 )
+
+__all__ = [
+    "val_executable",
+    "val_float",
+    "val_input_dir_path",
+    "val_input_path",
+    "val_int",
+    "val_output_dir_path",
+    "val_output_path",
+    "val_str",
+]
+
+logger = getLogger(__name__)
 
 
 def val_executable(
@@ -356,7 +369,7 @@ def val_output_dir_path(value: Path | str | Iterable[Path | str]) -> Path | list
             ) from exc
         if not validated_value.exists():
             validated_value.mkdir(parents=True)
-            info(f"Created directory {validated_value}")
+            logger.info(f"Created directory {validated_value}")
             return validated_value
         if not validated_value.is_dir():
             raise NotADirectoryError(f"{validated_value} is not a directory")
@@ -371,18 +384,23 @@ def val_output_dir_path(value: Path | str | Iterable[Path | str]) -> Path | list
 
 
 @overload
-def val_output_path(value: Path | str) -> Path: ...
+def val_output_path(value: Path | str, exist_ok: bool = False) -> Path: ...
 @overload
-def val_output_path(value: Iterable[Path | str]) -> list[Path]: ...
-def val_output_path(value: Path | str | Iterable[Path | str]) -> Path | list[Path]:
+def val_output_path(
+    value: Iterable[Path | str], exist_ok: bool = False
+) -> list[Path]: ...
+def val_output_path(
+    value: Path | str | Iterable[Path | str], exist_ok: bool = False
+) -> Path | list[Path]:
     """Validate output file path(s) and make them absolute.
 
     Arguments:
         value: Path or paths to output files
+        exist_ok: Whether to allow output files to already exist
     Returns:
         Validated path or paths
     Raises:
-        FileExistsError: If the file exists and must_exist is True
+        FileExistsError: If the file exists and exist_ok is False
         NotAFileError: If a path exists and is not a file
         TypeError: If any value cannot be cast to a Path
     """
@@ -395,7 +413,7 @@ def val_output_path(value: Path | str | Iterable[Path | str]) -> Path | list[Pat
         Returns:
             Validated path
         Raises:
-            FileExistsError: If file exists and may_exist is False
+            FileExistsError: If file exists and exist_ok is False
             TypeError: If value cannot be cast to a Path
         """
         try:
@@ -407,11 +425,11 @@ def val_output_path(value: Path | str | Iterable[Path | str]) -> Path | list[Pat
                 f"{value_to_validate} is of type "
                 f"{type(value_to_validate)}, cannot be cast to Path"
             ) from exc
-        if validated_value.exists():
+        if validated_value.exists() and not exist_ok:
             raise FileExistsError(f"Output file {validated_value} already exists")
         if not validated_value.parent.exists():
             validated_value.parent.mkdir(parents=True)
-            info(f"Created directory {validated_value.parent}")
+            logger.info(f"Created directory {validated_value.parent}")
         return validated_value
 
     # Handle non-iterables and iterables we don't want to iterate over
@@ -457,15 +475,3 @@ def val_str(value: Any, options: Iterable[str]) -> str:
         ) from None
 
     return case_insensitive_options[value]
-
-
-__all__ = [
-    "val_executable",
-    "val_float",
-    "val_input_dir_path",
-    "val_input_path",
-    "val_int",
-    "val_output_dir_path",
-    "val_output_path",
-    "val_str",
-]

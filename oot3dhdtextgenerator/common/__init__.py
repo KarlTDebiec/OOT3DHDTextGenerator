@@ -1,12 +1,15 @@
-#  Copyright 2020-2026 Karl T Debiec. All rights reserved. This software may be modified
+#  Copyright 2017-2026 Karl T Debiec. All rights reserved. This software may be modified
 #  and distributed under the terms of the BSD license. See the LICENSE file for details.
-"""General-purpose code not tied to a particular project."""
+"""General-purpose code not tied to a particular project.
+
+This module should not import from other modules outside the standard library.
+"""
 
 from __future__ import annotations
 
 from pathlib import Path
 
-from .command_line_interface import CommandLineInterface
+from .command_line_interface import CLIKwargs, CommandLineInterface
 from .exception import (
     ArgumentConflictError,
     DirectoryExistsError,
@@ -28,6 +31,7 @@ If this file is '/path/to/package/common/__init__.py', the value is
 
 __all__ = [
     "ArgumentConflictError",
+    "CLIKwargs",
     "CommandLineInterface",
     "DirectoryExistsError",
     "DirectoryNotFoundError",
