@@ -1,4 +1,4 @@
-#  Copyright 2020-2026 Karl T Debiec. All rights reserved. This software may be modified
+#  Copyright 2017-2026 Karl T Debiec. All rights reserved. This software may be modified
 #  and distributed under the terms of the BSD license. See the LICENSE file for details.
 """General-purpose functions related to argument parsing."""
 
@@ -9,9 +9,9 @@ from argparse import (
     ArgumentTypeError,
     _ArgumentGroup,  # noqa pylint
 )
-from collections.abc import Callable
+from collections.abc import Callable, Collection
 from pathlib import Path
-from typing import Any
+from typing import Any, TypedDict, Unpack
 
 from .validation import (
     val_float,
@@ -23,9 +23,56 @@ from .validation import (
     val_str,
 )
 
+__all__ = [
+    "FloatValidatorKwargs",
+    "IntValidatorKwargs",
+    "OutputPathValidatorKwargs",
+    "StrValidatorKwargs",
+    "float_arg",
+    "get_arg_groups_by_name",
+    "get_optional_args_group",
+    "get_required_args_group",
+    "get_validator",
+    "input_dir_arg",
+    "input_file_arg",
+    "int_arg",
+    "output_dir_arg",
+    "output_file_arg",
+    "str_arg",
+]
+
+
+class FloatValidatorKwargs(TypedDict, total=False):
+    """Keyword arguments for val_float."""
+
+    n_values: int | None
+    min_value: float | None
+    max_value: float | None
+
+
+class IntValidatorKwargs(TypedDict, total=False):
+    """Keyword arguments for val_int."""
+
+    n_values: int | None
+    min_value: int | None
+    max_value: int | None
+    acceptable_values: Collection[int] | None
+
+
+class OutputPathValidatorKwargs(TypedDict, total=False):
+    """Keyword arguments for val_output_path."""
+
+    exist_ok: bool
+
+
+class StrValidatorKwargs(TypedDict, total=False):
+    """Keyword arguments for val_str."""
+
+    options: Collection[str]
+
 
 def get_optional_args_group(parser: ArgumentParser) -> _ArgumentGroup:
-    """Get the 'optional arguments' group from an argparser.
+    """Get the optional arguments group from an argparser.
 
     Arguments:
         parser: Argparser to get group from
@@ -33,7 +80,9 @@ def get_optional_args_group(parser: ArgumentParser) -> _ArgumentGroup:
         Optional arguments group
     """
     action_groups = parser._action_groups  # noqa pylint: disable=protected-access
-    return next(ag for ag in action_groups if ag.title == "optional arguments")
+    return next(
+        ag for ag in action_groups if ag.title in ["optional arguments", "options"]
+    )
 
 
 def get_required_args_group(parser: ArgumentParser) -> _ArgumentGroup:
@@ -45,8 +94,9 @@ def get_required_args_group(parser: ArgumentParser) -> _ArgumentGroup:
         Required arguments group
     """
     action_groups = parser._action_groups  # noqa pylint: disable=protected-access
-    if any((required := ag).title == "required arguments" for ag in action_groups):
-        return required
+    for group in action_groups:
+        if group.title == "required arguments":
+            return group
 
     # Move "optional arguments" group below "required arguments" group
     optional = action_groups.pop()
@@ -135,93 +185,76 @@ def get_validator[T](function: Callable[..., T], **kwargs: Any) -> Callable[[Any
     return wrapped
 
 
-def float_arg(**kwargs: Any) -> Callable[[Any], float]:
+def float_arg(
+    **kwargs: Unpack[FloatValidatorKwargs],
+) -> Callable[[Any], float | list[float]]:
     """Validate a float argument.
 
     Arguments:
-        **kwargs: Keyword arguments to pass to val_float
+        **kwargs: keyword arguments to pass to val_float
     Returns:
-        Value validator function
+        value validator function
     """
     return get_validator(val_float, **kwargs)
 
 
-def input_dir_arg(**kwargs: Any) -> Callable[[Any], Path]:
+def input_dir_arg() -> Callable[[Any], Path | list[Path]]:
     """Validate an input directory path argument.
 
-    Arguments:
-        **kwargs: Keyword arguments to pass to val_input_dir_path
     Returns:
-        Value validator function
+        value validator function
     """
-    return get_validator(val_input_dir_path, **kwargs)
+    return get_validator(val_input_dir_path)
 
 
-def input_file_arg(**kwargs: Any) -> Callable[[Any], Path]:
+def input_file_arg() -> Callable[[Any], Path | list[Path]]:
     """Validate an input file path argument.
 
-    Arguments:
-        **kwargs: Keyword arguments to pass to val_input_path
     Returns:
-        Value validator function
+        value validator function
     """
-    return get_validator(val_input_path, **kwargs)
+    return get_validator(val_input_path)
 
 
-def int_arg(**kwargs: Any) -> Callable[[Any], int]:
+def int_arg(**kwargs: Unpack[IntValidatorKwargs]) -> Callable[[Any], int | list[int]]:
     """Validate an int argument.
 
     Arguments:
-        **kwargs: Keyword arguments to pass to val_int
+        **kwargs: keyword arguments to pass to val_int
     Returns:
-        Value validator function
+        value validator function
     """
     return get_validator(val_int, **kwargs)
 
 
-def output_dir_arg(**kwargs: Any) -> Callable[[Any], Path]:
+def output_dir_arg() -> Callable[[Any], Path | list[Path]]:
     """Validate an output directory path argument.
 
-    Arguments:
-        **kwargs: Keyword arguments to pass to val_output_dir_path
     Returns:
-        Value validator function
+        value validator function
     """
-    return get_validator(val_output_dir_path, **kwargs)
+    return get_validator(val_output_dir_path)
 
 
-def output_file_arg(**kwargs: Any) -> Callable[[Any], Path]:
+def output_file_arg(
+    **kwargs: Unpack[OutputPathValidatorKwargs],
+) -> Callable[[Any], Path | list[Path]]:
     """Validate an output file path argument.
 
     Arguments:
-        **kwargs: Keyword arguments to pass to val_output_path
+        **kwargs: keyword arguments to pass to val_output_path
     Returns:
-        Value validator function
+        value validator function
     """
     return get_validator(val_output_path, **kwargs)
 
 
-def str_arg(**kwargs: Any) -> Callable[[Any], str]:
+def str_arg(**kwargs: Unpack[StrValidatorKwargs]) -> Callable[[Any], str]:
     """Validate a string argument.
 
     Arguments:
-        **kwargs: Keyword arguments to pass to val_str
+        **kwargs: keyword arguments to pass to val_str
     Returns:
-        Value validator function
+        value validator function
     """
     return get_validator(val_str, **kwargs)
-
-
-__all__ = [
-    "float_arg",
-    "get_arg_groups_by_name",
-    "get_optional_args_group",
-    "get_required_args_group",
-    "get_validator",
-    "input_dir_arg",
-    "input_file_arg",
-    "int_arg",
-    "output_dir_arg",
-    "output_file_arg",
-    "str_arg",
-]

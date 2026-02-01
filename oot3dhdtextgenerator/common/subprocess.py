@@ -1,12 +1,12 @@
 #  Copyright 2020-2026 Karl T Debiec. All rights reserved. This software may be modified
 #  and distributed under the terms of the BSD license. See the LICENSE file for details.
-"""General-purpose functions not tied to a particular project."""
+"""Subprocess-related utility functions."""
 
 from __future__ import annotations
 
-import threading
 from collections.abc import Iterable
 from subprocess import PIPE, Popen, TimeoutExpired
+from threading import Thread
 
 
 def run_command(
@@ -63,7 +63,7 @@ def run_command(
 
 def run_command_live(
     command: str,
-    timeout: int | None = 600,
+    timeout: int | None = 43200,
     acceptable_exitcodes: Iterable[int] | None = None,
 ) -> tuple[int, str, str]:
     """Run a provided command and stream output live.
@@ -98,16 +98,10 @@ def run_command_live(
         bufsize=0,
         encoding="utf-8",
     ) as child:
-        stdout_thread = threading.Thread(
-            target=read_stream, args=(child.stdout, stdout_lines)
-        )
-        stderr_thread = threading.Thread(
-            target=read_stream, args=(child.stderr, stderr_lines)
-        )
-
+        stdout_thread = Thread(target=read_stream, args=(child.stdout, stdout_lines))
+        stderr_thread = Thread(target=read_stream, args=(child.stderr, stderr_lines))
         stdout_thread.start()
         stderr_thread.start()
-
         stdout_thread.join(timeout)
         stderr_thread.join(timeout)
 

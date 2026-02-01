@@ -56,7 +56,7 @@ class CharAssignerCli(CommandLineInterface):
         arg_groups["input arguments"].add_argument(
             "--model-input-file",
             dest="model_input_path",
-            type=input_file_arg(must_exist=False),
+            type=str,
             default="model_{n_chars}.pth",
             help="model input file (default: %(default)s)",
         )
