@@ -12,10 +12,11 @@ import torch
 from flask import Flask
 from torch.utils.data import DataLoader
 
-from oot3dhdtextgenerator.apps.char_assigner.character import Character
-from oot3dhdtextgenerator.apps.char_assigner.routes import route
 from oot3dhdtextgenerator.common.validation import val_input_path
 from oot3dhdtextgenerator.core import AssignmentDataset, Model
+
+from .character import Character
+from .routes import route
 
 
 class CharAssigner:

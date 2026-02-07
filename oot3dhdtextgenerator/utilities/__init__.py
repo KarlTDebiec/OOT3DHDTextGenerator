@@ -4,10 +4,10 @@
 
 from __future__ import annotations
 
-from oot3dhdtextgenerator.utilities.learning_dataset_generator import (
+from .learning_dataset_generator import (
     LearningDatasetGenerator,
 )
-from oot3dhdtextgenerator.utilities.model_trainer import ModelTrainer
+from .model_trainer import ModelTrainer
 
 __all__ = [
     "LearningDatasetGenerator",
