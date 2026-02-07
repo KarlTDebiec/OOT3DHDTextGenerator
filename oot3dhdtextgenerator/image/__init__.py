@@ -4,8 +4,8 @@
 
 from __future__ import annotations
 
-from oot3dhdtextgenerator.image.oot3d_shadow_processor import OOT3DShadowProcessor
-from oot3dhdtextgenerator.image.oot3d_text_processor import OOT3DHDTextProcessor
+from .oot3d_shadow_processor import OOT3DShadowProcessor
+from .oot3d_text_processor import OOT3DHDTextProcessor
 
 __all__ = [
     "OOT3DHDTextProcessor",
