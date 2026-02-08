@@ -1,6 +1,12 @@
 #  Copyright 2020-2026 Karl T Debiec. All rights reserved. This software may be modified
 #  and distributed under the terms of the BSD license. See the LICENSE file for details.
-"""Data."""
+"""Data.
+
+This module may import from: common
+
+Hierarchy within module:
+* characters (data only, no submodule hierarchy)
+"""
 
 from __future__ import annotations
 
