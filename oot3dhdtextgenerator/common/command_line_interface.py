@@ -119,9 +119,9 @@ class CommandLineInterface(ABC):
         configure_logging(verbosity)
 
         # File logging
-        log_file = kwargs.pop("log_file")
-        if log_file:
-            log_file_path = Path(log_file).resolve()
+        log_file_path = kwargs.pop("log_file")
+        if log_file_path:
+            log_file_path = Path(log_file_path).resolve()
             file_handler = FileHandler(log_file_path)
             file_handler.setLevel(getLogger().level)
             formatter = Formatter(DEFAULT_LOG_FORMAT)
