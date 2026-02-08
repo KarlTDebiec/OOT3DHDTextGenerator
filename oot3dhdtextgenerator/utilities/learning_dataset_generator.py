@@ -89,16 +89,16 @@ class LearningDatasetGenerator(Utility):
         cls,
         n_chars: int,
         test_proportion: float,
-        train_output_file: Path,
-        test_output_file: Path,
+        train_output_path: Path,
+        test_output_path: Path,
     ) -> None:
         """Execute.
 
         Arguments:
             n_chars: Number of unique characters to include in dataset
             test_proportion: Proportion of dataset to be set aside for testing
-            train_output_file: Train output file path
-            test_output_file: Test output file path
+            train_output_path: Train output file path
+            test_output_path: Test output file path
         """
         images, specifications = cls.generate_character_images(n_chars)
         info(f"Generated {images.shape[0]} character images")
@@ -113,13 +113,13 @@ class LearningDatasetGenerator(Utility):
             f"{test_images.shape[0]} test images"
         )
 
-        LearningDataset.save_hdf5(train_images, train_specifications, train_output_file)
-        info(f"Saved {train_images.shape[0]} character images to {train_output_file}")
-        LearningDataset.save_hdf5(test_images, test_specifications, test_output_file)
-        info(f"Saved {test_images.shape[0]} character images to {test_output_file}")
+        LearningDataset.save_hdf5(train_images, train_specifications, train_output_path)
+        info(f"Saved {train_images.shape[0]} character images to {train_output_path}")
+        LearningDataset.save_hdf5(test_images, test_specifications, test_output_path)
+        info(f"Saved {test_images.shape[0]} character images to {test_output_path}")
 
     @staticmethod
-    def generate_character_image(
+    def generate_character_image(  # noqa: PLR0913
         char: str,
         *,
         font: str = r"C:\Windows\Fonts\simhei.ttf",

@@ -29,7 +29,7 @@ class OOT3DHDTextProcessor(ImageProcessor):
     _char_size: tuple[int, int] = (16, 16)
     _scale: int = 4
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         assignment_path: Path | str,
         font: Path | str | None = None,
@@ -38,18 +38,35 @@ class OOT3DHDTextProcessor(ImageProcessor):
         debug_dir: Path | str | None = None,
         **kwargs: Any,
     ):
+        """Initialize.
+
+        Arguments:
+            assignment_path: Path to assignment dataset file
+            font: Path to font file, or None to auto-select by platform
+            size: Font size in pixels
+            offset: X and Y draw offset in output image
+            debug_dir: Directory path to write unknown-character debug artifacts
+            **kwargs: Additional keyword arguments for ImageProcessor
+        """
         super().__init__(**kwargs)
 
         self.assignment_path = val_output_path(assignment_path, exist_ok=True)
         self.assignment_dataset = AssignmentDataset(self.assignment_path)
 
         font_path = self._resolve_font_path(font)
-        self.font = ImageFont.truetype(str(font_path), val_int(size, 1))
-        self.size = val_int(size, 1)
+        self.font = ImageFont.truetype(str(font_path), val_int(size, min_value=1))
+        self.size = val_int(size, min_value=1)
         self.offset = offset
         self.debug_dir = None if debug_dir is None else val_output_dir_path(debug_dir)
 
     def __call__(self, input_image: Image.Image) -> Image.Image:
+        """Process input image.
+
+        Arguments:
+            input_image: Input RGBA image
+        Returns:
+            Processed output image
+        """
         array = np.array(input_image)[:, :, 3]
         chars = self.assignment_dataset.get_chars_for_multi_char_array(array)
         if chars is None:
@@ -61,7 +78,7 @@ class OOT3DHDTextProcessor(ImageProcessor):
 
     def __repr__(self) -> str:
         """Representation."""
-        return f"{self.__class__.__name__}(assignment_file={self.assignment_path!r})"
+        return f"{self.__class__.__name__}(assignment_path={self.assignment_path!r})"
 
     def create_image(self, input_image: Image.Image, characters: str) -> Image.Image:
         """Create image from characters.

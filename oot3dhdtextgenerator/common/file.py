@@ -28,13 +28,13 @@ def get_temp_directory_path() -> Generator[Path]:
     Returns:
         Path to temporary directory
     """
-    temp_directory_path = None
+    temp_dir_path = None
     try:
-        temp_directory_path = Path(mkdtemp()).resolve()
-        yield temp_directory_path
+        temp_dir_path = Path(mkdtemp()).resolve()
+        yield temp_dir_path
     finally:
-        if temp_directory_path:
-            rmtree(temp_directory_path)
+        if temp_dir_path:
+            rmtree(temp_dir_path)
 
 
 @contextmanager
