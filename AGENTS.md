@@ -5,6 +5,11 @@
 * This repository uses a virtual environment. To activate the venv in your shell: `source .venv/bin/activate`.
 * This repository uses `uv`. Use `uv run` when executing tools.
 
+### Version Control
+
+* Branches should be named in the format `feature/brief-description`.
+* Interact with GitHub using the GitHub MCP; do not use the `gh` CLI.
+
 ### Linting
 
 * Run the following checks on **only the Python files you have changed or been asked to**:
