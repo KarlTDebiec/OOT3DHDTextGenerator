@@ -86,7 +86,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: test-results
+          name: test-results-linux
           path: .github/outputs/
 
   macOS:
@@ -136,7 +136,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: test-results
+          name: test-results-macos
           path: .github/outputs/
 
   Windows:
@@ -194,5 +194,5 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: test-results
+          name: test-results-windows
           path: .github/outputs/
