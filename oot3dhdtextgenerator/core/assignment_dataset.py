@@ -4,18 +4,22 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
 from logging import debug, info
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import h5py
 import numpy as np
 from PIL import Image
-from torch import Tensor
 from torchvision.datasets import VisionDataset
 from torchvision.transforms import Compose, Normalize, ToTensor
 
 from oot3dhdtextgenerator.common.validation import val_output_path
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+    from pathlib import Path
+
+    from torch import Tensor
 
 
 class AssignmentDataset(VisionDataset):

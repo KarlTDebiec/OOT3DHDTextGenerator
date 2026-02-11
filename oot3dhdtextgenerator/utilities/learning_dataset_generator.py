@@ -7,8 +7,8 @@ from __future__ import annotations
 import time
 from itertools import product
 from logging import info
-from pathlib import Path
 from random import sample
+from typing import TYPE_CHECKING
 
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
@@ -16,6 +16,9 @@ from pipescaler.core import Utility
 
 from oot3dhdtextgenerator.core import LearningDataset
 from oot3dhdtextgenerator.data import hanzi_frequency
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 class LearningDatasetGenerator(Utility):
