@@ -52,9 +52,9 @@ class LearningDataset(VisionDataset):
         """Initialize.
 
         Arguments:
-            input_path: Path to HDF5 file
-            transform: Transform to apply to images
-            target_transform: Transform to apply to targets
+            input_path: path to HDF5 file
+            transform: transform to apply to images
+            target_transform: transform to apply to targets
         """
         input_path = val_input_path(input_path)
         super().__init__(
@@ -85,9 +85,9 @@ class LearningDataset(VisionDataset):
         """Decode specifications from HDF5 file.
 
         Arguments:
-            encoded_specifications: Specifications to decode
+            encoded_specifications: specifications to decode
         Returns:
-            Decoded specifications
+            decoded specifications
         """
         specifications = np.array(
             [
@@ -112,9 +112,9 @@ class LearningDataset(VisionDataset):
         """Encode specifications for storage in HDF5 file.
 
         Arguments:
-            specifications: Specifications to encode
+            specifications: specifications to encode
         Returns:
-            Encoded specifications
+            encoded specifications
         """
         encoded_specifications = np.array(
             [
@@ -142,9 +142,9 @@ class LearningDataset(VisionDataset):
         """Load images and specifications from an HDF5 file.
 
         Arguments:
-            input_path: Path to HDF5 infile
+            input_path: path to HDF5 infile
         Returns:
-            Train images, train specifications, test images, and test specifications
+            train images, train specifications, test images, and test specifications
         Raises:
             ValueError: If infile does not contain images and specifications
         """
@@ -170,9 +170,9 @@ class LearningDataset(VisionDataset):
         """Save images and specifications to an HDF5 file.
 
         Arguments:
-            images: Train images
-            specifications: Train image specifications
-            output_path: Path to HDF5 outfile
+            images: train images
+            specifications: train image specifications
+            output_path: path to HDF5 outfile
         """
         with h5py.File(output_path, "w") as h5_file:
             if "images" in h5_file:

@@ -21,13 +21,14 @@ class OOT3DShadowProcessor(PotraceProcessor):
         """Initialize.
 
         Arguments:
-            arguments: Command-line arguments to pass to potrace
-            invert: Whether to invert image before tracing
-            scale: Scale of re-rasterized output image relative to input
+            arguments: command-line arguments to pass to potrace
+            invert: whether to invert image before tracing
+            scale: scale of re-rasterized output image relative to input
         """
         super().__init__(arguments=arguments, invert=invert, scale=scale)
 
     def __call__(self, input_image: Image.Image) -> Image.Image:
+        """Process a shadow image into a cleaned traced output."""
         # Flatten image and convert to monochrome
         canvas = Image.new("RGBA", input_image.size, (255, 255, 255))
         composite = Image.alpha_composite(canvas, input_image)

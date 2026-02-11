@@ -72,9 +72,9 @@ def run_command_live(
     """Run a provided command and stream output live.
 
     Arguments:
-        command: Command to run
-        timeout: Maximum time to await command's completion
-        acceptable_exitcodes: Acceptable exit codes
+        command: command to run
+        timeout: maximum time to await command's completion
+        acceptable_exitcodes: acceptable exit codes
     Returns:
         exitcode, standard output, and standard error
     Raises:
@@ -87,6 +87,7 @@ def run_command_live(
     stderr_lines = []
 
     def read_stream(stream, lines):
+        """Read one process stream, emit live output, and collect lines."""
         for line in iter(stream.readline, ""):
             print(line, end="")
             lines.append(line)

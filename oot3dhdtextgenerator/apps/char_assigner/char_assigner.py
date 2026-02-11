@@ -36,11 +36,11 @@ class CharAssigner:
         """Run character assigner.
 
         Arguments:
-            n_chars: Number of characters included in model
-            assignment_path: Assignment HDF5 file
-            model_input_path: Model pth file
-            cuda_enabled: Whether to use CUDA
-            mps_enabled: Whether to use macOS GPU
+            n_chars: number of characters included in model
+            assignment_path: assignment HDF5 file
+            model_input_path: model pth file
+            cuda_enabled: whether to use CUDA
+            mps_enabled: whether to use macOS GPU
         """
         # Determine which device to use
         cuda_enabled = torch.cuda.is_available() and cuda_enabled
@@ -78,6 +78,7 @@ class CharAssigner:
         route(self)
 
     def run(self, **kwargs: Any) -> None:
+        """Run the Flask application."""
         self.app.run(**kwargs)
 
     @staticmethod
@@ -87,10 +88,10 @@ class CharAssigner:
         """Get characters.
 
         Arguments:
-            dataset: Assignment dataset
-            scores: Scores
+            dataset: assignment dataset
+            scores: scores
         Returns:
-            List of characters
+            list of characters
         """
         characters = []
         i = 0

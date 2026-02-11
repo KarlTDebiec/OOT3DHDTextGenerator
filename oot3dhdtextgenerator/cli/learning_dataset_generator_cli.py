@@ -33,7 +33,7 @@ class LearningDatasetGeneratorCli(UtilityCli):
         """Add arguments to a nascent argument parser.
 
         Arguments:
-            parser: Nascent argument parser
+            parser: nascent argument parser
         """
         super().add_arguments_to_argparser(parser)
 
@@ -94,7 +94,7 @@ class LearningDatasetGeneratorCli(UtilityCli):
         utility and the call to its run method.
 
         Arguments:
-            **kwargs: Keyword arguments
+            **kwargs: keyword arguments
         """
         utility_cls = cls.utility()
         kwargs["train_output_path"] = val_output_path(

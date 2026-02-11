@@ -41,10 +41,10 @@ def val_executable(
 
     Arguments:
         name: executable name
-        supported_platforms: Platforms that support executable;
+        supported_platforms: platforms that support executable;
           default: "Darwin", "Linux", "Windows"
     Returns:
-        Absolute path of executable
+        absolute path of executable
     Raises:
         ExecutableNotFoundError: if executable is not found in path
         UnsupportedPlatformError: if executable is not supported on current platform
@@ -91,12 +91,12 @@ def val_float(
     """Validate one or more floats.
 
     Arguments:
-        value: Single value or iterable of values to validate
-        n_values: Number of values expected, if applicable
-        min_value: Minimum value of float, if applicable
-        max_value: Maximum value of float, if applicable
+        value: single value or iterable of values to validate
+        n_values: number of values expected, if applicable
+        min_value: minimum value of float, if applicable
+        max_value: maximum value of float, if applicable
     Returns:
-        Single float or list of floats depending on input
+        single float or list of floats depending on input
     Raises:
         ArgumentConflictError: If min_value is greater than max_value
         TypeError: If a value may not be cast to a float
@@ -106,6 +106,7 @@ def val_float(
         raise ArgumentConflictError("min_value must be less than max_value")
 
     def _val_float(value_to_validate: Any) -> float:
+        """Validate a single value as a float."""
         try:
             validated_value = float(value_to_validate)
         except ValueError as exc:
@@ -145,9 +146,9 @@ def val_input_dir_path(value: Path | str | Iterable[Path | str]) -> Path | list[
     """Validate input directory path(s) and make them absolute.
 
     Arguments:
-        value: Path or paths to input directories
+        value: path or paths to input directories
     Returns:
-        Validated path or paths
+        validated path or paths
     Raises:
         DirectoryNotFoundError: If any path does not exist
         NotADirectoryError: If any path is not a directory
@@ -158,9 +159,9 @@ def val_input_dir_path(value: Path | str | Iterable[Path | str]) -> Path | list[
         """Validate a path.
 
         Arguments:
-            value_to_validate: Path to validate
+            value_to_validate: path to validate
         Returns:
-            Validated path
+            validated path
         Raises:
             DirectoryNotFoundError: If path does not exist
             NotADirectoryError: If path is not a directory
@@ -201,9 +202,9 @@ def val_input_path(value: Path | str | Iterable[Path | str]) -> Path | list[Path
     """Validate input file path(s) and make them absolute.
 
     Arguments:
-        value: Path or paths to input files
+        value: path or paths to input files
     Returns:
-        Validated path or paths
+        validated path or paths
     Raises:
         FileNotFoundError: If any file does not exist
         NotAFileError: If any path is not a file
@@ -214,9 +215,9 @@ def val_input_path(value: Path | str | Iterable[Path | str]) -> Path | list[Path
         """Validate a path.
 
         Arguments:
-            value_to_validate: Path to validate
+            value_to_validate: path to validate
         Returns:
-            Validated path
+            validated path
         Raises:
             FileNotFoundError: If path does not exist
             NotAFileError: If path is not a file
@@ -274,13 +275,13 @@ def val_int(
     """Validate one or more ints.
 
     Arguments:
-        value: Single value or iterable of values to validate
-        n_values: Number of values expected, if applicable
-        min_value: Minimum value of int, if applicable
-        max_value: Maximum value of int, if applicable
-        acceptable_values: Acceptable int values, if applicable
+        value: single value or iterable of values to validate
+        n_values: number of values expected, if applicable
+        min_value: minimum value of int, if applicable
+        max_value: maximum value of int, if applicable
+        acceptable_values: acceptable int values, if applicable
     Returns:
-        Single int or list of ints depending on input
+        single int or list of ints depending on input
     Raises:
         ArgumentConflictError: If min_value is greater than max_value
         TypeError: If a value may not be cast to an int
@@ -293,9 +294,9 @@ def val_int(
         """Validate a single value as an int.
 
         Arguments:
-            value_to_validate: Value to validate
+            value_to_validate: value to validate
         Returns:
-            Value as an int
+            value as an int
         """
         try:
             validated_value = int(value_to_validate)
@@ -338,9 +339,9 @@ def val_output_dir_path(value: Path | str | Iterable[Path | str]) -> Path | list
     """Validate output directory path(s), make them absolute, and create them if needed.
 
     Arguments:
-        value: Path or paths to output directories
+        value: path or paths to output directories
     Returns:
-        Validated path or paths
+        validated path or paths
     Raises:
         NotADirectoryError: If any path is not a directory
         TypeError: If any value cannot be cast to Path
@@ -350,9 +351,9 @@ def val_output_dir_path(value: Path | str | Iterable[Path | str]) -> Path | list
         """Validate a path.
 
         Arguments:
-            value_to_validate: Path to validate
+            value_to_validate: path to validate
         Returns:
-            Validated path
+            validated path
         Raises:
             FileExistsError: If path already exists
             NotADirectoryError: If path is not a directory
@@ -395,10 +396,10 @@ def val_output_path(
     """Validate output file path(s) and make them absolute.
 
     Arguments:
-        value: Path or paths to output files
-        exist_ok: Whether to allow output files to already exist
+        value: path or paths to output files
+        exist_ok: whether to allow output files to already exist
     Returns:
-        Validated path or paths
+        validated path or paths
     Raises:
         FileExistsError: If the file exists and exist_ok is False
         NotAFileError: If a path exists and is not a file
@@ -409,9 +410,9 @@ def val_output_path(
         """Validate a path.
 
         Arguments:
-            value_to_validate: Path to validate
+            value_to_validate: path to validate
         Returns:
-            Validated path
+            validated path
         Raises:
             FileExistsError: If file exists and exist_ok is False
             TypeError: If value cannot be cast to a Path
@@ -444,10 +445,10 @@ def val_str(value: Any, options: Iterable[str]) -> str:
     """Validate a str.
 
     Arguments:
-        value: Input value to validate
-        options: Acceptable string values, if applicable
+        value: input value to validate
+        options: acceptable string values, if applicable
     Returns:
-        Value as a str
+        value as a str
     Raises:
         ArgumentConflictError: If an option cannot be cast to a string
         TypeError: If value may not be cast to a str

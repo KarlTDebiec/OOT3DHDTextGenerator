@@ -77,9 +77,9 @@ def get_optional_args_group(parser: ArgumentParser) -> _ArgumentGroup:
     """Get the optional arguments group from an argparser.
 
     Arguments:
-        parser: Argparser to get group from
+        parser: argparser to get group from
     Returns:
-        Optional arguments group
+        optional arguments group
     """
     action_groups = parser._action_groups  # noqa pylint: disable=protected-access
     return next(
@@ -91,9 +91,9 @@ def get_required_args_group(parser: ArgumentParser) -> _ArgumentGroup:
     """Get or create a 'required arguments' group from an argparser.
 
     Arguments:
-        parser: Argparser to get group from
+        parser: argparser to get group from
     Returns:
-        Required arguments group
+        required arguments group
     """
     action_groups = parser._action_groups  # noqa pylint: disable=protected-access
     for group in action_groups:
@@ -127,11 +127,11 @@ def get_arg_groups_by_name(
     optional_arguments_name.
 
     Arguments:
-        parser: Argparser to get groups from
-        *names: Names of groups to get or create
-        optional_arguments_name: Name of optional arguments group
+        parser: argparser to get groups from
+        *names: names of groups to get or create
+        optional_arguments_name: name of optional arguments group
     Returns:
-        Dictionary of names to argument groups
+        dictionary of names to argument groups
     """
     specified_groups = {}
     for name in names:
@@ -163,19 +163,19 @@ def get_validator[T](function: Callable[..., T], **kwargs: Any) -> Callable[[Any
     """Get a function that can be called with the same signature as function.
 
     Arguments:
-        function: Function to be wrapped
-        **kwargs: Keyword arguments to pass to wrapped function
+        function: function to be wrapped
+        **kwargs: keyword arguments to pass to wrapped function
     Returns:
-        Wrapped function
+        wrapped function
     """
 
     def wrapped(value: Any) -> T:
         """Wrapped function.
 
         Arguments:
-            value: Value to be validated
+            value: value to be validated
         Returns:
-            Validated value
+            validated value
         Raises:
             ArgumentTypeError: If TypeError is raised by wrapped function
         """

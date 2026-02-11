@@ -31,9 +31,9 @@ class LearningDatasetGenerator(Utility):
         """Generate character images.
 
         Arguments:
-            n_chars: Number of unique characters to include in dataset
+            n_chars: number of unique characters to include in dataset
         Returns:
-            Images and specifications
+            images and specifications
         """
         characters = hanzi_frequency["character"].values[:n_chars]
         fonts = [
@@ -98,10 +98,10 @@ class LearningDatasetGenerator(Utility):
         """Execute.
 
         Arguments:
-            n_chars: Number of unique characters to include in dataset
-            test_proportion: Proportion of dataset to be set aside for testing
-            train_output_path: Train output file path
-            test_output_path: Test output file path
+            n_chars: number of unique characters to include in dataset
+            test_proportion: proportion of dataset to be set aside for testing
+            train_output_path: train output file path
+            test_output_path: test output file path
         """
         images, specifications = cls.generate_character_images(n_chars)
         info(f"Generated {images.shape[0]} character images")
@@ -135,13 +135,13 @@ class LearningDatasetGenerator(Utility):
         """Generate a character image.
 
         Arguments:
-            char: Hanzi character
-            font: Font name
-            size: Font size
-            fill: Fill color
-            x_offset: Horizontal offset
-            y_offset: Vertical offset
-            rotation: Rotation in degrees
+            char: hanzi character
+            font: font name
+            size: font size
+            fill: fill color
+            x_offset: horizontal offset
+            y_offset: vertical offset
+            rotation: rotation in degrees
         Returns:
             numpy array of character image
         """
@@ -176,11 +176,11 @@ class LearningDatasetGenerator(Utility):
         is included in the test set.
 
         Arguments:
-            images: Images
-            specifications: Specifications
-            test_proportion: Proportion of images to set aside for testing
+            images: images
+            specifications: specifications
+            test_proportion: proportion of images to set aside for testing
         Returns:
-            Train and test images and specifications
+            train and test images and specifications
         """
         train_index_set = set()
         for character in set(specifications["character"]):

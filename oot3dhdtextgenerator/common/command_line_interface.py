@@ -37,7 +37,7 @@ class CommandLineInterface(ABC):
         """Add arguments to a nascent argument parser.
 
         Arguments:
-            parser: Nascent argument parser
+            parser: nascent argument parser
         """
         verbosity = parser.add_mutually_exclusive_group()
         verbosity.add_argument(
@@ -75,10 +75,10 @@ class CommandLineInterface(ABC):
         """Construct argument parser.
 
         Arguments:
-            subparsers: Subparsers group to which a new subparser will be added; if
+            subparsers: subparsers group to which a new subparser will be added; if
               None, a new ArgumentParser will be created
         Returns:
-            Argument parser
+            argument parser
         """
         if not subparsers:
             parser = ArgumentParser(
