@@ -22,7 +22,7 @@ def assert_cli_help(cli: CliTuple) -> None:
     """Assert that a CLI tuple shows help text.
 
     Arguments:
-        cli: cLI class tuple with optional subcommands
+        cli: CLI class tuple with optional subcommands
     """
     subcommands = build_subcommands(cli)
     stdout = StringIO()
@@ -40,7 +40,7 @@ def assert_cli_usage(cli: CliTuple) -> None:
     """Assert that a CLI tuple shows usage on missing args.
 
     Arguments:
-        cli: cLI class tuple with optional subcommands
+        cli: CLI class tuple with optional subcommands
     """
     subcommands = build_subcommands(cli)
     stdout = StringIO()
@@ -58,7 +58,7 @@ def build_subcommands(cli: CliTuple) -> str:
     """Build subcommand string for a CLI tuple.
 
     Arguments:
-        cli: cLI class tuple with optional subcommands
+        cli: CLI class tuple with optional subcommands
     Returns:
         subcommand string to append to the base CLI
     """
@@ -69,7 +69,7 @@ def get_usage_prefix(cli: CliTuple) -> str:
     """Get expected usage prefix for a CLI tuple.
 
     Arguments:
-        cli: cLI class tuple with optional subcommands
+        cli: CLI class tuple with optional subcommands
     Returns:
         expected usage prefix
     """
@@ -84,7 +84,7 @@ def run_cli_with_args(cli: type[CommandLineInterface], args: str = ""):
     """Run CommandLineInterface as if from shell with provided args.
 
     Arguments:
-        cli: commandLineInterface to run
+        cli: CommandLineInterface to run
         args: arguments to pass
     """
     with patch.object(sys, "argv", [getfile(cli)] + args.split()):
