@@ -35,7 +35,7 @@ class Character:
         """Base64 encoded PNG representation of the character.
 
         Returns:
-            Base64 encoded image string.
+            base64 encoded image string.
         """
         img = Image.fromarray(self.array)
         img = invert(img)

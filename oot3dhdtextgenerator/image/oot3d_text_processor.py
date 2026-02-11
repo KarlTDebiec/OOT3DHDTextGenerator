@@ -41,12 +41,12 @@ class OOT3DHDTextProcessor(ImageProcessor):
         """Initialize.
 
         Arguments:
-            assignment_path: Path to assignment dataset file
-            font: Path to font file, or None to auto-select by platform
-            size: Font size in pixels
-            offset: X and Y draw offset in output image
-            debug_dir: Directory path to write unknown-character debug artifacts
-            **kwargs: Additional keyword arguments for ImageProcessor
+            assignment_path: path to assignment dataset file
+            font: path to font file, or None to auto-select by platform
+            size: font size in pixels
+            offset: x and Y draw offset in output image
+            debug_dir: directory path to write unknown-character debug artifacts
+            **kwargs: additional keyword arguments for ImageProcessor
         """
         super().__init__(**kwargs)
 
@@ -63,9 +63,9 @@ class OOT3DHDTextProcessor(ImageProcessor):
         """Process input image.
 
         Arguments:
-            input_image: Input RGBA image
+            input_image: input RGBA image
         Returns:
-            Processed output image
+            processed output image
         """
         array = np.array(input_image)[:, :, 3]
         chars = self.assignment_dataset.get_chars_for_multi_char_array(array)
@@ -84,10 +84,10 @@ class OOT3DHDTextProcessor(ImageProcessor):
         """Create image from characters.
 
         Arguments:
-            input_image: Input image
-            characters: Characters to draw, in row-major order
+            input_image: input image
+            characters: characters to draw, in row-major order
         Returns:
-            Image.Image: Output image
+            Image.Image: output image
         """
         if input_image.width % self._char_size[0] != 0:
             raise ValueError(
@@ -125,9 +125,9 @@ class OOT3DHDTextProcessor(ImageProcessor):
         """Resolve a platform-appropriate font path.
 
         Arguments:
-            font: Explicit font path, or None to use an OS-specific default
+            font: explicit font path, or None to use an OS-specific default
         Returns:
-            Path to a font file usable by PIL
+            path to a font file usable by PIL
         Raises:
             FileNotFoundError: If no suitable font can be found
         """
@@ -173,8 +173,8 @@ class OOT3DHDTextProcessor(ImageProcessor):
         """Write debug artifacts for an image with unknown characters.
 
         Arguments:
-            input_image: Original input image
-            alpha_array: Input alpha channel (H×W) as uint8
+            input_image: original input image
+            alpha_array: input alpha channel (H×W) as uint8
         """
         if self.debug_dir is None:
             return

@@ -25,7 +25,7 @@ class ModelTrainer(Utility):
     """Optical character recognition model trainer."""
 
     @classmethod
-    def run(
+    def run(  # noqa: PLR0913
         cls,
         *,
         train_input_path: Path,
@@ -45,19 +45,19 @@ class ModelTrainer(Utility):
         """Execute from command line.
 
         Arguments:
-            train_input_path: Train data input file
-            test_input_path: Test data input file
-            batch_size: Batch size for training
-            test_batch_size: Batch size for testing
-            epochs: Number of epochs to train
-            lr: Learning rate
-            gamma: Learning rate step gamma
-            cuda_enabled: Whether to use CUDA
-            mps_enabled: Whether to use macOS GPU
-            dry_run: Whether to check a single pass
-            seed: Random seed
-            log_interval: Training status logging interval
-            model_output_path: Model output file
+            train_input_path: train data input file
+            test_input_path: test data input file
+            batch_size: batch size for training
+            test_batch_size: batch size for testing
+            epochs: number of epochs to train
+            lr: learning rate
+            gamma: learning rate step gamma
+            cuda_enabled: whether to use CUDA
+            mps_enabled: whether to use macOS GPU
+            dry_run: whether to check a single pass
+            seed: random seed
+            log_interval: training status logging interval
+            model_output_path: model output file
         """
         # Determine which device to use
         cuda_enabled = torch.cuda.is_available() and cuda_enabled
@@ -113,20 +113,21 @@ class ModelTrainer(Utility):
         """Test model against test data.
 
         Arguments:
-            model: Model to test
-            device: Device to use
-            loader: Test data loader
+            model: model to test
+            device: device to use
+            loader: test data loader
         """
         model.eval()
         test_loss = 0
         correct = 0
         with torch.no_grad():
             for data, target in loader:
-                data, target = data.to(device), target.to(device)
-                output = model(data)
-                test_loss += nll_loss(output, target, reduction="sum").item()
+                batch_data = data.to(device)
+                batch_target = target.to(device)
+                output = model(batch_data)
+                test_loss += nll_loss(output, batch_target, reduction="sum").item()
                 pred = output.argmax(dim=1, keepdim=True)
-                correct += pred.eq(target.view_as(pred)).sum().item()
+                correct += pred.eq(batch_target.view_as(pred)).sum().item()
         test_loss /= len(loader.dataset)
         info(
             f"Test set: Average loss: {test_loss:.4f}, "
@@ -135,7 +136,7 @@ class ModelTrainer(Utility):
         )
 
     @staticmethod
-    def train(
+    def train(  # noqa: PLR0913
         model: Model,
         device: torch.device,
         loader: DataLoader,
@@ -148,26 +149,27 @@ class ModelTrainer(Utility):
         """Train model against training data.
 
         Arguments:
-            model: Model to train
-            device: Device to use
-            loader: Training data loader
-            optimizer: Optimizer to use
-            epoch: Epoch number
-            log_interval: Logging interval
-            dry_run: Whether to check a single pass
+            model: model to train
+            device: device to use
+            loader: training data loader
+            optimizer: optimizer to use
+            epoch: epoch number
+            log_interval: logging interval
+            dry_run: whether to check a single pass
         """
         model.train()
         for batch_idx, (data, target) in enumerate(loader):
-            data, target = data.to(device), target.to(device)
+            batch_data = data.to(device)
+            batch_target = target.to(device)
             optimizer.zero_grad()
-            output = model(data)
-            loss = nll_loss(output, target)
+            output = model(batch_data)
+            loss = nll_loss(output, batch_target)
             loss.backward()
             optimizer.step()
             if batch_idx % log_interval == 0:
                 info(
                     f"Train epoch {epoch} "
-                    f"[{batch_idx * len(data)}/{len(loader.dataset)} "
+                    f"[{batch_idx * len(batch_data)}/{len(loader.dataset)} "
                     f"({100.0 * batch_idx / len(loader):.0f}%)] "
                     f"Loss: {loss.item():.6f}"
                 )

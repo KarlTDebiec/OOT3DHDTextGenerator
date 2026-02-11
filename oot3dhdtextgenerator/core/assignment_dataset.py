@@ -66,8 +66,8 @@ class AssignmentDataset(VisionDataset):
         """Assign char to char array.
 
         Arguments:
-            char_array: Char array to assign
-            char: Char to assign
+            char_array: char array to assign
+            char: char to assign
         """
         char_bytes = self.array_to_bytes(char_array)
 
@@ -93,9 +93,9 @@ class AssignmentDataset(VisionDataset):
         """Get chars for a multi-char array, if all assigned, or None otherwise.
 
         Arguments:
-            multi_char_array: Multi-char array whose chars to retrieve
+            multi_char_array: multi-char array whose chars to retrieve
         Returns:
-            Chars, or None if not all chars are assigned
+            chars, or None if not all chars are assigned
         """
         if multi_char_array.shape not in self.multi_char_array_shapes:
             raise ValueError(
@@ -131,9 +131,9 @@ class AssignmentDataset(VisionDataset):
         If char_array is not assigned, it is added to self.unassigned_char_arrays.
 
         Arguments:
-            char_array: Char array whose char to retrieve
+            char_array: char array whose char to retrieve
         Returns:
-            Char, or None if not assigned
+            char, or None if not assigned
         """
         if char_array.shape != self.char_array_shape:
             raise ValueError(
@@ -160,7 +160,7 @@ class AssignmentDataset(VisionDataset):
         """Convert char array to char bytes.
 
         Arguments:
-            char_array: Char array
+            char_array: char array
         Returns:
             char bytes
         """
@@ -171,9 +171,9 @@ class AssignmentDataset(VisionDataset):
         """Convert char bytes to char array.
 
         Arguments:
-            char_bytes: Char bytes
+            char_bytes: char bytes
         Returns:
-            Char array
+            char array
         """
         return np.frombuffer(char_bytes, dtype=np.uint8).reshape(cls.char_array_shape)
 
@@ -182,9 +182,9 @@ class AssignmentDataset(VisionDataset):
         """Decode chars from HDF5 file.
 
         Arguments:
-            encoded_chars: Chars to decode
+            encoded_chars: chars to decode
         Returns:
-            Decoded chars
+            decoded chars
         """
         return [assignment.decode("utf-8") for assignment in encoded_chars]
 
@@ -193,9 +193,9 @@ class AssignmentDataset(VisionDataset):
         """Encode chars for HDF5 file.
 
         Arguments:
-            chars: Chars to encode
+            chars: chars to encode
         Returns:
-            Encoded chars
+            encoded chars
         """
         return [assignment.encode("utf-8") for assignment in chars]
 
@@ -204,9 +204,9 @@ class AssignmentDataset(VisionDataset):
         """Load char arrays and assignments from an HDF5 file.
 
         Arguments:
-            input_path: Path to HDF5 file
+            input_path: path to HDF5 file
         Returns:
-            Assigned and unassigned char bytes
+            assigned and unassigned char bytes
         """
         assigned: Iterable[bytes] = []
         assignments: list[str] = []
@@ -232,9 +232,9 @@ class AssignmentDataset(VisionDataset):
         """Save char bytes and assignments to an HDF5 file.
 
         Arguments:
-            assigned_char_bytes: Assigned images
-            unassigned_char_bytes: Unassigned images
-            output_path: Path to HDF5 outfile
+            assigned_char_bytes: assigned images
+            unassigned_char_bytes: unassigned images
+            output_path: path to HDF5 outfile
         """
         with h5py.File(output_path, "w") as h5_file:
             if "assigned" in h5_file:

@@ -12,10 +12,12 @@ def route(char_assigner):
 
     @char_assigner.app.route("/", methods=["GET"])
     def index():
+        """Render the character assignment index page."""
         return render_template("index.html", characters=char_assigner.characters)
 
     @char_assigner.app.route("/characters/<int:character_id>", methods=["PUT"])
     def update_character(character_id):
+        """Update a character assignment and persist it."""
         assignment = request.form["assignment"]
         if assignment == "":
             assignment = None

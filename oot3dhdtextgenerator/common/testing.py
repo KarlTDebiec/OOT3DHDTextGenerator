@@ -85,7 +85,7 @@ def run_cli_with_args(cli: type[CommandLineInterface], args: str = ""):
 
     Arguments:
         cli: CommandLineInterface to run
-        args: Arguments to pass
+        args: arguments to pass
     """
     with patch.object(sys, "argv", [getfile(cli)] + args.split()):
         cli.main()

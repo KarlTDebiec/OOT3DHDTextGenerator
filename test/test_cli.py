@@ -32,6 +32,7 @@ if TYPE_CHECKING:
     ],
 )
 def test_help(command: type[CommandLineInterface]) -> None:
+    """Test command help output."""
     stdout = StringIO()
     stderr = StringIO()
     try:

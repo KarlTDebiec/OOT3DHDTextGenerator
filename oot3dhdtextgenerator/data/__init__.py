@@ -24,6 +24,7 @@ characters = hanzi_frequency["character"].values.tolist()
 
 
 def character_to_index(character: str) -> int:
+    """Get index of a character in the ordered character list."""
     return characters.index(character)
 
 

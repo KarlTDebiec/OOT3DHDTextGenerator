@@ -82,6 +82,8 @@ def test_description_no_docstring():
     """Test description() with no docstring."""
 
     class NoDocCli(CommandLineInterface):
+        """ """
+
         @classmethod
         def _main(cls, **kwargs: Unpack[CliTestKwargs]):
             """Execute test CLI."""

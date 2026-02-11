@@ -16,7 +16,7 @@ class Model(Module):
         """Initialize.
 
         Arguments:
-            n_chars: Number of characters in dataset
+            n_chars: number of characters in dataset
         """
         super().__init__()
 
@@ -36,9 +36,9 @@ class Model(Module):
         """Forward pass of the model.
 
         Arguments:
-            x: Input tensor
+            x: input tensor
         Returns:
-            Output tensor
+            output tensor
         """
         x = self.conv1(x)
         x = relu(x)
