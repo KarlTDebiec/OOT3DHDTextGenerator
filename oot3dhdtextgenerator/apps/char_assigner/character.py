@@ -8,10 +8,13 @@ from base64 import b64encode
 from dataclasses import dataclass
 from functools import cached_property
 from io import BytesIO
+from typing import TYPE_CHECKING
 
-import numpy as np
 from PIL import Image
 from PIL.ImageOps import invert
+
+if TYPE_CHECKING:
+    import numpy as np
 
 
 @dataclass(slots=True)

@@ -4,8 +4,7 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import torch
@@ -17,6 +16,9 @@ from oot3dhdtextgenerator.core import AssignmentDataset, Model
 
 from .character import Character
 from .routes import route
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 class CharAssigner:

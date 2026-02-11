@@ -4,8 +4,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import h5py
 import numpy as np
@@ -14,6 +13,10 @@ from torchvision.datasets import VisionDataset
 
 from oot3dhdtextgenerator.common.validation import val_input_path
 from oot3dhdtextgenerator.data import character_to_index
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+    from pathlib import Path
 
 
 class LearningDataset(VisionDataset):

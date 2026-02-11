@@ -8,6 +8,7 @@ from contextlib import redirect_stderr, redirect_stdout
 from inspect import getfile
 from io import StringIO
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from pipescaler.testing.mark import parametrize_with_readable_ids
 
@@ -16,8 +17,10 @@ from oot3dhdtextgenerator.cli import (
     LearningDatasetGeneratorCli,
     ModelTrainerCli,
 )
-from oot3dhdtextgenerator.common import CommandLineInterface
 from oot3dhdtextgenerator.common.testing import run_cli_with_args
+
+if TYPE_CHECKING:
+    from oot3dhdtextgenerator.common import CommandLineInterface
 
 
 @parametrize_with_readable_ids(
