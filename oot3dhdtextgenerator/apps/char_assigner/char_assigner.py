@@ -11,7 +11,7 @@ import torch
 from flask import Flask
 from torch.utils.data import DataLoader
 
-from oot3dhdtextgenerator.common.validation import val_input_path
+from oot3dhdtextgenerator.common.validation import val_output_dir_path
 from oot3dhdtextgenerator.core import AssignmentDataset, Model
 
 from .character import Character
@@ -27,7 +27,7 @@ class CharAssigner:
     def __init__(
         self,
         n_chars: int,
-        assignment_path: Path,
+        assignment_dir_path: Path,
         model_input_path: Path,
         *,
         cuda_enabled: bool = True,
@@ -37,7 +37,7 @@ class CharAssigner:
 
         Arguments:
             n_chars: number of characters included in model
-            assignment_path: assignment HDF5 file
+            assignment_dir_path: assignment csv directory
             model_input_path: model pth file
             cuda_enabled: whether to use CUDA
             mps_enabled: whether to use macOS GPU
@@ -52,8 +52,8 @@ class CharAssigner:
             device = torch.device("cpu")
 
         # Load assignment data
-        self.assignment_path = val_input_path(assignment_path)
-        self.dataset = AssignmentDataset(self.assignment_path)
+        self.assignment_dir_path = val_output_dir_path(assignment_dir_path)
+        self.dataset = AssignmentDataset(self.assignment_dir_path)
         loader_kwargs = {"batch_size": len(self.dataset), "shuffle": False}
         if cuda_enabled:
             loader_kwargs.update({"num_workers": 1, "pin_memory": True})

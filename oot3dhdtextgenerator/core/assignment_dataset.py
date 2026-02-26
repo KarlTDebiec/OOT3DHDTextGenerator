@@ -4,19 +4,21 @@
 
 from __future__ import annotations
 
+from base64 import b64decode, b64encode
+from csv import DictReader, DictWriter
+from io import BytesIO
 from logging import debug, info
 from typing import TYPE_CHECKING
 
-import h5py
 import numpy as np
 from PIL import Image
 from torchvision.datasets import VisionDataset
 from torchvision.transforms import Compose, Normalize, ToTensor
 
-from oot3dhdtextgenerator.common.validation import val_output_path
+from oot3dhdtextgenerator.common.validation import val_output_dir_path
+from oot3dhdtextgenerator.data import oot3d_assigned_csv_path, oot3d_unassigned_csv_path
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
     from pathlib import Path
 
     from torch import Tensor
@@ -28,17 +30,28 @@ class AssignmentDataset(VisionDataset):
     multi_char_array_shapes = ((128, 256), (128, 512), (256, 256))
     char_array_shape = (16, 16)
 
-    def __init__(self, input_path: Path) -> None:
-        """Initialize."""
-        input_path = val_output_path(input_path, exist_ok=True)
+    def __init__(self, assignment_dir_path: Path) -> None:
+        """Initialize.
+
+        Arguments:
+            assignment_dir_path: path to assignment csv directory
+        """
+        self.assignment_dir_path = val_output_dir_path(assignment_dir_path)
+        self.assigned_csv_path = self.assignment_dir_path / "assigned.csv"
+        self.unassigned_csv_path = self.assignment_dir_path / "unassigned.csv"
 
         transform = Compose([ToTensor(), Normalize((0.1307,), (0.3081,))])
-        super().__init__(str(input_path.parent), transform=transform)
+        super().__init__(str(self.assignment_dir_path), transform=transform)
 
         assigned_char_bytes: dict[bytes, str] = {}
         unassigned_char_bytes: list[bytes] = []
-        if input_path.exists():
-            assigned_char_bytes, unassigned_char_bytes = self.load_hdf5(input_path)
+        assigned_csv_exists = self.assigned_csv_path.exists()
+        unassigned_csv_exists = self.unassigned_csv_path.exists()
+        if assigned_csv_exists or unassigned_csv_exists:
+            assigned_char_bytes, unassigned_char_bytes = self.load_csv(
+                self.assigned_csv_path,
+                self.unassigned_csv_path,
+            )
 
         self.assigned_char_bytes = assigned_char_bytes
         """Dictionary whose keys are char bytes and values are char strs"""
@@ -178,102 +191,141 @@ class AssignmentDataset(VisionDataset):
         return np.frombuffer(char_bytes, dtype=np.uint8).reshape(cls.char_array_shape)
 
     @classmethod
-    def decode_chars(cls, encoded_chars: Iterable[bytes]) -> list[str]:
-        """Decode chars from HDF5 file.
+    def array_to_raw_base64_png(cls, char_array: np.ndarray) -> str:
+        """Convert char array into raw base64-encoded PNG payload.
 
         Arguments:
-            encoded_chars: chars to decode
+            char_array: char array
         Returns:
-            decoded chars
+            raw base64 PNG payload
         """
-        return [assignment.decode("utf-8") for assignment in encoded_chars]
+        if char_array.shape != cls.char_array_shape:
+            raise ValueError(
+                f"Invalid array shape {char_array.shape}, expected {cls.char_array_shape}"
+            )
+
+        with BytesIO() as png_bytes:
+            Image.fromarray(char_array, mode="L").save(png_bytes, format="PNG")
+            return b64encode(png_bytes.getvalue()).decode("ascii")
 
     @classmethod
-    def encode_chars(cls, chars: Iterable[str]) -> list[bytes]:
-        """Encode chars for HDF5 file.
+    def raw_base64_png_to_array(cls, raw_base64_png: str) -> np.ndarray:
+        """Convert raw base64-encoded PNG payload into char array.
 
         Arguments:
-            chars: chars to encode
+            raw_base64_png: raw base64 PNG payload
         Returns:
-            encoded chars
+            char array
         """
-        return [assignment.encode("utf-8") for assignment in chars]
+        try:
+            png_bytes = b64decode(raw_base64_png)
+            with Image.open(BytesIO(png_bytes)) as image:
+                char_array = np.array(image.convert("L"), dtype=np.uint8)
+        except (OSError, ValueError) as exc:
+            raise ValueError("Invalid base64 PNG payload") from exc
+
+        if char_array.shape != cls.char_array_shape:
+            raise ValueError(
+                f"Invalid array shape {char_array.shape}, expected {cls.char_array_shape}"
+            )
+
+        return char_array
 
     @classmethod
-    def load_hdf5(cls, input_path: Path) -> tuple[dict[bytes, str], list[bytes]]:
-        """Load char arrays and assignments from an HDF5 file.
+    def load_csv(
+        cls,
+        assigned_csv_path: Path = oot3d_assigned_csv_path,
+        unassigned_csv_path: Path = oot3d_unassigned_csv_path,
+    ) -> tuple[dict[bytes, str], list[bytes]]:
+        """Load char arrays and assignments from CSV files.
 
         Arguments:
-            input_path: path to HDF5 file
+            assigned_csv_path: path to assigned csv file
+            unassigned_csv_path: path to unassigned csv file
         Returns:
             assigned and unassigned char bytes
         """
-        assigned: Iterable[bytes] = []
-        assignments: list[str] = []
-        unassigned: Iterable[bytes] = []
+        assigned: dict[bytes, str] = {}
+        if assigned_csv_path.exists():
+            with assigned_csv_path.open("r", encoding="utf-8", newline="") as infile:
+                reader = DictReader(infile)
+                for row in reader:
+                    if row.get("character") is None or row.get("png_base64") is None:
+                        continue
+                    char_bytes = cls.array_to_bytes(
+                        cls.raw_base64_png_to_array(row["png_base64"])
+                    )
+                    assigned[char_bytes] = row["character"]
 
-        with h5py.File(input_path, "r") as h5_file:
-            if "assigned" in h5_file and "assignments" in h5_file:
-                assigned = map(cls.array_to_bytes, np.array(h5_file["assigned"]))
-                assignments = cls.decode_chars(h5_file["assignments"])
+        unassigned: list[bytes] = []
+        if unassigned_csv_path.exists():
+            with unassigned_csv_path.open("r", encoding="utf-8", newline="") as infile:
+                reader = DictReader(infile)
+                for row in reader:
+                    if row.get("png_base64") is None:
+                        continue
+                    char_bytes = cls.array_to_bytes(
+                        cls.raw_base64_png_to_array(row["png_base64"])
+                    )
+                    unassigned.append(char_bytes)
 
-            if "unassigned" in h5_file:
-                unassigned = map(cls.array_to_bytes, np.array(h5_file["unassigned"]))
-
-        return dict(zip(assigned, assignments)), list(unassigned)
+        return assigned, unassigned
 
     @classmethod
-    def save_hdf5(
+    def save_csv(
         cls,
         assigned_char_bytes: dict[bytes, str],
         unassigned_char_bytes: list[bytes],
-        output_path: Path,
+        assigned_csv_path: Path = oot3d_assigned_csv_path,
+        unassigned_csv_path: Path = oot3d_unassigned_csv_path,
     ) -> None:
-        """Save char bytes and assignments to an HDF5 file.
+        """Save char bytes and assignments to CSV files.
 
         Arguments:
             assigned_char_bytes: assigned images
             unassigned_char_bytes: unassigned images
-            output_path: path to HDF5 outfile
+            assigned_csv_path: path to assigned csv output file
+            unassigned_csv_path: path to unassigned csv output file
         """
-        with h5py.File(output_path, "w") as h5_file:
-            if "assigned" in h5_file:
-                del h5_file["assigned"]
-            if "assignments" in h5_file:
-                del h5_file["assignments"]
-            if len(assigned_char_bytes) > 0:
-                sorted_assigned_char_bytes = dict(
-                    sorted(assigned_char_bytes.items(), key=lambda item: item[1])
-                )
-                h5_file.create_dataset(
-                    "assigned",
-                    data=np.array(
-                        list(map(cls.bytes_to_array, sorted_assigned_char_bytes.keys()))
-                    ),
-                    dtype=np.uint8,
-                    chunks=True,
-                    compression="gzip",
-                )
-                h5_file.create_dataset(
-                    "assignments",
-                    data=cls.encode_chars(sorted_assigned_char_bytes.values()),
-                    dtype="S4",
-                    chunks=True,
-                    compression="gzip",
+        assigned_csv_path.parent.mkdir(parents=True, exist_ok=True)
+        unassigned_csv_path.parent.mkdir(parents=True, exist_ok=True)
+
+        sorted_assigned_items = sorted(
+            assigned_char_bytes.items(), key=lambda item: item[1]
+        )
+        with assigned_csv_path.open("w", encoding="utf-8", newline="") as outfile:
+            writer = DictWriter(outfile, fieldnames=["character", "png_base64"])
+            writer.writeheader()
+            for char_bytes, char in sorted_assigned_items:
+                writer.writerow(
+                    {
+                        "character": char,
+                        "png_base64": cls.array_to_raw_base64_png(
+                            cls.bytes_to_array(char_bytes)
+                        ),
+                    }
                 )
 
-            if "unassigned" in h5_file:
-                del h5_file["unassigned"]
-            if len(unassigned_char_bytes) > 0:
-                unassigned_arrays = list(map(cls.bytes_to_array, unassigned_char_bytes))
-                sorted_unassigned_arrays = sorted(
-                    unassigned_arrays, key=lambda x: x.sum()
+        sorted_unassigned_char_bytes = sorted(
+            unassigned_char_bytes,
+            key=lambda char_bytes: cls.array_to_raw_base64_png(
+                cls.bytes_to_array(char_bytes)
+            ),
+        )
+        with unassigned_csv_path.open("w", encoding="utf-8", newline="") as outfile:
+            writer = DictWriter(outfile, fieldnames=["png_base64"])
+            writer.writeheader()
+            for char_bytes in sorted_unassigned_char_bytes:
+                writer.writerow(
+                    {
+                        "png_base64": cls.array_to_raw_base64_png(
+                            cls.bytes_to_array(char_bytes)
+                        ),
+                    }
                 )
-                h5_file.create_dataset(
-                    "unassigned",
-                    data=np.array(sorted_unassigned_arrays),
-                    dtype=np.uint8,
-                    chunks=True,
-                    compression="gzip",
-                )
-        info(f"Saved AssignmentDataset to {output_path}")
+
+        info(
+            "Saved AssignmentDataset to %s and %s",
+            assigned_csv_path,
+            unassigned_csv_path,
+        )

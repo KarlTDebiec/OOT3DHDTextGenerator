@@ -11,10 +11,11 @@ from oot3dhdtextgenerator.apps import CharAssigner
 from oot3dhdtextgenerator.common import CommandLineInterface
 from oot3dhdtextgenerator.common.argument_parsing import (
     get_arg_groups_by_name,
-    input_file_arg,
     int_arg,
+    output_dir_arg,
 )
 from oot3dhdtextgenerator.common.validation import val_input_path
+from oot3dhdtextgenerator.data import oot3d_data_path
 
 if TYPE_CHECKING:
     from argparse import ArgumentParser
@@ -49,11 +50,14 @@ class CharAssignerCli(CommandLineInterface):
             "common and ending with the least common (default: %(default)d, max: 9933)",
         )
         arg_groups["input arguments"].add_argument(
-            "--assignment-file",
-            dest="assignment_path",
-            type=input_file_arg(),
-            default="assignment.h5",
-            help="assignment input and output file (default: %(default)s)",
+            "--assignment-dir",
+            dest="assignment_dir_path",
+            type=output_dir_arg(),
+            default=str(oot3d_data_path),
+            help=(
+                "assignment input and output directory containing assigned.csv and "
+                "unassigned.csv (default: %(default)s)"
+            ),
         )
         arg_groups["input arguments"].add_argument(
             "--model-input-file",

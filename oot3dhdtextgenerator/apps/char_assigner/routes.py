@@ -25,10 +25,11 @@ def route(char_assigner):
         if character.assignment != assignment:
             character.assignment = assignment
             char_assigner.dataset.assign(character.array, assignment)
-            char_assigner.dataset.save_hdf5(
+            char_assigner.dataset.save_csv(
                 char_assigner.dataset.assigned_char_bytes,
                 char_assigner.dataset.unassigned_char_bytes,
-                char_assigner.assignment_path,
+                char_assigner.dataset.assigned_csv_path,
+                char_assigner.dataset.unassigned_csv_path,
             )
 
         return render_template("character.html", character=character)

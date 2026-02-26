@@ -14,6 +14,10 @@ import pandas as pd
 
 from oot3dhdtextgenerator.common import package_root
 
+oot3d_data_path = package_root / "data" / "oot3d"
+oot3d_assigned_csv_path = oot3d_data_path / "assigned.csv"
+oot3d_unassigned_csv_path = oot3d_data_path / "unassigned.csv"
+
 hanzi_frequency = pd.read_csv(
     f"{package_root}/data/characters.txt",
     sep="\t",
@@ -32,4 +36,7 @@ __all__ = [
     "characters",
     "character_to_index",
     "hanzi_frequency",
+    "oot3d_assigned_csv_path",
+    "oot3d_data_path",
+    "oot3d_unassigned_csv_path",
 ]
