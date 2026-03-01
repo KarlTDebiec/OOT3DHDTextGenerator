@@ -40,7 +40,7 @@ class OOT3DHDTextProcessor(ImageProcessor):
         """Initialize.
 
         Arguments:
-            assignment_dir_path: path to assignment dataset csv directory
+            assignment_dir_path: path to assignment dataset CSV directory
             font: path to font file, or None to auto-select by platform
             size: font size in pixels
             offset: x and Y draw offset in output image

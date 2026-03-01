@@ -4,9 +4,7 @@
 
 from __future__ import annotations
 
-from base64 import b64decode, b64encode
 from csv import DictReader, DictWriter
-from io import BytesIO
 from logging import debug, info
 from typing import TYPE_CHECKING
 
@@ -16,7 +14,14 @@ from torchvision.datasets import VisionDataset
 from torchvision.transforms import Compose, Normalize, ToTensor
 
 from oot3dhdtextgenerator.common.validation import val_output_dir_path
-from oot3dhdtextgenerator.data import oot3d_assigned_csv_path, oot3d_unassigned_csv_path
+from oot3dhdtextgenerator.core.assignment_dataset_helpers import (
+    array_to_raw_base64_png,
+    raw_base64_png_to_array,
+)
+from oot3dhdtextgenerator.data import (
+    oot3d_assigned_csv_path,
+    oot3d_unassigned_csv_path,
+)
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -34,7 +39,7 @@ class AssignmentDataset(VisionDataset):
         """Initialize.
 
         Arguments:
-            assignment_dir_path: path to assignment csv directory
+            assignment_dir_path: path to assignment CSV directory
         """
         self.assignment_dir_path = val_output_dir_path(assignment_dir_path)
         self.assigned_csv_path = self.assignment_dir_path / "assigned.csv"
@@ -191,47 +196,6 @@ class AssignmentDataset(VisionDataset):
         return np.frombuffer(char_bytes, dtype=np.uint8).reshape(cls.char_array_shape)
 
     @classmethod
-    def array_to_raw_base64_png(cls, char_array: np.ndarray) -> str:
-        """Convert char array into raw base64-encoded PNG payload.
-
-        Arguments:
-            char_array: char array
-        Returns:
-            raw base64 PNG payload
-        """
-        if char_array.shape != cls.char_array_shape:
-            raise ValueError(
-                f"Invalid array shape {char_array.shape}, expected {cls.char_array_shape}"
-            )
-
-        with BytesIO() as png_bytes:
-            Image.fromarray(char_array, mode="L").save(png_bytes, format="PNG")
-            return b64encode(png_bytes.getvalue()).decode("ascii")
-
-    @classmethod
-    def raw_base64_png_to_array(cls, raw_base64_png: str) -> np.ndarray:
-        """Convert raw base64-encoded PNG payload into char array.
-
-        Arguments:
-            raw_base64_png: raw base64 PNG payload
-        Returns:
-            char array
-        """
-        try:
-            png_bytes = b64decode(raw_base64_png)
-            with Image.open(BytesIO(png_bytes)) as image:
-                char_array = np.array(image.convert("L"), dtype=np.uint8)
-        except (OSError, ValueError) as exc:
-            raise ValueError("Invalid base64 PNG payload") from exc
-
-        if char_array.shape != cls.char_array_shape:
-            raise ValueError(
-                f"Invalid array shape {char_array.shape}, expected {cls.char_array_shape}"
-            )
-
-        return char_array
-
-    @classmethod
     def load_csv(
         cls,
         assigned_csv_path: Path = oot3d_assigned_csv_path,
@@ -240,8 +204,8 @@ class AssignmentDataset(VisionDataset):
         """Load char arrays and assignments from CSV files.
 
         Arguments:
-            assigned_csv_path: path to assigned csv file
-            unassigned_csv_path: path to unassigned csv file
+            assigned_csv_path: path to assigned CSV file
+            unassigned_csv_path: path to unassigned CSV file
         Returns:
             assigned and unassigned char bytes
         """
@@ -252,9 +216,13 @@ class AssignmentDataset(VisionDataset):
                 for row in reader:
                     if row.get("character") is None or row.get("png_base64") is None:
                         continue
-                    char_bytes = cls.array_to_bytes(
-                        cls.raw_base64_png_to_array(row["png_base64"])
-                    )
+                    char_array = raw_base64_png_to_array(row["png_base64"])
+                    if char_array.shape != cls.char_array_shape:
+                        raise ValueError(
+                            "Invalid array shape "
+                            f"{char_array.shape}, expected {cls.char_array_shape}"
+                        )
+                    char_bytes = cls.array_to_bytes(char_array)
                     assigned[char_bytes] = row["character"]
 
         unassigned: list[bytes] = []
@@ -264,9 +232,13 @@ class AssignmentDataset(VisionDataset):
                 for row in reader:
                     if row.get("png_base64") is None:
                         continue
-                    char_bytes = cls.array_to_bytes(
-                        cls.raw_base64_png_to_array(row["png_base64"])
-                    )
+                    char_array = raw_base64_png_to_array(row["png_base64"])
+                    if char_array.shape != cls.char_array_shape:
+                        raise ValueError(
+                            "Invalid array shape "
+                            f"{char_array.shape}, expected {cls.char_array_shape}"
+                        )
+                    char_bytes = cls.array_to_bytes(char_array)
                     unassigned.append(char_bytes)
 
         return assigned, unassigned
@@ -284,8 +256,8 @@ class AssignmentDataset(VisionDataset):
         Arguments:
             assigned_char_bytes: assigned images
             unassigned_char_bytes: unassigned images
-            assigned_csv_path: path to assigned csv output file
-            unassigned_csv_path: path to unassigned csv output file
+            assigned_csv_path: path to assigned CSV output file
+            unassigned_csv_path: path to unassigned CSV output file
         """
         assigned_csv_path.parent.mkdir(parents=True, exist_ok=True)
         unassigned_csv_path.parent.mkdir(parents=True, exist_ok=True)
@@ -297,20 +269,31 @@ class AssignmentDataset(VisionDataset):
             writer = DictWriter(outfile, fieldnames=["character", "png_base64"])
             writer.writeheader()
             for char_bytes, char in sorted_assigned_items:
+                char_array = cls.bytes_to_array(char_bytes)
+                if char_array.shape != cls.char_array_shape:
+                    raise ValueError(
+                        "Invalid array shape "
+                        f"{char_array.shape}, expected {cls.char_array_shape}"
+                    )
                 writer.writerow(
                     {
                         "character": char,
-                        "png_base64": cls.array_to_raw_base64_png(
-                            cls.bytes_to_array(char_bytes)
-                        ),
+                        "png_base64": array_to_raw_base64_png(char_array),
                     }
                 )
 
+        def _encode_unassigned(char_bytes: bytes) -> str:
+            char_array = cls.bytes_to_array(char_bytes)
+            if char_array.shape != cls.char_array_shape:
+                raise ValueError(
+                    "Invalid array shape "
+                    f"{char_array.shape}, expected {cls.char_array_shape}"
+                )
+            return array_to_raw_base64_png(char_array)
+
         sorted_unassigned_char_bytes = sorted(
             unassigned_char_bytes,
-            key=lambda char_bytes: cls.array_to_raw_base64_png(
-                cls.bytes_to_array(char_bytes)
-            ),
+            key=_encode_unassigned,
         )
         with unassigned_csv_path.open("w", encoding="utf-8", newline="") as outfile:
             writer = DictWriter(outfile, fieldnames=["png_base64"])
@@ -318,9 +301,7 @@ class AssignmentDataset(VisionDataset):
             for char_bytes in sorted_unassigned_char_bytes:
                 writer.writerow(
                     {
-                        "png_base64": cls.array_to_raw_base64_png(
-                            cls.bytes_to_array(char_bytes)
-                        ),
+                        "png_base64": _encode_unassigned(char_bytes),
                     }
                 )
 

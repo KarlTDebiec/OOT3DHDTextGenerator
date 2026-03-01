@@ -10,6 +10,10 @@ from pathlib import Path
 import numpy as np
 
 from oot3dhdtextgenerator.core import AssignmentDataset
+from oot3dhdtextgenerator.core.assignment_dataset_helpers import (
+    array_to_raw_base64_png,
+    raw_base64_png_to_array,
+)
 
 
 def _build_char_array(seed: int) -> np.ndarray:
@@ -25,7 +29,7 @@ def _build_char_array(seed: int) -> np.ndarray:
 
 
 def test_csv_bootstrap_empty_dataset(tmp_path: Path) -> None:
-    """Bootstraps from missing CSV files and persists empty CSVs.
+    """Bootstraps from missing CSV files and persists empty CSV files.
 
     Arguments:
         tmp_path: temporary test path fixture
@@ -96,15 +100,15 @@ def test_csv_round_trip_integrity(tmp_path: Path) -> None:
 
     expected_unassigned = sorted(
         unassigned_char_bytes,
-        key=lambda char_bytes: AssignmentDataset.array_to_raw_base64_png(
+        key=lambda char_bytes: array_to_raw_base64_png(
             AssignmentDataset.bytes_to_array(char_bytes)
         ),
     )
     assert loaded_unassigned == expected_unassigned
 
-    encoded = AssignmentDataset.array_to_raw_base64_png(assigned_arrays[0])
+    encoded = array_to_raw_base64_png(assigned_arrays[0])
     assert not encoded.startswith("data:image/png;base64,")
-    decoded = AssignmentDataset.raw_base64_png_to_array(encoded)
+    decoded = raw_base64_png_to_array(encoded)
     np.testing.assert_array_equal(decoded, assigned_arrays[0])
 
 
@@ -152,9 +156,6 @@ def test_csv_sorting_behavior(tmp_path: Path) -> None:
     assert [row["character"] for row in assigned_rows] == sorted(["漢", "一", "乙"])
 
     expected_unassigned_base64 = sorted(
-        [
-            AssignmentDataset.array_to_raw_base64_png(array)
-            for array in unassigned_arrays
-        ]
+        [array_to_raw_base64_png(array) for array in unassigned_arrays]
     )
     assert [row["png_base64"] for row in unassigned_rows] == expected_unassigned_base64

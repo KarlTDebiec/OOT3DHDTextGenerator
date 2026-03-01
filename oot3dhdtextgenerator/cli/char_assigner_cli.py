@@ -55,8 +55,8 @@ class CharAssignerCli(CommandLineInterface):
             type=output_dir_arg(),
             default=str(oot3d_data_path),
             help=(
-                "assignment input and output directory containing assigned.csv and "
-                "unassigned.csv (default: %(default)s)"
+                "assignment input and output CSV directory containing assigned.csv "
+                "and unassigned.csv (default: %(default)s)"
             ),
         )
         arg_groups["input arguments"].add_argument(

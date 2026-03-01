@@ -13,6 +13,7 @@ from torch.utils.data import DataLoader
 
 from oot3dhdtextgenerator.common.validation import val_output_dir_path
 from oot3dhdtextgenerator.core import AssignmentDataset, Model
+from oot3dhdtextgenerator.data import oot3d_data_path
 
 from .character import Character
 from .routes import route
@@ -27,8 +28,8 @@ class CharAssigner:
     def __init__(
         self,
         n_chars: int,
-        assignment_dir_path: Path,
         model_input_path: Path,
+        assignment_dir_path: Path = oot3d_data_path,
         *,
         cuda_enabled: bool = True,
         mps_enabled: bool = True,
@@ -37,8 +38,8 @@ class CharAssigner:
 
         Arguments:
             n_chars: number of characters included in model
-            assignment_dir_path: assignment csv directory
             model_input_path: model pth file
+            assignment_dir_path: assignment CSV directory
             cuda_enabled: whether to use CUDA
             mps_enabled: whether to use macOS GPU
         """
@@ -54,21 +55,38 @@ class CharAssigner:
         # Load assignment data
         self.assignment_dir_path = val_output_dir_path(assignment_dir_path)
         self.dataset = AssignmentDataset(self.assignment_dir_path)
-        loader_kwargs = {"batch_size": len(self.dataset), "shuffle": False}
-        if cuda_enabled:
-            loader_kwargs.update({"num_workers": 1, "pin_memory": True})
-        data = list(DataLoader(self.dataset, **loader_kwargs))[0]
-        data = data.to(device)
 
-        # Load model
-        model = Model(n_chars)
-        model.load_state_dict(torch.load(model_input_path))
-        model.eval()
-        model = model.to(device)
+        if len(self.dataset) == 0:
+            scores = np.empty((0, n_chars), dtype=np.float32)
+        else:
+            if cuda_enabled:
+                data_loader = DataLoader(
+                    self.dataset,
+                    batch_size=len(self.dataset),
+                    shuffle=False,
+                    num_workers=1,
+                    pin_memory=True,
+                )
+            else:
+                data_loader = DataLoader(
+                    self.dataset,
+                    batch_size=len(self.dataset),
+                    shuffle=False,
+                )
+            data = next(iter(data_loader))
+            if not isinstance(data, torch.Tensor):
+                raise TypeError(f"Expected Tensor batch, received {type(data)}")
+            data = data.to(device)
 
-        # Get predictions
-        scores = model(data)  # pylint: disable=not-callable
-        scores = scores.detach().cpu().numpy()
+            # Load model
+            model = Model(n_chars)
+            model.load_state_dict(torch.load(model_input_path))
+            model.eval()
+            model = model.to(device)
+
+            # Get predictions
+            scores = model(data)  # pylint: disable=not-callable
+            scores = scores.detach().cpu().numpy()
 
         # Prepare characters for frontend
         self.characters = self.get_characters(self.dataset, scores)
