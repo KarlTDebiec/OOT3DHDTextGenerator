@@ -14,7 +14,7 @@ from torchvision.datasets import VisionDataset
 from torchvision.transforms import Compose, Normalize, ToTensor
 
 from oot3dhdtextgenerator.common.validation import val_output_dir_path
-from oot3dhdtextgenerator.core.assignment_dataset_helpers import (
+from oot3dhdtextgenerator.core.base64 import (
     array_to_raw_base64_png,
     raw_base64_png_to_array,
 )

@@ -11,7 +11,7 @@ import numpy as np
 import pytest
 
 from oot3dhdtextgenerator.core import AssignmentDataset
-from oot3dhdtextgenerator.core.assignment_dataset_helpers import (
+from oot3dhdtextgenerator.core.base64 import (
     array_to_raw_base64_png,
     raw_base64_png_to_array,
 )
