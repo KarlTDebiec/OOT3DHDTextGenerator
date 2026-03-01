@@ -65,6 +65,8 @@ class AssignmentDataset(VisionDataset):
 
     def __getitem__(self, index: int) -> Tensor:
         """Get unassigned char Tensor at index."""
+        if self.transform is None:
+            raise RuntimeError("AssignmentDataset transform is not configured")
         char_bytes = self.unassigned_char_bytes[index]
         char_array = self.bytes_to_array(char_bytes)
         char_image = Image.fromarray(char_array)
