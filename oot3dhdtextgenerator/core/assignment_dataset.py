@@ -317,7 +317,7 @@ class AssignmentDataset(VisionDataset):
             prefix=f".{assigned_csv_path.name}.",
             suffix=".tmp",
         ) as outfile:
-            assigned_temp_path = Path(outfile.name)
+            assigned_temp_path = outfile.name
             writer = DictWriter(outfile, fieldnames=["character", "png_base64"])
             writer.writeheader()
             for char_bytes, char in sorted_assigned_items:
@@ -360,7 +360,7 @@ class AssignmentDataset(VisionDataset):
             prefix=f".{unassigned_csv_path.name}.",
             suffix=".tmp",
         ) as outfile:
-            unassigned_temp_path = Path(outfile.name)
+            unassigned_temp_path = outfile.name
             writer = DictWriter(outfile, fieldnames=["png_base64"])
             writer.writeheader()
             for png_base64, _ in encoded_unassigned:
