@@ -80,7 +80,7 @@ class CharAssigner:
 
             # Load model
             model = Model(n_chars)
-            model.load_state_dict(torch.load(model_input_path))
+            model.load_state_dict(torch.load(model_input_path, map_location=device))
             model.eval()
             model = model.to(device)
 

@@ -192,3 +192,24 @@ def test_load_csv_rejects_missing_unassigned_header(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="Missing required CSV columns"):
         AssignmentDataset.load_csv(assigned_csv_path, unassigned_csv_path)
+
+
+def test_load_csv_rejects_multi_character_assignment(tmp_path: Path) -> None:
+    """Rejects assigned CSV rows with multi-character assignments.
+
+    Arguments:
+        tmp_path: temporary test path fixture
+    """
+    assigned_csv_path = tmp_path / "oot3d" / "assigned.csv"
+    unassigned_csv_path = tmp_path / "oot3d" / "unassigned.csv"
+    array = _build_char_array(13)
+    encoded = array_to_raw_base64_png(array)
+    assigned_csv_path.parent.mkdir(parents=True, exist_ok=True)
+    assigned_csv_path.write_text(
+        f"character,png_base64\nab,{encoded}\n",
+        encoding="utf-8",
+    )
+    unassigned_csv_path.write_text("png_base64\n", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="Invalid assigned character"):
+        AssignmentDataset.load_csv(assigned_csv_path, unassigned_csv_path)

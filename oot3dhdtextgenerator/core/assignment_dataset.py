@@ -26,6 +26,7 @@ from oot3dhdtextgenerator.data import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
     from pathlib import Path
 
     from torch import Tensor
@@ -200,6 +201,53 @@ class AssignmentDataset(VisionDataset):
         return np.frombuffer(char_bytes, dtype=np.uint8).reshape(cls.char_array_shape)
 
     @classmethod
+    def _validate_required_columns(
+        cls,
+        fieldnames: Sequence[str] | None,
+        required_fieldnames: set[str],
+        csv_path: Path,
+    ) -> None:
+        """Validate required CSV column names.
+
+        Arguments:
+            fieldnames: CSV field names from DictReader
+            required_fieldnames: names that must exist in the CSV
+            csv_path: CSV file path for error context
+        """
+        missing_fieldnames = required_fieldnames - set(fieldnames or [])
+        if missing_fieldnames:
+            raise ValueError(
+                f"Missing required CSV columns in {csv_path}: "
+                f"{sorted(missing_fieldnames)}"
+            )
+
+    @classmethod
+    def _decode_png_base64_row(
+        cls, png_base64: str, csv_path: Path, row_number: int
+    ) -> np.ndarray:
+        """Decode and validate one base64 PNG payload from CSV.
+
+        Arguments:
+            png_base64: raw base64 PNG payload
+            csv_path: CSV file path for error context
+            row_number: one-based CSV row number for error context
+        Returns:
+            decoded char array
+        """
+        try:
+            char_array = raw_base64_png_to_array(png_base64)
+        except ValueError as exc:
+            raise ValueError(
+                f"Invalid base64 PNG payload at {csv_path}:{row_number}"
+            ) from exc
+        if char_array.shape != cls.char_array_shape:
+            raise ValueError(
+                f"Invalid array shape {char_array.shape}, "
+                f"expected {cls.char_array_shape}"
+            )
+        return char_array
+
+    @classmethod
     def load_csv(
         cls,
         assigned_csv_path: Path = oot3d_assigned_csv_path,
@@ -217,14 +265,9 @@ class AssignmentDataset(VisionDataset):
         if assigned_csv_path.exists():
             with assigned_csv_path.open("r", encoding="utf-8", newline="") as infile:
                 reader = DictReader(infile)
-                fieldnames = set(reader.fieldnames or [])
-                required_fieldnames = {"character", "png_base64"}
-                missing_fieldnames = required_fieldnames - fieldnames
-                if missing_fieldnames:
-                    raise ValueError(
-                        "Missing required CSV columns in "
-                        f"{assigned_csv_path}: {sorted(missing_fieldnames)}"
-                    )
+                cls._validate_required_columns(
+                    reader.fieldnames, {"character", "png_base64"}, assigned_csv_path
+                )
 
                 for row_number, row in enumerate(reader, start=2):
                     character = row.get("character")
@@ -234,18 +277,14 @@ class AssignmentDataset(VisionDataset):
                             "Malformed assigned CSV row "
                             f"{row_number} in {assigned_csv_path}"
                         )
-                    try:
-                        char_array = raw_base64_png_to_array(row["png_base64"])
-                    except ValueError as exc:
+                    if len(character) != 1:
                         raise ValueError(
-                            "Invalid base64 PNG payload at "
-                            f"{assigned_csv_path}:{row_number}"
-                        ) from exc
-                    if char_array.shape != cls.char_array_shape:
-                        raise ValueError(
-                            "Invalid array shape "
-                            f"{char_array.shape}, expected {cls.char_array_shape}"
+                            "Invalid assigned character at "
+                            f"{assigned_csv_path}:{row_number}: {character!r}"
                         )
+                    char_array = cls._decode_png_base64_row(
+                        png_base64, assigned_csv_path, row_number
+                    )
                     char_bytes = cls.array_to_bytes(char_array)
                     assigned[char_bytes] = character
 
@@ -253,14 +292,9 @@ class AssignmentDataset(VisionDataset):
         if unassigned_csv_path.exists():
             with unassigned_csv_path.open("r", encoding="utf-8", newline="") as infile:
                 reader = DictReader(infile)
-                fieldnames = set(reader.fieldnames or [])
-                required_fieldnames = {"png_base64"}
-                missing_fieldnames = required_fieldnames - fieldnames
-                if missing_fieldnames:
-                    raise ValueError(
-                        "Missing required CSV columns in "
-                        f"{unassigned_csv_path}: {sorted(missing_fieldnames)}"
-                    )
+                cls._validate_required_columns(
+                    reader.fieldnames, {"png_base64"}, unassigned_csv_path
+                )
 
                 for row_number, row in enumerate(reader, start=2):
                     png_base64 = row.get("png_base64")
@@ -269,18 +303,9 @@ class AssignmentDataset(VisionDataset):
                             "Malformed unassigned CSV row "
                             f"{row_number} in {unassigned_csv_path}"
                         )
-                    try:
-                        char_array = raw_base64_png_to_array(row["png_base64"])
-                    except ValueError as exc:
-                        raise ValueError(
-                            "Invalid base64 PNG payload at "
-                            f"{unassigned_csv_path}:{row_number}"
-                        ) from exc
-                    if char_array.shape != cls.char_array_shape:
-                        raise ValueError(
-                            "Invalid array shape "
-                            f"{char_array.shape}, expected {cls.char_array_shape}"
-                        )
+                    char_array = cls._decode_png_base64_row(
+                        png_base64, unassigned_csv_path, row_number
+                    )
                     char_bytes = cls.array_to_bytes(char_array)
                     unassigned.append(char_bytes)
 
