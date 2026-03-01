@@ -8,6 +8,7 @@ import csv
 from pathlib import Path
 
 import numpy as np
+import pytest
 
 from oot3dhdtextgenerator.core import AssignmentDataset
 from oot3dhdtextgenerator.core.assignment_dataset_helpers import (
@@ -159,3 +160,35 @@ def test_csv_sorting_behavior(tmp_path: Path) -> None:
         [array_to_raw_base64_png(array) for array in unassigned_arrays]
     )
     assert [row["png_base64"] for row in unassigned_rows] == expected_unassigned_base64
+
+
+def test_load_csv_rejects_missing_assigned_header(tmp_path: Path) -> None:
+    """Rejects assigned CSV files missing required headers.
+
+    Arguments:
+        tmp_path: temporary test path fixture
+    """
+    assigned_csv_path = tmp_path / "oot3d" / "assigned.csv"
+    assigned_csv_path.parent.mkdir(parents=True, exist_ok=True)
+    assigned_csv_path.write_text("character\n你\n", encoding="utf-8")
+    unassigned_csv_path = tmp_path / "oot3d" / "unassigned.csv"
+    unassigned_csv_path.write_text("png_base64\n", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="Missing required CSV columns"):
+        AssignmentDataset.load_csv(assigned_csv_path, unassigned_csv_path)
+
+
+def test_load_csv_rejects_missing_unassigned_header(tmp_path: Path) -> None:
+    """Rejects unassigned CSV files missing required headers.
+
+    Arguments:
+        tmp_path: temporary test path fixture
+    """
+    assigned_csv_path = tmp_path / "oot3d" / "assigned.csv"
+    assigned_csv_path.parent.mkdir(parents=True, exist_ok=True)
+    assigned_csv_path.write_text("character,png_base64\n", encoding="utf-8")
+    unassigned_csv_path = tmp_path / "oot3d" / "unassigned.csv"
+    unassigned_csv_path.write_text("character\n你\n", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="Missing required CSV columns"):
+        AssignmentDataset.load_csv(assigned_csv_path, unassigned_csv_path)

@@ -35,7 +35,7 @@ class AssignmentDataset(VisionDataset):
     multi_char_array_shapes = ((128, 256), (128, 512), (256, 256))
     char_array_shape = (16, 16)
 
-    def __init__(self, assignment_dir_path: Path) -> None:
+    def __init__(self, assignment_dir_path: Path | str) -> None:
         """Initialize.
 
         Arguments:
@@ -215,9 +215,23 @@ class AssignmentDataset(VisionDataset):
         if assigned_csv_path.exists():
             with assigned_csv_path.open("r", encoding="utf-8", newline="") as infile:
                 reader = DictReader(infile)
-                for row in reader:
-                    if row.get("character") is None or row.get("png_base64") is None:
-                        continue
+                fieldnames = set(reader.fieldnames or [])
+                required_fieldnames = {"character", "png_base64"}
+                missing_fieldnames = required_fieldnames - fieldnames
+                if missing_fieldnames:
+                    raise ValueError(
+                        "Missing required CSV columns in "
+                        f"{assigned_csv_path}: {sorted(missing_fieldnames)}"
+                    )
+
+                for row_number, row in enumerate(reader, start=2):
+                    character = row.get("character")
+                    png_base64 = row.get("png_base64")
+                    if character is None or png_base64 is None:
+                        raise ValueError(
+                            "Malformed assigned CSV row "
+                            f"{row_number} in {assigned_csv_path}"
+                        )
                     char_array = raw_base64_png_to_array(row["png_base64"])
                     if char_array.shape != cls.char_array_shape:
                         raise ValueError(
@@ -225,15 +239,28 @@ class AssignmentDataset(VisionDataset):
                             f"{char_array.shape}, expected {cls.char_array_shape}"
                         )
                     char_bytes = cls.array_to_bytes(char_array)
-                    assigned[char_bytes] = row["character"]
+                    assigned[char_bytes] = character
 
         unassigned: list[bytes] = []
         if unassigned_csv_path.exists():
             with unassigned_csv_path.open("r", encoding="utf-8", newline="") as infile:
                 reader = DictReader(infile)
-                for row in reader:
-                    if row.get("png_base64") is None:
-                        continue
+                fieldnames = set(reader.fieldnames or [])
+                required_fieldnames = {"png_base64"}
+                missing_fieldnames = required_fieldnames - fieldnames
+                if missing_fieldnames:
+                    raise ValueError(
+                        "Missing required CSV columns in "
+                        f"{unassigned_csv_path}: {sorted(missing_fieldnames)}"
+                    )
+
+                for row_number, row in enumerate(reader, start=2):
+                    png_base64 = row.get("png_base64")
+                    if png_base64 is None:
+                        raise ValueError(
+                            "Malformed unassigned CSV row "
+                            f"{row_number} in {unassigned_csv_path}"
+                        )
                     char_array = raw_base64_png_to_array(row["png_base64"])
                     if char_array.shape != cls.char_array_shape:
                         raise ValueError(
