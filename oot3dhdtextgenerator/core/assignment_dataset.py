@@ -6,6 +6,8 @@ from __future__ import annotations
 
 from csv import DictReader, DictWriter
 from logging import debug, info
+from os import replace
+from tempfile import NamedTemporaryFile
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -232,7 +234,13 @@ class AssignmentDataset(VisionDataset):
                             "Malformed assigned CSV row "
                             f"{row_number} in {assigned_csv_path}"
                         )
-                    char_array = raw_base64_png_to_array(row["png_base64"])
+                    try:
+                        char_array = raw_base64_png_to_array(row["png_base64"])
+                    except ValueError as exc:
+                        raise ValueError(
+                            "Invalid base64 PNG payload at "
+                            f"{assigned_csv_path}:{row_number}"
+                        ) from exc
                     if char_array.shape != cls.char_array_shape:
                         raise ValueError(
                             "Invalid array shape "
@@ -261,7 +269,13 @@ class AssignmentDataset(VisionDataset):
                             "Malformed unassigned CSV row "
                             f"{row_number} in {unassigned_csv_path}"
                         )
-                    char_array = raw_base64_png_to_array(row["png_base64"])
+                    try:
+                        char_array = raw_base64_png_to_array(row["png_base64"])
+                    except ValueError as exc:
+                        raise ValueError(
+                            "Invalid base64 PNG payload at "
+                            f"{unassigned_csv_path}:{row_number}"
+                        ) from exc
                     if char_array.shape != cls.char_array_shape:
                         raise ValueError(
                             "Invalid array shape "
@@ -294,7 +308,16 @@ class AssignmentDataset(VisionDataset):
         sorted_assigned_items = sorted(
             assigned_char_bytes.items(), key=lambda item: item[1]
         )
-        with assigned_csv_path.open("w", encoding="utf-8", newline="") as outfile:
+        with NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            newline="",
+            delete=False,
+            dir=assigned_csv_path.parent,
+            prefix=f".{assigned_csv_path.name}.",
+            suffix=".tmp",
+        ) as outfile:
+            assigned_temp_path = Path(outfile.name)
             writer = DictWriter(outfile, fieldnames=["character", "png_base64"])
             writer.writeheader()
             for char_bytes, char in sorted_assigned_items:
@@ -310,6 +333,7 @@ class AssignmentDataset(VisionDataset):
                         "png_base64": array_to_raw_base64_png(char_array),
                     }
                 )
+        replace(assigned_temp_path, assigned_csv_path)
 
         def _encode_unassigned(char_bytes: bytes) -> str:
             char_array = cls.bytes_to_array(char_bytes)
@@ -320,19 +344,32 @@ class AssignmentDataset(VisionDataset):
                 )
             return array_to_raw_base64_png(char_array)
 
-        sorted_unassigned_char_bytes = sorted(
-            unassigned_char_bytes,
-            key=_encode_unassigned,
+        encoded_unassigned = [
+            (_encode_unassigned(char_bytes), char_bytes)
+            for char_bytes in unassigned_char_bytes
+        ]
+        encoded_unassigned.sort(
+            key=lambda encoded_and_bytes: encoded_and_bytes[0],
         )
-        with unassigned_csv_path.open("w", encoding="utf-8", newline="") as outfile:
+        with NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            newline="",
+            delete=False,
+            dir=unassigned_csv_path.parent,
+            prefix=f".{unassigned_csv_path.name}.",
+            suffix=".tmp",
+        ) as outfile:
+            unassigned_temp_path = Path(outfile.name)
             writer = DictWriter(outfile, fieldnames=["png_base64"])
             writer.writeheader()
-            for char_bytes in sorted_unassigned_char_bytes:
+            for png_base64, _ in encoded_unassigned:
                 writer.writerow(
                     {
-                        "png_base64": _encode_unassigned(char_bytes),
+                        "png_base64": png_base64,
                     }
                 )
+        replace(unassigned_temp_path, unassigned_csv_path)
 
         info(
             "Saved AssignmentDataset to %s and %s",
