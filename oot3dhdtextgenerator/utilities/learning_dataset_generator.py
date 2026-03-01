@@ -92,16 +92,16 @@ class LearningDatasetGenerator(Utility):
         cls,
         n_chars: int,
         test_proportion: float,
-        train_output_path: Path,
-        test_output_path: Path,
+        train_output_dir_path: Path,
+        test_output_dir_path: Path,
     ) -> None:
         """Execute.
 
         Arguments:
             n_chars: number of unique characters to include in dataset
             test_proportion: proportion of dataset to be set aside for testing
-            train_output_path: train output file path
-            test_output_path: test output file path
+            train_output_dir_path: train output directory path
+            test_output_dir_path: test output directory path
         """
         images, specifications = cls.generate_character_images(n_chars)
         info(f"Generated {images.shape[0]} character images")
@@ -116,10 +116,16 @@ class LearningDatasetGenerator(Utility):
             f"{test_images.shape[0]} test images"
         )
 
-        LearningDataset.save_hdf5(train_images, train_specifications, train_output_path)
-        info(f"Saved {train_images.shape[0]} character images to {train_output_path}")
-        LearningDataset.save_hdf5(test_images, test_specifications, test_output_path)
-        info(f"Saved {test_images.shape[0]} character images to {test_output_path}")
+        LearningDataset.save_dataset(
+            train_images, train_specifications, train_output_dir_path
+        )
+        info(
+            f"Saved {train_images.shape[0]} character images to {train_output_dir_path}"
+        )
+        LearningDataset.save_dataset(
+            test_images, test_specifications, test_output_dir_path
+        )
+        info(f"Saved {test_images.shape[0]} character images to {test_output_dir_path}")
 
     @staticmethod
     def generate_character_image(  # noqa: PLR0913

@@ -13,9 +13,8 @@ from oot3dhdtextgenerator.common.argument_parsing import (
     float_arg,
     get_arg_groups_by_name,
     int_arg,
-    output_file_arg,
 )
-from oot3dhdtextgenerator.common.validation import val_output_path
+from oot3dhdtextgenerator.common.validation import val_output_dir_path
 from oot3dhdtextgenerator.utilities import LearningDatasetGenerator
 
 if TYPE_CHECKING:
@@ -65,18 +64,18 @@ class LearningDatasetGeneratorCli(UtilityCli):
 
         # Output arguments
         arg_groups["output arguments"].add_argument(
-            "--train-output-file",
-            dest="train_output_path",
-            type=output_file_arg(),
-            default="train_{n_chars}.h5",
-            help="train output file (default: %(default)s)",
+            "--train-output-dir",
+            dest="train_output_dir_path",
+            type=str,
+            default="oot3dhdtextgenerator/data/train_{n_chars}",
+            help="train output directory (default: %(default)s)",
         )
         arg_groups["output arguments"].add_argument(
-            "--test-output-file",
-            dest="test_output_path",
-            type=output_file_arg(),
-            default="test_{n_chars}.h5",
-            help="test output file (default: %(default)s)",
+            "--test-output-dir",
+            dest="test_output_dir_path",
+            type=str,
+            default="oot3dhdtextgenerator/data/test_{n_chars}",
+            help="test output directory (default: %(default)s)",
         )
 
     @classmethod
@@ -97,11 +96,11 @@ class LearningDatasetGeneratorCli(UtilityCli):
             **kwargs: keyword arguments
         """
         utility_cls = cls.utility()
-        kwargs["train_output_path"] = val_output_path(
-            str(kwargs["train_output_path"]).format(**kwargs)
+        kwargs["train_output_dir_path"] = val_output_dir_path(
+            str(kwargs["train_output_dir_path"]).format(**kwargs)
         )
-        kwargs["test_output_path"] = val_output_path(
-            str(kwargs["test_output_path"]).format(**kwargs)
+        kwargs["test_output_dir_path"] = val_output_dir_path(
+            str(kwargs["test_output_dir_path"]).format(**kwargs)
         )
         utility_cls.run(**kwargs)
 

@@ -15,7 +15,7 @@ from oot3dhdtextgenerator.common.argument_parsing import (
     output_file_arg,
 )
 from oot3dhdtextgenerator.common.validation import (
-    val_input_path,
+    val_input_dir_path,
     val_output_path,
 )
 from oot3dhdtextgenerator.utilities import ModelTrainer
@@ -54,18 +54,18 @@ class ModelTrainerCli(UtilityCli):
             "common and ending with the least common (default: %(default)d, max: 9933)",
         )
         arg_groups["input arguments"].add_argument(
-            "--train-input-file",
-            dest="train_input_path",
+            "--train-input-dir",
+            dest="train_input_dir_path",
             type=str,
-            default="train_{n_chars}.h5",
-            help="train data input file (default: %(default)s)",
+            default="oot3dhdtextgenerator/data/train_{n_chars}",
+            help="train data input directory (default: %(default)s)",
         )
         arg_groups["input arguments"].add_argument(
-            "--test-input-file",
-            dest="test_input_path",
+            "--test-input-dir",
+            dest="test_input_dir_path",
             type=str,
-            default="test_{n_chars}.h5",
-            help="test data input file (default: %(default)s)",
+            default="oot3dhdtextgenerator/data/test_{n_chars}",
+            help="test data input directory (default: %(default)s)",
         )
 
         # Operation arguments
@@ -159,11 +159,11 @@ class ModelTrainerCli(UtilityCli):
             **kwargs: keyword arguments
         """
         utility_cls = cls.utility()
-        kwargs["train_input_path"] = val_input_path(
-            str(kwargs["train_input_path"]).format(**kwargs)
+        kwargs["train_input_dir_path"] = val_input_dir_path(
+            str(kwargs["train_input_dir_path"]).format(**kwargs)
         )
-        kwargs["test_input_path"] = val_input_path(
-            str(kwargs["test_input_path"]).format(**kwargs)
+        kwargs["test_input_dir_path"] = val_input_dir_path(
+            str(kwargs["test_input_dir_path"]).format(**kwargs)
         )
         kwargs["model_output_path"] = val_output_path(
             str(kwargs["model_output_path"]).format(**kwargs)

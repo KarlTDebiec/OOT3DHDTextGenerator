@@ -7,3 +7,5 @@ __pycache__
 *.h5
 *.pth
 *.egg-info
+oot3dhdtextgenerator/data/train_*/
+oot3dhdtextgenerator/data/test_*/
