@@ -7,8 +7,9 @@ from __future__ import annotations
 import time
 from itertools import product
 from logging import info
+from pathlib import Path
+from platform import system
 from random import sample
-from typing import TYPE_CHECKING
 
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
@@ -16,9 +17,6 @@ from pipescaler.core import Utility
 
 from oot3dhdtextgenerator.core import TrainingDataset
 from oot3dhdtextgenerator.data import hanzi_frequency
-
-if TYPE_CHECKING:
-    from pathlib import Path
 
 
 class TrainingDatasetGenerator(Utility):
@@ -36,9 +34,7 @@ class TrainingDatasetGenerator(Utility):
             images and specifications
         """
         characters = hanzi_frequency["character"].values[:n_chars]
-        fonts = [
-            r"C:\Windows\Fonts\simhei.ttf",
-        ]
+        fonts = [cls.get_default_font_path()]
         sizes = [14, 15, 16]
         offsets = [-1, 0, 1]
         fills = [255]
@@ -128,10 +124,63 @@ class TrainingDatasetGenerator(Utility):
         info(f"Saved {test_images.shape[0]} character images to {test_output_dir_path}")
 
     @staticmethod
+    def get_default_font_path() -> str:
+        """Resolve a platform-appropriate font path.
+
+        Returns:
+            existing font path string
+        Raises:
+            FileNotFoundError: if no candidate font path exists
+        """
+        system_name = system()
+        if system_name == "Windows":
+            candidates = [
+                r"C:\Windows\Fonts\simhei.ttf",
+                r"C:\Windows\Fonts\msyh.ttc",
+                r"C:\Windows\Fonts\simsun.ttc",
+                r"C:\Windows\Fonts\arial.ttf",
+            ]
+        elif system_name == "Darwin":
+            candidates = [
+                "/System/Library/Fonts/PingFang.ttc",
+                "/System/Library/Fonts/STHeiti Medium.ttc",
+                "/System/Library/Fonts/STHeiti Light.ttc",
+                "/System/Library/Fonts/Hiragino Sans GB.ttc",
+            ]
+        else:
+            candidates = [
+                "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
+                "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+            ]
+
+        for candidate in candidates:
+            if Path(candidate).exists():
+                return candidate
+
+        raise FileNotFoundError(
+            "No default font was found for this platform. "
+            "Pass an explicit font path in code."
+        )
+
+    @staticmethod
+    def get_default_font(size: int = 12) -> ImageFont.FreeTypeFont:
+        """Get a platform-appropriate default font.
+
+        Arguments:
+            size: font size
+        Returns:
+            loaded font
+        """
+        return ImageFont.truetype(
+            TrainingDatasetGenerator.get_default_font_path(), size
+        )
+
+    @staticmethod
     def generate_character_image(  # noqa: PLR0913
         char: str,
         *,
-        font: str = r"C:\Windows\Fonts\simhei.ttf",
+        font: str | None = None,
         size: int = 12,
         fill: int = 0,
         x_offset: int = 0,
@@ -151,22 +200,18 @@ class TrainingDatasetGenerator(Utility):
         Returns:
             numpy array of character image
         """
-        # info(
-        #     f"Generating image of {char} with font {font}, size {size}, fill {fill}, "
-        #     f"x offset {x_offset}, y offset {y_offset}, and rotation {rotation}"
-        # )
+        if font is None:
+            font_type = TrainingDatasetGenerator.get_default_font(size)
+        else:
+            font_type = ImageFont.truetype(font, size)
         image = Image.new("L", (16, 16), 0)
         draw = ImageDraw.Draw(image)
-        font_type = ImageFont.truetype(font, size)
         _, _, width, height = draw.textbbox((0, 0), char, font=font_type)
         xy = ((16 - width) / 2, (16 - height) / 2)
         draw.text(xy, char, font=font_type, fill=int(fill))
         image = image.rotate(rotation)
         array = np.array(image)
         array = np.roll(array, (x_offset, y_offset), (0, 1))
-        # image = Image.fromarray(array)
-        # image.show()
-        # input()
 
         return array
 
