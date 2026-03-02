@@ -115,7 +115,7 @@ class ModelTrainer(Utility):
 
         # Save model
         torch.save(model.state_dict(), model_output_path)
-        info(f"{cls}: Model saved to {model_output_path}")
+        info(f"Model saved to {model_output_path}")
 
     @staticmethod
     def test(model: Model, device: torch.device, loader: DataLoader) -> None:

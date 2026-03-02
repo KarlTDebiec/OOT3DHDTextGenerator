@@ -14,7 +14,8 @@ from oot3dhdtextgenerator.common.argument_parsing import (
     get_arg_groups_by_name,
     int_arg,
 )
-from oot3dhdtextgenerator.common.validation import val_output_dir_path
+from oot3dhdtextgenerator.common.validation import val_output_dir_path, val_output_path
+from oot3dhdtextgenerator.core import TrainingDataset
 from oot3dhdtextgenerator.data import oot3d_data_path
 from oot3dhdtextgenerator.utilities import TrainingDatasetGenerator
 
@@ -78,6 +79,13 @@ class TrainingDatasetGeneratorCli(UtilityCli):
             default="{oot3d_data_path}/test_{n_chars}",
             help="test output directory (default: %(default)s)",
         )
+        arg_groups["output arguments"].add_argument(
+            "-o",
+            "--overwrite",
+            action="store_true",
+            default=False,
+            help="overwrite existing train/test output files",
+        )
 
     @classmethod
     @override
@@ -107,6 +115,25 @@ class TrainingDatasetGeneratorCli(UtilityCli):
         kwargs["test_output_dir_path"] = val_output_dir_path(
             str(kwargs["test_output_dir_path"]).format(**format_kwargs)
         )
+        val_output_path(
+            kwargs["train_output_dir_path"] / TrainingDataset.images_npy_file_name,
+            exist_ok=kwargs["overwrite"],
+        )
+        val_output_path(
+            kwargs["train_output_dir_path"]
+            / TrainingDataset.specifications_csv_file_name,
+            exist_ok=kwargs["overwrite"],
+        )
+        val_output_path(
+            kwargs["test_output_dir_path"] / TrainingDataset.images_npy_file_name,
+            exist_ok=kwargs["overwrite"],
+        )
+        val_output_path(
+            kwargs["test_output_dir_path"]
+            / TrainingDataset.specifications_csv_file_name,
+            exist_ok=kwargs["overwrite"],
+        )
+        kwargs.pop("overwrite")
         utility_cls.run(**kwargs)
 
 
