@@ -19,6 +19,9 @@ from oot3dhdtextgenerator.cli import (
     TrainingDatasetGeneratorCli,
 )
 from oot3dhdtextgenerator.cli import (
+    char_assigner_cli as char_assigner_cli_module,
+)
+from oot3dhdtextgenerator.cli import (
     training_dataset_generator_cli as training_dataset_generator_cli_module,
 )
 from oot3dhdtextgenerator.common.testing import run_cli_with_args
@@ -168,3 +171,93 @@ def test_training_dataset_generator_overwrite_uses_exist_ok(
 
     assert captured["exist_ok"] == [True, True, True, True]
     assert "overwrite" not in captured["run_kwargs"]
+
+
+def test_char_assigner_default_paths_are_formatted(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """Test char assigner defaults are formatted with oot3d data path."""
+    captured: dict[str, Any] = {}
+
+    def fake_val_output_dir_path(value: str) -> Path:
+        """Validate mocked output directory path."""
+        captured["assignment_dir_path"] = value
+        return Path(value)
+
+    def fake_val_input_path(value: str) -> Path:
+        """Validate mocked input path."""
+        captured["model_input_path"] = value
+        return Path(value)
+
+    class FakeCharAssigner:
+        """Mock character assigner."""
+
+        def __init__(self, **kwargs: Any) -> None:
+            """Capture initializer keyword arguments."""
+            captured["init_kwargs"] = kwargs
+
+        def run(self, **kwargs: Any) -> None:
+            """Capture run keyword arguments."""
+            captured["run_kwargs"] = kwargs
+
+    monkeypatch.setattr(
+        char_assigner_cli_module, "val_output_dir_path", fake_val_output_dir_path
+    )
+    monkeypatch.setattr(char_assigner_cli_module, "val_input_path", fake_val_input_path)
+    monkeypatch.setattr(char_assigner_cli_module, "CharAssigner", FakeCharAssigner)
+
+    CharAssignerCli._main(
+        n_chars=100,
+        assignment_dir_path="{oot3d_data_path}",
+        model_input_path="{oot3d_data_path}/model_{n_chars}.pth",
+        cuda_enabled=True,
+        mps_enabled=True,
+    )
+
+    assert captured["assignment_dir_path"].endswith("/oot3d")
+    assert captured["model_input_path"].endswith("/oot3d/model_100.pth")
+    assert captured["run_kwargs"] == {"port": 5001}
+
+
+def test_char_assigner_custom_port_is_forwarded(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """Test char assigner forwards custom port to Flask app run."""
+    captured: dict[str, Any] = {}
+
+    def fake_val_output_dir_path(value: str) -> Path:
+        """Validate mocked output directory path."""
+        return Path(value)
+
+    def fake_val_input_path(value: str) -> Path:
+        """Validate mocked input path."""
+        return Path(value)
+
+    class FakeCharAssigner:
+        """Mock character assigner."""
+
+        def __init__(self, **kwargs: Any) -> None:
+            """Capture initializer keyword arguments."""
+            captured["init_kwargs"] = kwargs
+
+        def run(self, **kwargs: Any) -> None:
+            """Capture run keyword arguments."""
+            captured["run_kwargs"] = kwargs
+
+    monkeypatch.setattr(
+        char_assigner_cli_module, "val_output_dir_path", fake_val_output_dir_path
+    )
+    monkeypatch.setattr(char_assigner_cli_module, "val_input_path", fake_val_input_path)
+    monkeypatch.setattr(char_assigner_cli_module, "CharAssigner", FakeCharAssigner)
+
+    CharAssignerCli._main(
+        n_chars=100,
+        assignment_dir_path="{oot3d_data_path}",
+        model_input_path="{oot3d_data_path}/model_{n_chars}.pth",
+        cuda_enabled=True,
+        mps_enabled=True,
+        port=5002,
+    )
+
+    assert captured["run_kwargs"] == {"port": 5002}
+    assert "port" not in captured["init_kwargs"]

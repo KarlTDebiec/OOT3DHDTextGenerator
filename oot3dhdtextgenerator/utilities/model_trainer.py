@@ -4,10 +4,12 @@
 
 from __future__ import annotations
 
+import random
 from collections.abc import Sized
 from logging import info
 from typing import TYPE_CHECKING, cast
 
+import numpy as np
 import torch
 from pipescaler.core import Utility
 from torch.nn.functional import nll_loss
@@ -62,7 +64,10 @@ class ModelTrainer(Utility):
         """
         # Determine which device to use
         cuda_enabled = torch.cuda.is_available() and cuda_enabled
+        random.seed(seed)
         torch.manual_seed(seed)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(seed)
         if cuda_enabled:
             device = torch.device("cuda")
         elif torch.backends.mps.is_available() and mps_enabled:
@@ -71,27 +76,50 @@ class ModelTrainer(Utility):
             device = torch.device("cpu")
 
         # Load training and test data
-        transform = Compose([ToTensor(), Normalize((0.1307,), (0.3081,))])
-        train_dataset = TrainingDataset(train_input_dir_path, transform=transform)
-        test_dataset = TrainingDataset(test_input_dir_path, transform=transform)
+        train_dataset = TrainingDataset(train_input_dir_path)
+        test_dataset = TrainingDataset(test_input_dir_path)
+        normalization_mean, normalization_std = cls.get_normalization_stats(
+            train_dataset
+        )
+        transform = Compose(
+            [ToTensor(), Normalize((normalization_mean,), (normalization_std,))]
+        )
+        train_dataset.transform = transform
+        test_dataset.transform = transform
+        info(
+            "Using normalization mean %.6f and std %.6f",
+            normalization_mean,
+            normalization_std,
+        )
+
         if cuda_enabled:
             train_loader = DataLoader(
                 train_dataset,
                 batch_size=batch_size,
+                shuffle=True,
                 num_workers=1,
                 pin_memory=True,
-                shuffle=True,
             )
             test_loader = DataLoader(
                 test_dataset,
                 batch_size=test_batch_size,
+                shuffle=False,
                 num_workers=1,
                 pin_memory=True,
-                shuffle=True,
             )
         else:
-            train_loader = DataLoader(train_dataset, batch_size=batch_size)
-            test_loader = DataLoader(test_dataset, batch_size=test_batch_size)
+            train_loader = DataLoader(
+                train_dataset,
+                batch_size=batch_size,
+                shuffle=True,
+                num_workers=1,
+            )
+            test_loader = DataLoader(
+                test_dataset,
+                batch_size=test_batch_size,
+                shuffle=False,
+                num_workers=1,
+            )
 
         # Configure model
         n_chars = len(set(train_dataset.specifications["character"]))
@@ -114,8 +142,29 @@ class ModelTrainer(Utility):
             scheduler.step()
 
         # Save model
-        torch.save(model.state_dict(), model_output_path)
+        checkpoint = {
+            "state_dict": model.state_dict(),
+            "n_chars": n_chars,
+            "normalization": {"mean": normalization_mean, "std": normalization_std},
+        }
+        torch.save(checkpoint, model_output_path)
         info(f"Model saved to {model_output_path}")
+
+    @staticmethod
+    def get_normalization_stats(dataset: TrainingDataset) -> tuple[float, float]:
+        """Calculate normalization statistics from the training dataset.
+
+        Arguments:
+            dataset: training dataset
+        Returns:
+            mean and standard deviation in [0, 1] scale
+        """
+        images = dataset.images.astype(np.float32) / 255.0
+        mean = float(images.mean())
+        std = float(images.std())
+        if std <= 0:
+            std = 1.0
+        return mean, std
 
     @staticmethod
     def test(model: Model, device: torch.device, loader: DataLoader) -> None:

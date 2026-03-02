@@ -34,7 +34,7 @@ class TrainingDatasetGenerator(Utility):
             images and specifications
         """
         characters = hanzi_frequency["character"].values[:n_chars]
-        fonts = [cls.get_default_font_path()]
+        fonts = cls.get_default_font_paths()
         sizes = [14, 15, 16]
         offsets = [-1, 0, 1]
         fills = [255]
@@ -124,11 +124,11 @@ class TrainingDatasetGenerator(Utility):
         info(f"Saved {test_images.shape[0]} character images to {test_output_dir_path}")
 
     @staticmethod
-    def get_default_font_path() -> str:
-        """Resolve a platform-appropriate font path.
+    def get_default_font_paths() -> list[str]:
+        """Resolve platform-appropriate font paths.
 
         Returns:
-            existing font path string
+            existing font path strings
         Raises:
             FileNotFoundError: if no candidate font path exists
         """
@@ -154,9 +154,12 @@ class TrainingDatasetGenerator(Utility):
                 "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
             ]
 
-        for candidate in candidates:
-            if Path(candidate).exists():
-                return candidate
+        existing_candidates = [
+            candidate for candidate in candidates if Path(candidate).exists()
+        ]
+
+        if existing_candidates:
+            return existing_candidates
 
         raise FileNotFoundError(
             "No default font was found for this platform. "
@@ -188,18 +191,54 @@ class TrainingDatasetGenerator(Utility):
             numpy array of character image
         """
         if font is None:
-            font = TrainingDatasetGenerator.get_default_font_path()
+            font = TrainingDatasetGenerator.get_default_font_paths()[0]
         font_type = ImageFont.truetype(font, size)
         image = Image.new("L", (16, 16), 0)
         draw = ImageDraw.Draw(image)
         _, _, width, height = draw.textbbox((0, 0), char, font=font_type)
         xy = ((16 - width) / 2, (16 - height) / 2)
         draw.text(xy, char, font=font_type, fill=int(fill))
-        image = image.rotate(rotation)
+        image = image.rotate(rotation, fillcolor=0)
         array = np.array(image)
-        array = np.roll(array, (x_offset, y_offset), (0, 1))
+        array = TrainingDatasetGenerator._translate_array_no_wrap(
+            array, x_offset, y_offset
+        )
 
         return array
+
+    @staticmethod
+    def _translate_array_no_wrap(
+        array: np.ndarray, x_offset: int, y_offset: int
+    ) -> np.ndarray:
+        """Translate a 2D array without wraparound.
+
+        Arguments:
+            array: source image array
+            x_offset: horizontal translation in pixels, positive is right
+            y_offset: vertical translation in pixels, positive is down
+        Returns:
+            translated array with uncovered pixels filled with zero
+        """
+        height, width = array.shape
+        translated = np.zeros_like(array)
+
+        dst_x_start = max(0, x_offset)
+        dst_x_end = min(width, width + x_offset)
+        dst_y_start = max(0, y_offset)
+        dst_y_end = min(height, height + y_offset)
+
+        src_x_start = max(0, -x_offset)
+        src_x_end = src_x_start + (dst_x_end - dst_x_start)
+        src_y_start = max(0, -y_offset)
+        src_y_end = src_y_start + (dst_y_end - dst_y_start)
+
+        if dst_x_start < dst_x_end and dst_y_start < dst_y_end:
+            translated[dst_y_start:dst_y_end, dst_x_start:dst_x_end] = array[
+                src_y_start:src_y_end,
+                src_x_start:src_x_end,
+            ]
+
+        return translated
 
     @staticmethod
     def split_train_and_test(

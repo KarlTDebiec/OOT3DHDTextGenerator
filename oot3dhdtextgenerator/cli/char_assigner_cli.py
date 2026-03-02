@@ -12,9 +12,8 @@ from oot3dhdtextgenerator.common import CommandLineInterface
 from oot3dhdtextgenerator.common.argument_parsing import (
     get_arg_groups_by_name,
     int_arg,
-    output_dir_arg,
 )
-from oot3dhdtextgenerator.common.validation import val_input_path
+from oot3dhdtextgenerator.common.validation import val_input_path, val_output_dir_path
 from oot3dhdtextgenerator.data import oot3d_data_path
 
 if TYPE_CHECKING:
@@ -52,8 +51,8 @@ class CharAssignerCli(CommandLineInterface):
         arg_groups["input arguments"].add_argument(
             "--assignment-dir",
             dest="assignment_dir_path",
-            type=output_dir_arg(),
-            default=str(oot3d_data_path),
+            type=str,
+            default="{oot3d_data_path}",
             help=(
                 "assignment input and output CSV directory containing assigned.csv "
                 "and unassigned.csv (default: %(default)s)"
@@ -63,7 +62,7 @@ class CharAssignerCli(CommandLineInterface):
             "--model-input-file",
             dest="model_input_path",
             type=str,
-            default="model_{n_chars}.pth",
+            default="{oot3d_data_path}/model_{n_chars}.pth",
             help="model input file (default: %(default)s)",
         )
 
@@ -82,16 +81,31 @@ class CharAssignerCli(CommandLineInterface):
             default=True,
             help="disable macOS GPU",
         )
+        arg_groups["operation arguments"].add_argument(
+            "-p",
+            "--port",
+            type=int_arg(min_value=1, max_value=65535),
+            default=5001,
+            help="port on which to run character assigner (default: %(default)d)",
+        )
 
     @classmethod
     @override
     def _main(cls, **kwargs: Any) -> None:
         """Execute with provided keyword arguments."""
+        port = kwargs.pop("port", 5001)
+        format_kwargs = {
+            "n_chars": kwargs["n_chars"],
+            "oot3d_data_path": str(oot3d_data_path),
+        }
+        kwargs["assignment_dir_path"] = val_output_dir_path(
+            str(kwargs["assignment_dir_path"]).format(**format_kwargs)
+        )
         kwargs["model_input_path"] = val_input_path(
-            str(kwargs["model_input_path"]).format(**kwargs)
+            str(kwargs["model_input_path"]).format(**format_kwargs)
         )
         char_assigner = CharAssigner(**kwargs)
-        char_assigner.run(port=5001)
+        char_assigner.run(port=port)
 
 
 if __name__ == "__main__":

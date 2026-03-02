@@ -5,8 +5,7 @@
 from __future__ import annotations
 
 from base64 import b64encode
-from dataclasses import dataclass
-from functools import cached_property
+from dataclasses import dataclass, field
 from io import BytesIO
 from typing import TYPE_CHECKING
 
@@ -29,19 +28,24 @@ class Character:
     """Assigned value, if any."""
     predictions: list[str] | None = None
     """Potential assignments, if any."""
+    _image: str | None = field(default=None, init=False, repr=False)
+    """Cached base64 encoded PNG representation of the character."""
 
-    @cached_property
+    @property
     def image(self) -> str:
         """Base64 encoded PNG representation of the character.
 
         Returns:
             base64 encoded image string.
         """
+        if self._image is not None:
+            return self._image
+
         img = Image.fromarray(self.array)
         img = invert(img)
 
         image_io = BytesIO()
         img.save(image_io, format="PNG")
         b64_image = b64encode(image_io.getvalue()).decode("ascii")
-
-        return f"data:image/png;base64,{b64_image}"
+        self._image = f"data:image/png;base64,{b64_image}"
+        return self._image
