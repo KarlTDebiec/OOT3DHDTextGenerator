@@ -97,7 +97,10 @@ class TrainingDatasetGeneratorCli(UtilityCli):
             **kwargs: keyword arguments
         """
         utility_cls = cls.utility()
-        format_kwargs = kwargs | {"oot3d_data_path": str(oot3d_data_path)}
+        format_kwargs = {
+            "n_chars": kwargs["n_chars"],
+            "oot3d_data_path": str(oot3d_data_path),
+        }
         kwargs["train_output_dir_path"] = val_output_dir_path(
             str(kwargs["train_output_dir_path"]).format(**format_kwargs)
         )
