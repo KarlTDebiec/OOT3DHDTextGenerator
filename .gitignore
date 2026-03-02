@@ -9,3 +9,5 @@ __pycache__
 *.egg-info
 oot3dhdtextgenerator/data/train_*/
 oot3dhdtextgenerator/data/test_*/
+oot3dhdtextgenerator/data/oot3d/train_*/
+oot3dhdtextgenerator/data/oot3d/test_*/
