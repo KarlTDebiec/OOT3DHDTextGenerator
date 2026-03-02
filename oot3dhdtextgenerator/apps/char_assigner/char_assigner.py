@@ -186,7 +186,17 @@ class CharAssigner:
             )
         prediction_labels = np.array(known_characters[:label_count], dtype=object)
         i = 0
-        for char_bytes, score in zip(dataset.unassigned_char_bytes, unassigned_scores):
+        unassigned_items = list(zip(dataset.unassigned_char_bytes, unassigned_scores))
+        unassigned_items = sorted(
+            enumerate(unassigned_items),
+            key=lambda item: (
+                int(np.argmax(item[1][1]))
+                if item[1][1].size > 0
+                else len(known_characters),
+                item[0],
+            ),
+        )
+        for _, (char_bytes, score) in unassigned_items:
             char_array = dataset.bytes_to_array(char_bytes)
             prediction_indexes = list(np.argsort(score))[::-1]
             predictions = prediction_labels[prediction_indexes].tolist()[:10]

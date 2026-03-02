@@ -89,3 +89,35 @@ def test_get_characters_assigned_rows_are_sorted_and_predicted() -> None:
     assert characters[1].predictions[0] == known_characters[7]
     assert characters[2].predictions is not None
     assert characters[2].predictions[0] == known_characters[8]
+
+
+def test_get_characters_unassigned_rows_are_sorted_by_top_prediction() -> None:
+    """Test unassigned rows are sorted by top prediction label order."""
+
+    class FakeDataset:
+        """Minimal dataset stub for char assigner tests."""
+
+        unassigned_char_bytes = [bytes([1] * (16 * 16)), bytes([2] * (16 * 16))]
+        assigned_char_bytes: dict[bytes, str] = {}
+
+        @staticmethod
+        def bytes_to_array(char_bytes: bytes) -> np.ndarray:
+            """Convert bytes to a 16x16 array."""
+            return np.frombuffer(char_bytes, dtype=np.uint8).reshape((16, 16))
+
+    # First unassigned char predicts label 5, second predicts label 1.
+    # Output should be sorted as label 1 then label 5, independent of input order.
+    scores = np.zeros((2, 10), dtype=np.float32)
+    scores[0, 5] = 1.0
+    scores[1, 1] = 1.0
+
+    dataset = cast("AssignmentDataset", FakeDataset())
+    characters = CharAssigner.get_characters(dataset, scores, {})
+
+    assert len(characters) == 2
+    assert characters[0].assignment is None
+    assert characters[1].assignment is None
+    assert characters[0].predictions is not None
+    assert characters[1].predictions is not None
+    assert characters[0].predictions[0] == known_characters[1]
+    assert characters[1].predictions[0] == known_characters[5]
