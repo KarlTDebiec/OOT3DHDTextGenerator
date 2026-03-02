@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, cast
 import numpy as np
 
 from oot3dhdtextgenerator.apps.char_assigner.char_assigner import CharAssigner
+from oot3dhdtextgenerator.apps.char_assigner.character import Character
 from oot3dhdtextgenerator.data import characters as known_characters
 
 if TYPE_CHECKING:
@@ -121,3 +122,63 @@ def test_get_characters_unassigned_rows_are_sorted_by_top_prediction() -> None:
     assert characters[1].predictions is not None
     assert characters[0].predictions[0] == known_characters[1]
     assert characters[1].predictions[0] == known_characters[5]
+
+
+def test_filter_characters_conflicts_only_assigned() -> None:
+    """Test assigned conflicts-only filter shows duplicate assignments only."""
+    characters = [
+        Character(0, np.zeros((16, 16), dtype=np.uint8), None, [known_characters[2]]),
+        Character(1, np.zeros((16, 16), dtype=np.uint8), known_characters[3], ["x"]),
+        Character(2, np.zeros((16, 16), dtype=np.uint8), known_characters[4], ["x"]),
+        Character(3, np.zeros((16, 16), dtype=np.uint8), known_characters[3], ["x"]),
+    ]
+
+    filtered = CharAssigner.filter_characters(
+        characters,
+        unassigned_filter="hidden",
+        assigned_filter="conflicts_only",
+    )
+
+    assert [character.assignment for character in filtered] == [
+        known_characters[3],
+        known_characters[3],
+    ]
+
+
+def test_filter_characters_unassigned_hidden_assigned_hidden() -> None:
+    """Test hidden filters suppress both unassigned and assigned rows."""
+    characters = [
+        Character(0, np.zeros((16, 16), dtype=np.uint8), None, [known_characters[2]]),
+        Character(1, np.zeros((16, 16), dtype=np.uint8), known_characters[3], ["x"]),
+    ]
+
+    filtered = CharAssigner.filter_characters(
+        characters,
+        unassigned_filter="hidden",
+        assigned_filter="hidden",
+    )
+
+    assert filtered == []
+
+
+def test_filter_characters_unassigned_top_prediction_available_only() -> None:
+    """Test top-prediction-available mode hides unavailable unassigned rows."""
+    characters = [
+        Character(0, np.zeros((16, 16), dtype=np.uint8), None, [known_characters[2]]),
+        Character(1, np.zeros((16, 16), dtype=np.uint8), None, [known_characters[3]]),
+        Character(2, np.zeros((16, 16), dtype=np.uint8), known_characters[2], ["x"]),
+    ]
+
+    filtered = CharAssigner.filter_characters(
+        characters,
+        unassigned_filter="top_prediction_available_only",
+        assigned_filter="visible",
+    )
+
+    # Top prediction known_characters[2] is already assigned, so only [3] remains.
+    assert [character.assignment for character in filtered] == [
+        None,
+        known_characters[2],
+    ]
+    assert filtered[0].predictions is not None
+    assert filtered[0].predictions[0] == known_characters[3]

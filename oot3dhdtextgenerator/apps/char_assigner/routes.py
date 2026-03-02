@@ -13,7 +13,33 @@ def route(char_assigner):
     @char_assigner.app.route("/", methods=["GET"])
     def index():
         """Render the character assignment index page."""
-        return render_template("index.html", characters=char_assigner.characters)
+        (
+            characters,
+            unassigned_filter,
+            assigned_filter,
+        ) = char_assigner.get_display_characters(
+            request.args.get("unassigned_filter"),
+            request.args.get("assigned_filter"),
+        )
+        return render_template(
+            "index.html",
+            characters=characters,
+            unassigned_filter=unassigned_filter,
+            assigned_filter=assigned_filter,
+        )
+
+    @char_assigner.app.route("/characters", methods=["GET"])
+    def get_characters():
+        """Render filtered character rows."""
+        (
+            characters,
+            _unassigned_filter,
+            _assigned_filter,
+        ) = char_assigner.get_display_characters(
+            request.args.get("unassigned_filter"),
+            request.args.get("assigned_filter"),
+        )
+        return render_template("characters_rows.html", characters=characters)
 
     @char_assigner.app.route("/characters/<int:character_id>", methods=["PUT"])
     def update_character(character_id):
@@ -31,5 +57,12 @@ def route(char_assigner):
                 char_assigner.dataset.assigned_csv_path,
                 char_assigner.dataset.unassigned_csv_path,
             )
-
-        return render_template("character.html", character=character)
+        (
+            characters,
+            _unassigned_filter,
+            _assigned_filter,
+        ) = char_assigner.get_display_characters(
+            request.values.get("unassigned_filter"),
+            request.values.get("assigned_filter"),
+        )
+        return render_template("characters_rows.html", characters=characters)

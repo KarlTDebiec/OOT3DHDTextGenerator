@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from collections import Counter
 from logging import warning
 from typing import TYPE_CHECKING, Any
 
@@ -27,6 +28,13 @@ if TYPE_CHECKING:
 
 class CharAssigner:
     """Character assigner."""
+
+    unassigned_filter_values = {
+        "visible",
+        "top_prediction_available_only",
+        "hidden",
+    }
+    assigned_filter_values = {"visible", "conflicts_only", "hidden"}
 
     def __init__(
         self,
@@ -130,6 +138,149 @@ class CharAssigner:
     def run(self, **kwargs: Any) -> None:
         """Run the Flask application."""
         self.app.run(**kwargs)
+
+    @staticmethod
+    def normalize_filters(
+        unassigned_filter: str | None, assigned_filter: str | None
+    ) -> tuple[str, str]:
+        """Normalize filter values to supported options.
+
+        Arguments:
+            unassigned_filter: unassigned visibility filter
+            assigned_filter: assigned visibility filter
+        Returns:
+            normalized unassigned and assigned filters
+        """
+        normalized_unassigned_filter = (
+            unassigned_filter
+            if unassigned_filter in CharAssigner.unassigned_filter_values
+            else "visible"
+        )
+        normalized_assigned_filter = (
+            assigned_filter
+            if assigned_filter in CharAssigner.assigned_filter_values
+            else "visible"
+        )
+        return normalized_unassigned_filter, normalized_assigned_filter
+
+    @staticmethod
+    def sort_characters(characters: list[Character]) -> list[Character]:
+        """Sort unassigned and assigned characters for display.
+
+        Arguments:
+            characters: unsorted characters
+        Returns:
+            sorted characters
+        """
+        character_indexes = {
+            character: index for index, character in enumerate(known_characters)
+        }
+
+        unassigned_characters = [char for char in characters if char.assignment is None]
+        unassigned_characters = sorted(
+            unassigned_characters,
+            key=lambda char: (
+                character_indexes.get(char.predictions[0], len(known_characters))
+                if char.predictions
+                else len(known_characters),
+                char.id,
+            ),
+        )
+
+        assigned_characters = [
+            char for char in characters if char.assignment is not None
+        ]
+        assigned_characters = sorted(
+            assigned_characters,
+            key=lambda char: (
+                character_indexes.get(char.assignment or "", len(known_characters)),
+                char.id,
+            ),
+        )
+        return unassigned_characters + assigned_characters
+
+    @staticmethod
+    def filter_characters(
+        characters: list[Character],
+        *,
+        unassigned_filter: str,
+        assigned_filter: str,
+    ) -> list[Character]:
+        """Filter characters for display.
+
+        Arguments:
+            characters: characters to filter
+            unassigned_filter: unassigned visibility filter
+            assigned_filter: assigned visibility filter
+        Returns:
+            filtered characters
+        """
+        sorted_characters = CharAssigner.sort_characters(characters)
+        unassigned_characters = [
+            char for char in sorted_characters if char.assignment is None
+        ]
+        assigned_characters = [
+            char for char in sorted_characters if char.assignment is not None
+        ]
+
+        if unassigned_filter == "hidden":
+            unassigned_characters = []
+        elif unassigned_filter == "top_prediction_available_only":
+            assigned_characters_set = {
+                char.assignment
+                for char in sorted_characters
+                if char.assignment is not None
+            }
+            unassigned_characters = [
+                char
+                for char in unassigned_characters
+                if char.predictions is not None
+                and len(char.predictions) > 0
+                and char.predictions[0] not in assigned_characters_set
+            ]
+
+        if assigned_filter == "hidden":
+            assigned_characters = []
+        elif assigned_filter == "conflicts_only":
+            assigned_counts = Counter(
+                char.assignment
+                for char in assigned_characters
+                if char.assignment is not None
+            )
+            assigned_characters = [
+                char
+                for char in assigned_characters
+                if char.assignment is not None
+                and assigned_counts.get(char.assignment, 0) > 1
+            ]
+
+        return unassigned_characters + assigned_characters
+
+    def get_display_characters(
+        self, unassigned_filter: str | None, assigned_filter: str | None
+    ) -> tuple[list[Character], str, str]:
+        """Get display characters and normalized filter values.
+
+        Arguments:
+            unassigned_filter: unassigned visibility filter
+            assigned_filter: assigned visibility filter
+        Returns:
+            display characters and normalized filter values
+        """
+        (
+            normalized_unassigned_filter,
+            normalized_assigned_filter,
+        ) = self.normalize_filters(unassigned_filter, assigned_filter)
+        display_characters = self.filter_characters(
+            self.characters,
+            unassigned_filter=normalized_unassigned_filter,
+            assigned_filter=normalized_assigned_filter,
+        )
+        return (
+            display_characters,
+            normalized_unassigned_filter,
+            normalized_assigned_filter,
+        )
 
     @staticmethod
     def get_tensors(

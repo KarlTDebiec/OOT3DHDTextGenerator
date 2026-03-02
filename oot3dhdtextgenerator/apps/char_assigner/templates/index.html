@@ -24,6 +24,17 @@ and distributed under the terms of the BSD license. See the LICENSE file for det
             margin: 0;
         }
 
+        .filters {
+            align-items: center;
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .filters select {
+            font-size: 1rem;
+        }
+
         img {
             border-style: solid;
             image-rendering: pixelated;
@@ -100,6 +111,32 @@ and distributed under the terms of the BSD license. See the LICENSE file for det
 </head>
 <body>
 <h1>Characters</h1>
+<form id="filters-form" class="filters">
+    <label for="unassigned-filter">Unassigned</label>
+    <select id="unassigned-filter"
+            name="unassigned_filter"
+            hx-get="/characters"
+            hx-include="#filters-form"
+            hx-target="#characters-body"
+            hx-swap="innerHTML"
+            hx-trigger="change">
+        <option value="visible"{% if unassigned_filter == "visible" %} selected{% endif %}>Visible</option>
+        <option value="top_prediction_available_only"{% if unassigned_filter == "top_prediction_available_only" %} selected{% endif %}>Top prediction available only</option>
+        <option value="hidden"{% if unassigned_filter == "hidden" %} selected{% endif %}>Hidden</option>
+    </select>
+    <label for="assigned-filter">Assigned</label>
+    <select id="assigned-filter"
+            name="assigned_filter"
+            hx-get="/characters"
+            hx-include="#filters-form"
+            hx-target="#characters-body"
+            hx-swap="innerHTML"
+            hx-trigger="change">
+        <option value="visible"{% if assigned_filter == "visible" %} selected{% endif %}>Visible</option>
+        <option value="conflicts_only"{% if assigned_filter == "conflicts_only" %} selected{% endif %}>Conflicts only</option>
+        <option value="hidden"{% if assigned_filter == "hidden" %} selected{% endif %}>Hidden</option>
+    </select>
+</form>
 <table>
     <thead>
     <tr>
@@ -120,10 +157,8 @@ and distributed under the terms of the BSD license. See the LICENSE file for det
         <th>10</th>
     </tr>
     </thead>
-    <tbody hx-target="closest tr" hx-swap="outerHTML swap:0.1s">
-    {% for character in characters %}
-    {% include 'character.html' %}
-    {% endfor %}
+    <tbody id="characters-body">
+    {% include 'characters_rows.html' %}
     </tbody>
 </table>
 </body>
