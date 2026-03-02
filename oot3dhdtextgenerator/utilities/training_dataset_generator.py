@@ -164,19 +164,6 @@ class TrainingDatasetGenerator(Utility):
         )
 
     @staticmethod
-    def get_default_font(size: int = 12) -> ImageFont.FreeTypeFont:
-        """Get a platform-appropriate default font.
-
-        Arguments:
-            size: font size
-        Returns:
-            loaded font
-        """
-        return ImageFont.truetype(
-            TrainingDatasetGenerator.get_default_font_path(), size
-        )
-
-    @staticmethod
     def generate_character_image(  # noqa: PLR0913
         char: str,
         *,
@@ -201,9 +188,8 @@ class TrainingDatasetGenerator(Utility):
             numpy array of character image
         """
         if font is None:
-            font_type = TrainingDatasetGenerator.get_default_font(size)
-        else:
-            font_type = ImageFont.truetype(font, size)
+            font = TrainingDatasetGenerator.get_default_font_path()
+        font_type = ImageFont.truetype(font, size)
         image = Image.new("L", (16, 16), 0)
         draw = ImageDraw.Draw(image)
         _, _, width, height = draw.textbbox((0, 0), char, font=font_type)
