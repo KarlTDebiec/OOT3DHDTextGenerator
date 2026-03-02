@@ -12,12 +12,12 @@ from pipescaler.core.cli import UtilityCli
 from oot3dhdtextgenerator.common.argument_parsing import (
     get_arg_groups_by_name,
     int_arg,
-    output_file_arg,
 )
 from oot3dhdtextgenerator.common.validation import (
     val_input_dir_path,
     val_output_path,
 )
+from oot3dhdtextgenerator.data import oot3d_data_path
 from oot3dhdtextgenerator.utilities import ModelTrainer
 
 if TYPE_CHECKING:
@@ -57,14 +57,14 @@ class ModelTrainerCli(UtilityCli):
             "--train-input-dir",
             dest="train_input_dir_path",
             type=str,
-            default="oot3dhdtextgenerator/data/train_{n_chars}",
+            default="{oot3d_data_path}/train_{n_chars}",
             help="train data input directory (default: %(default)s)",
         )
         arg_groups["input arguments"].add_argument(
             "--test-input-dir",
             dest="test_input_dir_path",
             type=str,
-            default="oot3dhdtextgenerator/data/test_{n_chars}",
+            default="{oot3d_data_path}/test_{n_chars}",
             help="test data input directory (default: %(default)s)",
         )
 
@@ -136,9 +136,16 @@ class ModelTrainerCli(UtilityCli):
         arg_groups["output arguments"].add_argument(
             "--model-output-file",
             dest="model_output_path",
-            type=output_file_arg(),
-            default="model_{n_chars}.pth",
+            type=str,
+            default="{oot3d_data_path}/model_{n_chars}.pth",
             help="model output file (default: %(default)s)",
+        )
+        arg_groups["output arguments"].add_argument(
+            "-o",
+            "--overwrite",
+            action="store_true",
+            default=False,
+            help="overwrite existing model output file",
         )
 
     @classmethod
@@ -159,16 +166,22 @@ class ModelTrainerCli(UtilityCli):
             **kwargs: keyword arguments
         """
         utility_cls = cls.utility()
+        format_kwargs = {
+            "n_chars": kwargs["n_chars"],
+            "oot3d_data_path": str(oot3d_data_path),
+        }
         kwargs["train_input_dir_path"] = val_input_dir_path(
-            str(kwargs["train_input_dir_path"]).format(**kwargs)
+            str(kwargs["train_input_dir_path"]).format(**format_kwargs)
         )
         kwargs["test_input_dir_path"] = val_input_dir_path(
-            str(kwargs["test_input_dir_path"]).format(**kwargs)
+            str(kwargs["test_input_dir_path"]).format(**format_kwargs)
         )
         kwargs["model_output_path"] = val_output_path(
-            str(kwargs["model_output_path"]).format(**kwargs)
+            str(kwargs["model_output_path"]).format(**format_kwargs),
+            exist_ok=kwargs["overwrite"],
         )
         kwargs.pop("n_chars")
+        kwargs.pop("overwrite")
         utility_cls.run(**kwargs)
 
 
