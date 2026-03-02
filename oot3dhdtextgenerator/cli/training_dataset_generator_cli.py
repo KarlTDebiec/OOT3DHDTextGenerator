@@ -15,6 +15,7 @@ from oot3dhdtextgenerator.common.argument_parsing import (
     int_arg,
 )
 from oot3dhdtextgenerator.common.validation import val_output_dir_path
+from oot3dhdtextgenerator.data import oot3d_data_path
 from oot3dhdtextgenerator.utilities import TrainingDatasetGenerator
 
 if TYPE_CHECKING:
@@ -67,14 +68,14 @@ class TrainingDatasetGeneratorCli(UtilityCli):
             "--train-output-dir",
             dest="train_output_dir_path",
             type=str,
-            default="oot3dhdtextgenerator/data/train_{n_chars}",
+            default="{oot3d_data_path}/train_{n_chars}",
             help="train output directory (default: %(default)s)",
         )
         arg_groups["output arguments"].add_argument(
             "--test-output-dir",
             dest="test_output_dir_path",
             type=str,
-            default="oot3dhdtextgenerator/data/test_{n_chars}",
+            default="{oot3d_data_path}/test_{n_chars}",
             help="test output directory (default: %(default)s)",
         )
 
@@ -96,11 +97,12 @@ class TrainingDatasetGeneratorCli(UtilityCli):
             **kwargs: keyword arguments
         """
         utility_cls = cls.utility()
+        format_kwargs = kwargs | {"oot3d_data_path": str(oot3d_data_path)}
         kwargs["train_output_dir_path"] = val_output_dir_path(
-            str(kwargs["train_output_dir_path"]).format(**kwargs)
+            str(kwargs["train_output_dir_path"]).format(**format_kwargs)
         )
         kwargs["test_output_dir_path"] = val_output_dir_path(
-            str(kwargs["test_output_dir_path"]).format(**kwargs)
+            str(kwargs["test_output_dir_path"]).format(**format_kwargs)
         )
         utility_cls.run(**kwargs)
 
