@@ -14,8 +14,8 @@ from pipescaler.testing.mark import parametrize_with_readable_ids
 
 from oot3dhdtextgenerator.cli import (
     CharAssignerCli,
-    LearningDatasetGeneratorCli,
     ModelTrainerCli,
+    TrainingDatasetGeneratorCli,
 )
 from oot3dhdtextgenerator.common.testing import run_cli_with_args
 
@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     ("command"),
     [
         (CharAssignerCli),
-        (LearningDatasetGeneratorCli),
+        (TrainingDatasetGeneratorCli),
         (ModelTrainerCli),
     ],
 )

@@ -1,6 +1,6 @@
 #  Copyright 2020-2026 Karl T Debiec. All rights reserved. This software may be modified
 #  and distributed under the terms of the BSD license. See the LICENSE file for details.
-"""Learning dataset generator."""
+"""Training dataset generator."""
 
 from __future__ import annotations
 
@@ -14,15 +14,15 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 from pipescaler.core import Utility
 
-from oot3dhdtextgenerator.core import LearningDataset
+from oot3dhdtextgenerator.core import TrainingDataset
 from oot3dhdtextgenerator.data import hanzi_frequency
 
 if TYPE_CHECKING:
     from pathlib import Path
 
 
-class LearningDatasetGenerator(Utility):
-    """Learning dataset generator."""
+class TrainingDatasetGenerator(Utility):
+    """Training dataset generator."""
 
     @classmethod
     def generate_character_images(
@@ -64,7 +64,7 @@ class LearningDatasetGenerator(Utility):
                     rotations,
                 )
             ),
-            dtype=LearningDataset.specification_dtypes,
+            dtype=TrainingDataset.specification_dtypes,
         )
         n_images = len(specifications)
         info(f"Generating {n_images} images total")
@@ -116,13 +116,13 @@ class LearningDatasetGenerator(Utility):
             f"{test_images.shape[0]} test images"
         )
 
-        LearningDataset.save_dataset(
+        TrainingDataset.save_dataset(
             train_images, train_specifications, train_output_dir_path
         )
         info(
             f"Saved {train_images.shape[0]} character images to {train_output_dir_path}"
         )
-        LearningDataset.save_dataset(
+        TrainingDataset.save_dataset(
             test_images, test_specifications, test_output_dir_path
         )
         info(f"Saved {test_images.shape[0]} character images to {test_output_dir_path}")

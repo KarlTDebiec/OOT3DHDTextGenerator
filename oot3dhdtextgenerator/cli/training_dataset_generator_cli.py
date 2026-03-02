@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #  Copyright 2020-2026 Karl T Debiec. All rights reserved. This software may be modified
 #  and distributed under the terms of the BSD license. See the LICENSE file for details.
-"""Learning dataset generator command-line interface."""
+"""Training dataset generator command-line interface."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ from oot3dhdtextgenerator.common.argument_parsing import (
     int_arg,
 )
 from oot3dhdtextgenerator.common.validation import val_output_dir_path
-from oot3dhdtextgenerator.utilities import LearningDatasetGenerator
+from oot3dhdtextgenerator.utilities import TrainingDatasetGenerator
 
 if TYPE_CHECKING:
     from argparse import ArgumentParser
@@ -23,8 +23,8 @@ if TYPE_CHECKING:
 # TODO: Expose settings for image font, sizes, offsets, fills, and rotations
 
 
-class LearningDatasetGeneratorCli(UtilityCli):
-    """Learning dataset generator command-line interface."""
+class TrainingDatasetGeneratorCli(UtilityCli):
+    """Training dataset generator command-line interface."""
 
     @classmethod
     @override
@@ -80,9 +80,9 @@ class LearningDatasetGeneratorCli(UtilityCli):
 
     @classmethod
     @override
-    def utility(cls) -> type[LearningDatasetGenerator]:
+    def utility(cls) -> type[TrainingDatasetGenerator]:
         """Type of utility wrapped by command-line interface."""
-        return LearningDatasetGenerator
+        return TrainingDatasetGenerator
 
     @classmethod
     @override
@@ -106,4 +106,4 @@ class LearningDatasetGeneratorCli(UtilityCli):
 
 
 if __name__ == "__main__":
-    LearningDatasetGeneratorCli.main()
+    TrainingDatasetGeneratorCli.main()

@@ -16,7 +16,7 @@ from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import DataLoader
 from torchvision.transforms import Compose, Normalize, ToTensor
 
-from oot3dhdtextgenerator.core import LearningDataset, Model
+from oot3dhdtextgenerator.core import Model, TrainingDataset
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -72,8 +72,8 @@ class ModelTrainer(Utility):
 
         # Load training and test data
         transform = Compose([ToTensor(), Normalize((0.1307,), (0.3081,))])
-        train_dataset = LearningDataset(train_input_dir_path, transform=transform)
-        test_dataset = LearningDataset(test_input_dir_path, transform=transform)
+        train_dataset = TrainingDataset(train_input_dir_path, transform=transform)
+        test_dataset = TrainingDataset(test_input_dir_path, transform=transform)
         if cuda_enabled:
             train_loader = DataLoader(
                 train_dataset,
