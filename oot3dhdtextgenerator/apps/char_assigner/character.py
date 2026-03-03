@@ -28,6 +28,8 @@ class Character:
     """Assigned value, if any."""
     predictions: list[str] | None = None
     """Potential assignments, if any."""
+    score: np.ndarray | None = field(default=None, repr=False)
+    """Raw model score vector."""
     _image: str | None = field(default=None, init=False, repr=False)
     """Cached base64 encoded PNG representation of the character."""
 

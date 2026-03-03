@@ -136,6 +136,19 @@ and distributed under the terms of the BSD license. See the LICENSE file for det
         <option value="conflicts_only"{% if assigned_filter == "conflicts_only" %} selected{% endif %}>Conflicts only</option>
         <option value="hidden"{% if assigned_filter == "hidden" %} selected{% endif %}>Hidden</option>
     </select>
+    <label for="prior-weight-percent">Prior weight (%)</label>
+    <input id="prior-weight-percent"
+           name="prior_weight_percent"
+           type="number"
+           min="0"
+           max="100"
+           step="1"
+           value="{{prior_weight_percent}}"
+           hx-get="/characters"
+           hx-include="#filters-form"
+           hx-target="#characters-body"
+           hx-swap="innerHTML"
+           hx-trigger="change">
 </form>
 <table>
     <thead>

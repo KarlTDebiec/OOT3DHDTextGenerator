@@ -17,7 +17,7 @@ from torchvision.transforms import Compose, Normalize, ToTensor
 from oot3dhdtextgenerator.common.validation import val_output_dir_path
 from oot3dhdtextgenerator.core import AssignmentDataset, Model
 from oot3dhdtextgenerator.data import characters as known_characters
-from oot3dhdtextgenerator.data import oot3d_data_path
+from oot3dhdtextgenerator.data import hanzi_frequency, oot3d_data_path
 
 from .character import Character
 from .routes import route
@@ -125,11 +125,14 @@ class CharAssigner:
             }
 
         # Prepare characters for frontend
+        self.n_chars = n_chars
+        self.prior_probabilities = self.get_prior_probabilities(n_chars)
         self.characters = self.get_characters(
             self.dataset,
             unassigned_scores,
             assigned_scores_by_bytes,
         )
+        self.update_character_predictions(prior_weight=0.0)
 
         self.app = Flask(__name__)
 
@@ -162,6 +165,80 @@ class CharAssigner:
             else "visible"
         )
         return normalized_unassigned_filter, normalized_assigned_filter
+
+    @staticmethod
+    def normalize_prior_weight_percent(prior_weight_percent: str | None) -> float:
+        """Normalize prior-weight percentage value.
+
+        Arguments:
+            prior_weight_percent: prior weight in percent units [0, 100]
+        Returns:
+            normalized prior weight in percent units [0, 100]
+        """
+        try:
+            if prior_weight_percent is None:
+                return 0.0
+            value = float(prior_weight_percent)
+        except ValueError:
+            return 0.0
+        return min(100.0, max(0.0, value))
+
+    @staticmethod
+    def get_prior_probabilities(n_chars: int) -> np.ndarray:
+        """Get normalized character prior probabilities for active labels.
+
+        Arguments:
+            n_chars: number of characters in active model label space
+        Returns:
+            normalized prior probabilities
+        """
+        priors = hanzi_frequency["frequency"].to_numpy(dtype=np.float64)[:n_chars]
+        if priors.size == 0:
+            return priors
+        priors = np.maximum(priors, 0.0)
+        total = priors.sum()
+        if total <= 0:
+            return np.full(priors.shape, 1.0 / len(priors), dtype=np.float64)
+        return priors / total
+
+    @staticmethod
+    def blend_scores(
+        model_score: np.ndarray, prior_probabilities: np.ndarray, prior_weight: float
+    ) -> np.ndarray:
+        """Blend model and prior scores using a linear combination.
+
+        Arguments:
+            model_score: raw model score vector (log probabilities)
+            prior_probabilities: normalized prior probabilities
+            prior_weight: blend weight in [0.0, 1.0]
+        Returns:
+            blended score vector in probability space
+        """
+        if model_score.size == 0:
+            return model_score
+        model_probabilities = np.exp(model_score.astype(np.float64))
+        return (
+            1.0 - prior_weight
+        ) * model_probabilities + prior_weight * prior_probabilities[
+            : model_probabilities.shape[0]
+        ]
+
+    def update_character_predictions(self, prior_weight: float) -> None:
+        """Update predictions for all characters at a given blend weight.
+
+        Arguments:
+            prior_weight: blend weight in [0.0, 1.0]
+        """
+        prediction_labels = np.array(known_characters[: self.n_chars], dtype=object)
+        for character in self.characters:
+            if character.score is None:
+                character.predictions = None
+                continue
+            blended = self.blend_scores(
+                character.score, self.prior_probabilities, prior_weight
+            )
+            prediction_indexes = list(np.argsort(blended))[::-1]
+            character.predictions = prediction_labels[prediction_indexes].tolist()[:10]
 
     @staticmethod
     def sort_characters(characters: list[Character]) -> list[Character]:
@@ -257,13 +334,17 @@ class CharAssigner:
         return unassigned_characters + assigned_characters
 
     def get_display_characters(
-        self, unassigned_filter: str | None, assigned_filter: str | None
-    ) -> tuple[list[Character], str, str]:
+        self,
+        unassigned_filter: str | None,
+        assigned_filter: str | None,
+        prior_weight_percent: str | None,
+    ) -> tuple[list[Character], str, str, float]:
         """Get display characters and normalized filter values.
 
         Arguments:
             unassigned_filter: unassigned visibility filter
             assigned_filter: assigned visibility filter
+            prior_weight_percent: prior weight in percent units [0, 100]
         Returns:
             display characters and normalized filter values
         """
@@ -271,6 +352,10 @@ class CharAssigner:
             normalized_unassigned_filter,
             normalized_assigned_filter,
         ) = self.normalize_filters(unassigned_filter, assigned_filter)
+        normalized_prior_weight_percent = self.normalize_prior_weight_percent(
+            prior_weight_percent
+        )
+        self.update_character_predictions(normalized_prior_weight_percent / 100.0)
         display_characters = self.filter_characters(
             self.characters,
             unassigned_filter=normalized_unassigned_filter,
@@ -280,6 +365,7 @@ class CharAssigner:
             display_characters,
             normalized_unassigned_filter,
             normalized_assigned_filter,
+            normalized_prior_weight_percent,
         )
 
     @staticmethod
@@ -328,14 +414,6 @@ class CharAssigner:
             list of characters
         """
         characters = []
-        label_count = (
-            int(unassigned_scores.shape[1]) if unassigned_scores.ndim == 2 else 0
-        )
-        if assigned_scores_by_bytes:
-            label_count = max(
-                label_count, len(next(iter(assigned_scores_by_bytes.values())))
-            )
-        prediction_labels = np.array(known_characters[:label_count], dtype=object)
         i = 0
         unassigned_items = list(zip(dataset.unassigned_char_bytes, unassigned_scores))
         unassigned_items = sorted(
@@ -350,8 +428,11 @@ class CharAssigner:
         for _, (char_bytes, score) in unassigned_items:
             char_array = dataset.bytes_to_array(char_bytes)
             prediction_indexes = list(np.argsort(score))[::-1]
+            prediction_labels = np.array(
+                known_characters[: int(score.shape[0])], dtype=object
+            )
             predictions = prediction_labels[prediction_indexes].tolist()[:10]
-            characters.append(Character(i, char_array, None, predictions))
+            characters.append(Character(i, char_array, None, predictions, score))
             i += 1
         character_indexes = {
             character: index for index, character in enumerate(known_characters)
@@ -366,8 +447,11 @@ class CharAssigner:
             predictions: list[str] | None = None
             if score is not None:
                 prediction_indexes = list(np.argsort(score))[::-1]
+                prediction_labels = np.array(
+                    known_characters[: int(score.shape[0])], dtype=object
+                )
                 predictions = prediction_labels[prediction_indexes].tolist()[:10]
-            characters.append(Character(i, char_array, assignment, predictions))
+            characters.append(Character(i, char_array, assignment, predictions, score))
             i += 1
 
         return characters

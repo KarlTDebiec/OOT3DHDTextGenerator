@@ -182,3 +182,24 @@ def test_filter_characters_unassigned_top_prediction_available_only() -> None:
     ]
     assert filtered[0].predictions is not None
     assert filtered[0].predictions[0] == known_characters[3]
+
+
+def test_normalize_prior_weight_percent_clamps_and_defaults() -> None:
+    """Test prior weight normalization handles bounds and invalid values."""
+    assert CharAssigner.normalize_prior_weight_percent(None) == 0.0
+    assert CharAssigner.normalize_prior_weight_percent("abc") == 0.0
+    assert CharAssigner.normalize_prior_weight_percent("-5") == 0.0
+    assert CharAssigner.normalize_prior_weight_percent("25") == 25.0
+    assert CharAssigner.normalize_prior_weight_percent("150") == 100.0
+
+
+def test_blend_scores_extremes() -> None:
+    """Test blend score uses model only at 0 and prior only at 1."""
+    score = np.log(np.array([0.2, 0.8], dtype=np.float64))
+    priors = np.array([0.9, 0.1], dtype=np.float64)
+
+    model_only = CharAssigner.blend_scores(score, priors, 0.0)
+    prior_only = CharAssigner.blend_scores(score, priors, 1.0)
+
+    np.testing.assert_allclose(model_only, np.array([0.2, 0.8], dtype=np.float64))
+    np.testing.assert_allclose(prior_only, np.array([0.9, 0.1], dtype=np.float64))
