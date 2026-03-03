@@ -18,10 +18,12 @@ def route(char_assigner):
             unassigned_filter,
             assigned_filter,
             prior_weight_percent,
+            exclude_assigned_from_predictions,
         ) = char_assigner.get_display_characters(
             request.args.get("unassigned_filter"),
             request.args.get("assigned_filter"),
             request.args.get("prior_weight_percent"),
+            request.args.get("exclude_assigned_from_predictions"),
         )
         return render_template(
             "index.html",
@@ -29,6 +31,7 @@ def route(char_assigner):
             unassigned_filter=unassigned_filter,
             assigned_filter=assigned_filter,
             prior_weight_percent=prior_weight_percent,
+            exclude_assigned_from_predictions=exclude_assigned_from_predictions,
         )
 
     @char_assigner.app.route("/characters", methods=["GET"])
@@ -39,10 +42,12 @@ def route(char_assigner):
             _unassigned_filter,
             _assigned_filter,
             _prior_weight_percent,
+            _exclude_assigned_from_predictions,
         ) = char_assigner.get_display_characters(
             request.args.get("unassigned_filter"),
             request.args.get("assigned_filter"),
             request.args.get("prior_weight_percent"),
+            request.args.get("exclude_assigned_from_predictions"),
         )
         return render_template("characters_rows.html", characters=characters)
 
@@ -67,9 +72,11 @@ def route(char_assigner):
             _unassigned_filter,
             _assigned_filter,
             _prior_weight_percent,
+            _exclude_assigned_from_predictions,
         ) = char_assigner.get_display_characters(
             request.values.get("unassigned_filter"),
             request.values.get("assigned_filter"),
             request.values.get("prior_weight_percent"),
+            request.values.get("exclude_assigned_from_predictions"),
         )
         return render_template("characters_rows.html", characters=characters)

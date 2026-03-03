@@ -35,6 +35,12 @@ and distributed under the terms of the BSD license. See the LICENSE file for det
             font-size: 1rem;
         }
 
+        .filters .checkbox-label {
+            align-items: center;
+            display: inline-flex;
+            gap: 0.3rem;
+        }
+
         img {
             border-style: solid;
             image-rendering: pixelated;
@@ -134,8 +140,22 @@ and distributed under the terms of the BSD license. See the LICENSE file for det
             hx-trigger="change">
         <option value="visible"{% if assigned_filter == "visible" %} selected{% endif %}>Visible</option>
         <option value="conflicts_only"{% if assigned_filter == "conflicts_only" %} selected{% endif %}>Conflicts only</option>
+        <option value="top_prediction_mismatch_only"{% if assigned_filter == "top_prediction_mismatch_only" %} selected{% endif %}>Top prediction mismatch only</option>
         <option value="hidden"{% if assigned_filter == "hidden" %} selected{% endif %}>Hidden</option>
     </select>
+    <label class="checkbox-label" for="exclude-assigned-from-predictions">
+        <input id="exclude-assigned-from-predictions"
+               name="exclude_assigned_from_predictions"
+               type="checkbox"
+               value="1"
+               {% if exclude_assigned_from_predictions %}checked{% endif %}
+               hx-get="/characters"
+               hx-include="#filters-form"
+               hx-target="#characters-body"
+               hx-swap="innerHTML"
+               hx-trigger="change">
+        Exclude assigned characters from predictions
+    </label>
     <label for="prior-weight-percent">Prior weight (%)</label>
     <input id="prior-weight-percent"
            name="prior_weight_percent"

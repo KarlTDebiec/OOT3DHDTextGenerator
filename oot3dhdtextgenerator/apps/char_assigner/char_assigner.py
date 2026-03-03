@@ -34,7 +34,12 @@ class CharAssigner:
         "top_prediction_available_only",
         "hidden",
     }
-    assigned_filter_values = {"visible", "conflicts_only", "hidden"}
+    assigned_filter_values = {
+        "visible",
+        "conflicts_only",
+        "top_prediction_mismatch_only",
+        "hidden",
+    }
 
     def __init__(
         self,
@@ -132,7 +137,9 @@ class CharAssigner:
             unassigned_scores,
             assigned_scores_by_bytes,
         )
-        self.update_character_predictions(prior_weight=0.0)
+        self.update_character_predictions(
+            prior_weight=0.0, exclude_assigned_from_predictions=False
+        )
 
         self.app = Flask(__name__)
 
@@ -184,6 +191,19 @@ class CharAssigner:
         return min(100.0, max(0.0, value))
 
     @staticmethod
+    def normalize_exclude_assigned_from_predictions(
+        exclude_assigned_from_predictions: str | None,
+    ) -> bool:
+        """Normalize exclude-assigned checkbox value.
+
+        Arguments:
+            exclude_assigned_from_predictions: checkbox value from request
+        Returns:
+            whether to exclude currently assigned characters from predictions
+        """
+        return exclude_assigned_from_predictions in {"1", "true", "on", "yes"}
+
+    @staticmethod
     def get_prior_probabilities(n_chars: int) -> np.ndarray:
         """Get normalized character prior probabilities for active labels.
 
@@ -223,13 +243,29 @@ class CharAssigner:
             : model_probabilities.shape[0]
         ]
 
-    def update_character_predictions(self, prior_weight: float) -> None:
+    def update_character_predictions(
+        self, prior_weight: float, *, exclude_assigned_from_predictions: bool
+    ) -> None:
         """Update predictions for all characters at a given blend weight.
 
         Arguments:
             prior_weight: blend weight in [0.0, 1.0]
+            exclude_assigned_from_predictions: whether to exclude currently assigned
+              characters from prediction candidates
         """
         prediction_labels = np.array(known_characters[: self.n_chars], dtype=object)
+        assigned_label_indexes = set()
+        if exclude_assigned_from_predictions:
+            character_indexes = {
+                character: index for index, character in enumerate(known_characters)
+            }
+            for character in self.characters:
+                if character.assignment is None:
+                    continue
+                assignment_index = character_indexes.get(character.assignment)
+                if assignment_index is None or assignment_index >= self.n_chars:
+                    continue
+                assigned_label_indexes.add(assignment_index)
         for character in self.characters:
             if character.score is None:
                 character.predictions = None
@@ -237,6 +273,10 @@ class CharAssigner:
             blended = self.blend_scores(
                 character.score, self.prior_probabilities, prior_weight
             )
+            if assigned_label_indexes:
+                blended = blended.copy()
+                for assigned_label_index in assigned_label_indexes:
+                    blended[assigned_label_index] = float("-inf")
             prediction_indexes = list(np.argsort(blended))[::-1]
             character.predictions = prediction_labels[prediction_indexes].tolist()[:10]
 
@@ -330,6 +370,15 @@ class CharAssigner:
                 if char.assignment is not None
                 and assigned_counts.get(char.assignment, 0) > 1
             ]
+        elif assigned_filter == "top_prediction_mismatch_only":
+            assigned_characters = [
+                char
+                for char in assigned_characters
+                if char.assignment is not None
+                and char.predictions is not None
+                and len(char.predictions) > 0
+                and char.predictions[0] != char.assignment
+            ]
 
         return unassigned_characters + assigned_characters
 
@@ -338,13 +387,15 @@ class CharAssigner:
         unassigned_filter: str | None,
         assigned_filter: str | None,
         prior_weight_percent: str | None,
-    ) -> tuple[list[Character], str, str, float]:
+        exclude_assigned_from_predictions: str | None,
+    ) -> tuple[list[Character], str, str, float, bool]:
         """Get display characters and normalized filter values.
 
         Arguments:
             unassigned_filter: unassigned visibility filter
             assigned_filter: assigned visibility filter
             prior_weight_percent: prior weight in percent units [0, 100]
+            exclude_assigned_from_predictions: checkbox value from request
         Returns:
             display characters and normalized filter values
         """
@@ -355,7 +406,15 @@ class CharAssigner:
         normalized_prior_weight_percent = self.normalize_prior_weight_percent(
             prior_weight_percent
         )
-        self.update_character_predictions(normalized_prior_weight_percent / 100.0)
+        normalized_exclude_assigned_from_predictions = (
+            self.normalize_exclude_assigned_from_predictions(
+                exclude_assigned_from_predictions
+            )
+        )
+        self.update_character_predictions(
+            normalized_prior_weight_percent / 100.0,
+            exclude_assigned_from_predictions=normalized_exclude_assigned_from_predictions,
+        )
         display_characters = self.filter_characters(
             self.characters,
             unassigned_filter=normalized_unassigned_filter,
@@ -366,6 +425,7 @@ class CharAssigner:
             normalized_unassigned_filter,
             normalized_assigned_filter,
             normalized_prior_weight_percent,
+            normalized_exclude_assigned_from_predictions,
         )
 
     @staticmethod

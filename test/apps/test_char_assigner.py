@@ -203,3 +203,92 @@ def test_blend_scores_extremes() -> None:
 
     np.testing.assert_allclose(model_only, np.array([0.2, 0.8], dtype=np.float64))
     np.testing.assert_allclose(prior_only, np.array([0.9, 0.1], dtype=np.float64))
+
+
+def test_normalize_exclude_assigned_from_predictions() -> None:
+    """Test checkbox parsing for exclude-assigned option."""
+    assert CharAssigner.normalize_exclude_assigned_from_predictions(None) is False
+    assert CharAssigner.normalize_exclude_assigned_from_predictions("0") is False
+    assert CharAssigner.normalize_exclude_assigned_from_predictions("off") is False
+    assert CharAssigner.normalize_exclude_assigned_from_predictions("1") is True
+    assert CharAssigner.normalize_exclude_assigned_from_predictions("on") is True
+
+
+def test_update_character_predictions_excludes_assigned_labels() -> None:
+    """Test assigned labels are excluded from prediction candidates when requested."""
+
+    class FakeAssigner:
+        """Minimal object compatible with CharAssigner.update_character_predictions."""
+
+        n_chars = 3
+        prior_probabilities = np.array([0.34, 0.33, 0.33], dtype=np.float64)
+        characters = [
+            Character(
+                0,
+                np.zeros((16, 16), dtype=np.uint8),
+                known_characters[0],
+                None,
+                np.log(np.array([0.9, 0.05, 0.05], dtype=np.float64)),
+            ),
+            Character(
+                1,
+                np.zeros((16, 16), dtype=np.uint8),
+                None,
+                None,
+                np.log(np.array([0.8, 0.15, 0.05], dtype=np.float64)),
+            ),
+        ]
+        blend_scores = staticmethod(CharAssigner.blend_scores)
+
+    assigner = cast("CharAssigner", FakeAssigner())
+
+    CharAssigner.update_character_predictions(
+        assigner,
+        prior_weight=0.0,
+        exclude_assigned_from_predictions=True,
+    )
+    assert assigner.characters[1].predictions is not None
+    assert assigner.characters[1].predictions[0] == known_characters[1]
+
+    CharAssigner.update_character_predictions(
+        assigner,
+        prior_weight=0.0,
+        exclude_assigned_from_predictions=False,
+    )
+    assert assigner.characters[1].predictions is not None
+    assert assigner.characters[1].predictions[0] == known_characters[0]
+
+
+def test_filter_characters_assigned_top_prediction_mismatch_only() -> None:
+    """Test mismatch-only assigned filter keeps only top-prediction mismatches."""
+    characters = [
+        Character(
+            0,
+            np.zeros((16, 16), dtype=np.uint8),
+            known_characters[1],
+            [known_characters[1]],
+        ),
+        Character(
+            1,
+            np.zeros((16, 16), dtype=np.uint8),
+            known_characters[2],
+            [known_characters[3]],
+        ),
+        Character(
+            2,
+            np.zeros((16, 16), dtype=np.uint8),
+            known_characters[3],
+            [known_characters[2]],
+        ),
+    ]
+
+    filtered = CharAssigner.filter_characters(
+        characters,
+        unassigned_filter="hidden",
+        assigned_filter="top_prediction_mismatch_only",
+    )
+
+    assert [character.assignment for character in filtered] == [
+        known_characters[2],
+        known_characters[3],
+    ]
