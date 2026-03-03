@@ -117,27 +117,22 @@ and distributed under the terms of the BSD license. See the LICENSE file for det
 </head>
 <body>
 <h1>Characters</h1>
-<form id="filters-form" class="filters">
+<form id="filters-form"
+      class="filters"
+      hx-get="/characters"
+      hx-target="#characters-body"
+      hx-swap="innerHTML"
+      hx-trigger="change">
     <label for="unassigned-filter">Unassigned</label>
     <select id="unassigned-filter"
-            name="unassigned_filter"
-            hx-get="/characters"
-            hx-include="#filters-form"
-            hx-target="#characters-body"
-            hx-swap="innerHTML"
-            hx-trigger="change">
+            name="unassigned_filter">
         <option value="visible"{% if unassigned_filter == "visible" %} selected{% endif %}>Visible</option>
         <option value="top_prediction_available_only"{% if unassigned_filter == "top_prediction_available_only" %} selected{% endif %}>Top prediction available only</option>
         <option value="hidden"{% if unassigned_filter == "hidden" %} selected{% endif %}>Hidden</option>
     </select>
     <label for="assigned-filter">Assigned</label>
     <select id="assigned-filter"
-            name="assigned_filter"
-            hx-get="/characters"
-            hx-include="#filters-form"
-            hx-target="#characters-body"
-            hx-swap="innerHTML"
-            hx-trigger="change">
+            name="assigned_filter">
         <option value="visible"{% if assigned_filter == "visible" %} selected{% endif %}>Visible</option>
         <option value="conflicts_only"{% if assigned_filter == "conflicts_only" %} selected{% endif %}>Conflicts only</option>
         <option value="top_prediction_mismatch_only"{% if assigned_filter == "top_prediction_mismatch_only" %} selected{% endif %}>Top prediction mismatch only</option>
@@ -148,12 +143,7 @@ and distributed under the terms of the BSD license. See the LICENSE file for det
                name="exclude_assigned_from_predictions"
                type="checkbox"
                value="1"
-               {% if exclude_assigned_from_predictions %}checked{% endif %}
-               hx-get="/characters"
-               hx-include="#filters-form"
-               hx-target="#characters-body"
-               hx-swap="innerHTML"
-               hx-trigger="change">
+               {% if exclude_assigned_from_predictions %}checked{% endif %}>
         Exclude assigned characters from predictions
     </label>
     <label for="prior-weight-percent">Prior weight (%)</label>
@@ -163,12 +153,7 @@ and distributed under the terms of the BSD license. See the LICENSE file for det
            min="0"
            max="100"
            step="1"
-           value="{{prior_weight_percent}}"
-           hx-get="/characters"
-           hx-include="#filters-form"
-           hx-target="#characters-body"
-           hx-swap="innerHTML"
-           hx-trigger="change">
+           value="{{prior_weight_percent}}">
 </form>
 <table>
     <thead>

@@ -260,25 +260,35 @@ def test_update_character_predictions_excludes_assigned_labels() -> None:
 
 
 def test_filter_characters_assigned_top_prediction_mismatch_only() -> None:
-    """Test mismatch-only assigned filter keeps only top-prediction mismatches."""
+    """Test mismatch-only filter keeps only predictable top-prediction mismatches."""
     characters = [
         Character(
             0,
             np.zeros((16, 16), dtype=np.uint8),
             known_characters[1],
             [known_characters[1]],
+            np.log(np.array([0.05, 0.8, 0.1, 0.05], dtype=np.float64)),
         ),
         Character(
             1,
             np.zeros((16, 16), dtype=np.uint8),
             known_characters[2],
             [known_characters[3]],
+            np.log(np.array([0.05, 0.1, 0.2, 0.65], dtype=np.float64)),
         ),
         Character(
             2,
             np.zeros((16, 16), dtype=np.uint8),
             known_characters[3],
             [known_characters[2]],
+            np.log(np.array([0.05, 0.65, 0.2, 0.1], dtype=np.float64)),
+        ),
+        Character(
+            3,
+            np.zeros((16, 16), dtype=np.uint8),
+            known_characters[5],
+            [known_characters[1]],
+            np.log(np.array([0.7, 0.1, 0.1, 0.1], dtype=np.float64)),
         ),
     ]
 
@@ -288,6 +298,7 @@ def test_filter_characters_assigned_top_prediction_mismatch_only() -> None:
         assigned_filter="top_prediction_mismatch_only",
     )
 
+    # index 5 assignment is excluded: outside score label space
     assert [character.assignment for character in filtered] == [
         known_characters[2],
         known_characters[3],

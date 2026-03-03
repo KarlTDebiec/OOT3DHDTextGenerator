@@ -371,12 +371,18 @@ class CharAssigner:
                 and assigned_counts.get(char.assignment, 0) > 1
             ]
         elif assigned_filter == "top_prediction_mismatch_only":
+            character_indexes = {
+                character: index for index, character in enumerate(known_characters)
+            }
             assigned_characters = [
                 char
                 for char in assigned_characters
                 if char.assignment is not None
                 and char.predictions is not None
                 and len(char.predictions) > 0
+                and char.score is not None
+                and character_indexes.get(char.assignment, len(known_characters))
+                < int(char.score.shape[0])
                 and char.predictions[0] != char.assignment
             ]
 
