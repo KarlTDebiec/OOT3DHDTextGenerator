@@ -19,9 +19,14 @@ oot3d_assigned_csv_path = oot3d_data_path / "assigned.csv"
 oot3d_unassigned_csv_path = oot3d_data_path / "unassigned.csv"
 
 hanzi_frequency = pd.read_csv(
-    f"{package_root}/data/characters.txt",
-    sep="\t",
-    names=["character", "frequency", "cumulative frequency"],
+    f"{package_root}/data/characters.csv",
+    sep=",",
+    names=[
+        "character",
+        "frequency",
+        "pinyin",
+        "definition",
+    ],
 )
 
 characters = hanzi_frequency["character"].values.tolist()
