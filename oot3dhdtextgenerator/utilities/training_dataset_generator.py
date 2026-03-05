@@ -200,17 +200,13 @@ class TrainingDatasetGenerator(Utility):
         draw.text(xy, char, font=font_type, fill=int(fill))
         image = image.rotate(rotation, fillcolor=0)
         array = np.array(image)
-        array = TrainingDatasetGenerator._translate_array_no_wrap(
-            array, x_offset, y_offset
-        )
+        array = TrainingDatasetGenerator._translate_array(array, x_offset, y_offset)
 
         return array
 
     @staticmethod
-    def _translate_array_no_wrap(
-        array: np.ndarray, x_offset: int, y_offset: int
-    ) -> np.ndarray:
-        """Translate a 2D array without wraparound.
+    def _translate_array(array: np.ndarray, x_offset: int, y_offset: int) -> np.ndarray:
+        """Translate a 2D array.
 
         Arguments:
             array: source image array
@@ -218,9 +214,19 @@ class TrainingDatasetGenerator(Utility):
             y_offset: vertical translation in pixels, positive is down
         Returns:
             translated array with uncovered pixels filled with zero
+        Raises:
+            ValueError: if input array is not 2D
+            ValueError: if translation would move all pixels off-canvas
         """
+        if array.ndim != 2:
+            raise ValueError(f"Expected a 2D array, got shape {array.shape}")
         height, width = array.shape
-        translated = np.zeros_like(array)
+        if abs(x_offset) >= width or abs(y_offset) >= height:
+            raise ValueError(
+                "Offsets must keep at least one pixel on-canvas: "
+                f"x_offset={x_offset}, y_offset={y_offset}, "
+                f"array_shape={array.shape}"
+            )
 
         dst_x_start = max(0, x_offset)
         dst_x_end = min(width, width + x_offset)
@@ -232,11 +238,11 @@ class TrainingDatasetGenerator(Utility):
         src_y_start = max(0, -y_offset)
         src_y_end = src_y_start + (dst_y_end - dst_y_start)
 
-        if dst_x_start < dst_x_end and dst_y_start < dst_y_end:
-            translated[dst_y_start:dst_y_end, dst_x_start:dst_x_end] = array[
-                src_y_start:src_y_end,
-                src_x_start:src_x_end,
-            ]
+        translated = np.zeros_like(array)
+        translated[dst_y_start:dst_y_end, dst_x_start:dst_x_end] = array[
+            src_y_start:src_y_end,
+            src_x_start:src_x_end,
+        ]
 
         return translated
 
