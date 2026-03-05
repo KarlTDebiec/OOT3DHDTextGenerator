@@ -10,7 +10,8 @@ Hierarchy within module:
 
 from __future__ import annotations
 
-import pandas as pd
+import csv
+from dataclasses import dataclass
 
 from oot3dhdtextgenerator.common import package_root
 
@@ -18,18 +19,39 @@ oot3d_data_path = package_root / "data" / "oot3d"
 oot3d_assigned_csv_path = oot3d_data_path / "assigned.csv"
 oot3d_unassigned_csv_path = oot3d_data_path / "unassigned.csv"
 
-hanzi_frequency = pd.read_csv(
-    f"{package_root}/data/characters.csv",
-    sep=",",
-    names=[
-        "character",
-        "frequency",
-        "pinyin",
-        "definition",
-    ],
-)
 
-characters = hanzi_frequency["character"].values.tolist()
+@dataclass(frozen=True, slots=True)
+class HanziFrequencyEntry:
+    """Character metadata row loaded from characters.csv."""
+
+    character: str
+    frequency: float
+    pinyin: str
+    definition: str
+
+
+def _load_hanzi_frequency() -> list[HanziFrequencyEntry]:
+    """Load character metadata from CSV."""
+    output: list[HanziFrequencyEntry] = []
+    with (package_root / "data" / "characters.csv").open(
+        encoding="utf-8", newline=""
+    ) as infile:
+        reader = csv.reader(infile)
+        for row in reader:
+            character, frequency, pinyin, definition = row
+            output.append(
+                HanziFrequencyEntry(
+                    character=character,
+                    frequency=float(frequency),
+                    pinyin=pinyin,
+                    definition=definition,
+                )
+            )
+    return output
+
+
+hanzi_frequency = _load_hanzi_frequency()
+characters = [entry.character for entry in hanzi_frequency]
 
 
 def character_to_index(character: str) -> int:
@@ -40,6 +62,7 @@ def character_to_index(character: str) -> int:
 __all__ = [
     "characters",
     "character_to_index",
+    "HanziFrequencyEntry",
     "hanzi_frequency",
     "oot3d_assigned_csv_path",
     "oot3d_data_path",

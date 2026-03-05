@@ -33,7 +33,7 @@ class TrainingDatasetGenerator(Utility):
         Returns:
             images and specifications
         """
-        characters = hanzi_frequency["character"].values[:n_chars]
+        characters = [entry.character for entry in hanzi_frequency[:n_chars]]
         fonts = cls.get_default_font_paths()
         sizes = [14, 15, 16]
         offsets = [-1, 0, 1]

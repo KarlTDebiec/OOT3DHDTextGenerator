@@ -212,7 +212,10 @@ class CharAssigner:
         Returns:
             normalized prior probabilities
         """
-        priors = hanzi_frequency["frequency"].to_numpy(dtype=np.float64)[:n_chars]
+        priors = np.array(
+            [entry.frequency for entry in hanzi_frequency[:n_chars]],
+            dtype=np.float64,
+        )
         if priors.size == 0:
             return priors
         priors = np.maximum(priors, 0.0)
