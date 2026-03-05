@@ -5,7 +5,8 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, override
+from argparse import ArgumentParser
+from typing import Any, override
 
 from pipescaler.core.cli import UtilityCli
 
@@ -19,9 +20,6 @@ from oot3dhdtextgenerator.common.validation import (
 )
 from oot3dhdtextgenerator.data import oot3d_data_path
 from oot3dhdtextgenerator.utilities import ModelTrainer
-
-if TYPE_CHECKING:
-    from argparse import ArgumentParser
 
 
 class ModelTrainerCli(UtilityCli):

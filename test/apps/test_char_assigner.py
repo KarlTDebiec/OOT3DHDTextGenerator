@@ -4,16 +4,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+from typing import cast
 
 import numpy as np
 
 from oot3dhdtextgenerator.apps.char_assigner.char_assigner import CharAssigner
 from oot3dhdtextgenerator.apps.char_assigner.character import Character
+from oot3dhdtextgenerator.core import AssignmentDataset
 from oot3dhdtextgenerator.data import characters as known_characters
-
-if TYPE_CHECKING:
-    from oot3dhdtextgenerator.core import AssignmentDataset
 
 
 def test_get_characters_predictions_use_label_list() -> None:
@@ -32,7 +30,7 @@ def test_get_characters_predictions_use_label_list() -> None:
 
     score = np.zeros(10, dtype=np.float32)
     score[9] = 1.0
-    dataset = cast("AssignmentDataset", FakeDataset())
+    dataset = cast(AssignmentDataset, FakeDataset())
     characters = CharAssigner.get_characters(
         dataset,
         score[None, :],
@@ -68,7 +66,7 @@ def test_get_characters_assigned_rows_are_sorted_and_predicted() -> None:
     assigned_score_2 = np.zeros(10, dtype=np.float32)
     assigned_score_2[7] = 1.0
 
-    dataset = cast("AssignmentDataset", FakeDataset())
+    dataset = cast(AssignmentDataset, FakeDataset())
     characters = CharAssigner.get_characters(
         dataset,
         unassigned_score[None, :],
@@ -112,7 +110,7 @@ def test_get_characters_unassigned_rows_are_sorted_by_top_prediction() -> None:
     scores[0, 5] = 1.0
     scores[1, 1] = 1.0
 
-    dataset = cast("AssignmentDataset", FakeDataset())
+    dataset = cast(AssignmentDataset, FakeDataset())
     characters = CharAssigner.get_characters(dataset, scores, {})
 
     assert len(characters) == 2

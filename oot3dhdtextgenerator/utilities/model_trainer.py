@@ -7,7 +7,8 @@ from __future__ import annotations
 import random
 from collections.abc import Sized
 from logging import info
-from typing import TYPE_CHECKING, cast
+from pathlib import Path
+from typing import cast
 
 import numpy as np
 import torch
@@ -19,9 +20,6 @@ from torch.utils.data import DataLoader
 from torchvision.transforms import Compose, Normalize, ToTensor
 
 from oot3dhdtextgenerator.core import Model, TrainingDataset
-
-if TYPE_CHECKING:
-    from pathlib import Path
 
 
 class ModelTrainer(Utility):

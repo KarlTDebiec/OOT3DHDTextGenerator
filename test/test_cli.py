@@ -8,9 +8,10 @@ from contextlib import redirect_stderr, redirect_stdout
 from inspect import getfile
 from io import StringIO
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from pipescaler.testing.mark import parametrize_with_readable_ids
+from pytest import MonkeyPatch
 
 import oot3dhdtextgenerator.cli.model_trainer_cli as model_trainer_cli_module
 from oot3dhdtextgenerator.cli import (
@@ -24,12 +25,8 @@ from oot3dhdtextgenerator.cli import (
 from oot3dhdtextgenerator.cli import (
     training_dataset_generator_cli as training_dataset_generator_cli_module,
 )
+from oot3dhdtextgenerator.common import CommandLineInterface
 from oot3dhdtextgenerator.common.testing import run_cli_with_args
-
-if TYPE_CHECKING:
-    from pytest import MonkeyPatch
-
-    from oot3dhdtextgenerator.common import CommandLineInterface
 
 
 @parametrize_with_readable_ids(

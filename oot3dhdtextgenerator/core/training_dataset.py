@@ -4,8 +4,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable, Sequence
 from csv import DictReader, DictWriter
-from typing import TYPE_CHECKING
+from pathlib import Path
 
 import numpy as np
 from PIL import Image
@@ -16,10 +17,6 @@ from oot3dhdtextgenerator.common.validation import (
     val_output_dir_path,
 )
 from oot3dhdtextgenerator.data import character_to_index
-
-if TYPE_CHECKING:
-    from collections.abc import Callable, Sequence
-    from pathlib import Path
 
 
 class TrainingDataset(VisionDataset):

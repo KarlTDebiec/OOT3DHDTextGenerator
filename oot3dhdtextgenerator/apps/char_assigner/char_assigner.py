@@ -6,7 +6,8 @@ from __future__ import annotations
 
 from collections import Counter
 from logging import warning
-from typing import TYPE_CHECKING, Any
+from pathlib import Path
+from typing import Any
 
 import numpy as np
 import torch
@@ -21,9 +22,6 @@ from oot3dhdtextgenerator.data import hanzi_frequency, oot3d_data_path
 
 from .character import Character
 from .routes import route
-
-if TYPE_CHECKING:
-    from pathlib import Path
 
 
 class CharAssigner:

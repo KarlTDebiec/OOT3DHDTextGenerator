@@ -5,7 +5,8 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, override
+from argparse import ArgumentParser
+from typing import Any, override
 
 from oot3dhdtextgenerator.apps import CharAssigner
 from oot3dhdtextgenerator.common import CommandLineInterface
@@ -15,9 +16,6 @@ from oot3dhdtextgenerator.common.argument_parsing import (
 )
 from oot3dhdtextgenerator.common.validation import val_input_path, val_output_dir_path
 from oot3dhdtextgenerator.data import oot3d_data_path
-
-if TYPE_CHECKING:
-    from argparse import ArgumentParser
 
 
 class CharAssignerCli(CommandLineInterface):

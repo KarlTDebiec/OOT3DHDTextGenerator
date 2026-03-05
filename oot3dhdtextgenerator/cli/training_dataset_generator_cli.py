@@ -5,7 +5,8 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, override
+from argparse import ArgumentParser
+from typing import Any, override
 
 from pipescaler.core.cli import UtilityCli
 
@@ -18,9 +19,6 @@ from oot3dhdtextgenerator.common.validation import val_output_dir_path, val_outp
 from oot3dhdtextgenerator.core import TrainingDataset
 from oot3dhdtextgenerator.data import oot3d_data_path
 from oot3dhdtextgenerator.utilities import TrainingDatasetGenerator
-
-if TYPE_CHECKING:
-    from argparse import ArgumentParser
 
 # TODO: Expose settings for image font, sizes, offsets, fills, and rotations
 

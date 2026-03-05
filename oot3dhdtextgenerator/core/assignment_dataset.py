@@ -4,14 +4,16 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from csv import DictReader, DictWriter
 from logging import debug, info
 from os import replace
+from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import TYPE_CHECKING
 
 import numpy as np
 from PIL import Image
+from torch import Tensor
 from torchvision.datasets import VisionDataset
 from torchvision.transforms import Compose, Normalize, ToTensor
 
@@ -24,12 +26,6 @@ from oot3dhdtextgenerator.data import (
     oot3d_assigned_csv_path,
     oot3d_unassigned_csv_path,
 )
-
-if TYPE_CHECKING:
-    from collections.abc import Sequence
-    from pathlib import Path
-
-    from torch import Tensor
 
 
 class AssignmentDataset(VisionDataset):
