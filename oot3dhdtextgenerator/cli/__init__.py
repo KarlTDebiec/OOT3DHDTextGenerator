@@ -14,9 +14,7 @@ from __future__ import annotations
 
 from .char_assigner_cli import CharAssignerCli
 from .model_trainer_cli import ModelTrainerCli
-from .training_dataset_generator_cli import (
-    TrainingDatasetGeneratorCli,
-)
+from .training_dataset_generator_cli import TrainingDatasetGeneratorCli
 
 __all__ = [
     "CharAssignerCli",
