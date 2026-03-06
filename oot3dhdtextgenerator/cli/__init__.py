@@ -6,6 +6,7 @@ This module may import from: common, core, data, image, utilities
 
 Hierarchy within module:
 * char_assigner_cli
+* char_inspector_cli
 * training_dataset_generator_cli
 * model_trainer_cli
 """
@@ -13,11 +14,13 @@ Hierarchy within module:
 from __future__ import annotations
 
 from .char_assigner_cli import CharAssignerCli
+from .char_inspector_cli import CharInspectorCli
 from .model_trainer_cli import ModelTrainerCli
 from .training_dataset_generator_cli import TrainingDatasetGeneratorCli
 
 __all__ = [
     "CharAssignerCli",
+    "CharInspectorCli",
     "TrainingDatasetGeneratorCli",
     "ModelTrainerCli",
 ]

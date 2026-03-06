@@ -16,11 +16,15 @@ from pytest import MonkeyPatch
 import oot3dhdtextgenerator.cli.model_trainer_cli as model_trainer_cli_module
 from oot3dhdtextgenerator.cli import (
     CharAssignerCli,
+    CharInspectorCli,
     ModelTrainerCli,
     TrainingDatasetGeneratorCli,
 )
 from oot3dhdtextgenerator.cli import (
     char_assigner_cli as char_assigner_cli_module,
+)
+from oot3dhdtextgenerator.cli import (
+    char_inspector_cli as char_inspector_cli_module,
 )
 from oot3dhdtextgenerator.cli import (
     training_dataset_generator_cli as training_dataset_generator_cli_module,
@@ -33,6 +37,7 @@ from oot3dhdtextgenerator.common.testing import run_cli_with_args
     ("command"),
     [
         (CharAssignerCli),
+        (CharInspectorCli),
         (TrainingDatasetGeneratorCli),
         (ModelTrainerCli),
     ],
@@ -257,4 +262,76 @@ def test_char_assigner_custom_port_is_forwarded(
     )
 
     assert captured["run_kwargs"] == {"port": 5002}
+    assert "port" not in captured["init_kwargs"]
+
+
+def test_char_inspector_default_paths_are_formatted(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """Test char inspector defaults are formatted with oot3d data path."""
+    captured: dict[str, Any] = {}
+
+    def fake_val_output_dir_path(value: str) -> Path:
+        """Validate mocked output directory path."""
+        captured["assignment_dir_path"] = value
+        return Path(value)
+
+    class FakeCharInspector:
+        """Mock character inspector."""
+
+        def __init__(self, **kwargs: Any) -> None:
+            """Capture initializer keyword arguments."""
+            captured["init_kwargs"] = kwargs
+
+        def run(self, **kwargs: Any) -> None:
+            """Capture run keyword arguments."""
+            captured["run_kwargs"] = kwargs
+
+    monkeypatch.setattr(
+        char_inspector_cli_module, "val_output_dir_path", fake_val_output_dir_path
+    )
+    monkeypatch.setattr(char_inspector_cli_module, "CharInspector", FakeCharInspector)
+
+    CharInspectorCli._main(
+        n_chars=100,
+        assignment_dir_path="{oot3d_data_path}",
+    )
+
+    assert captured["assignment_dir_path"].endswith("/oot3d")
+    assert captured["run_kwargs"] == {"port": 5002}
+
+
+def test_char_inspector_custom_port_is_forwarded(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """Test char inspector forwards custom port to Flask app run."""
+    captured: dict[str, Any] = {}
+
+    def fake_val_output_dir_path(value: str) -> Path:
+        """Validate mocked output directory path."""
+        return Path(value)
+
+    class FakeCharInspector:
+        """Mock character inspector."""
+
+        def __init__(self, **kwargs: Any) -> None:
+            """Capture initializer keyword arguments."""
+            captured["init_kwargs"] = kwargs
+
+        def run(self, **kwargs: Any) -> None:
+            """Capture run keyword arguments."""
+            captured["run_kwargs"] = kwargs
+
+    monkeypatch.setattr(
+        char_inspector_cli_module, "val_output_dir_path", fake_val_output_dir_path
+    )
+    monkeypatch.setattr(char_inspector_cli_module, "CharInspector", FakeCharInspector)
+
+    CharInspectorCli._main(
+        n_chars=100,
+        assignment_dir_path="{oot3d_data_path}",
+        port=5003,
+    )
+
+    assert captured["run_kwargs"] == {"port": 5003}
     assert "port" not in captured["init_kwargs"]

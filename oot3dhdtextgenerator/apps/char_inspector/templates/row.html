@@ -1,0 +1,26 @@
+{# Copyright 2020-2026 Karl T Debiec. All rights reserved. This software may be modified
+and distributed under the terms of the BSD license. See the LICENSE file for details. #}
+<tr class="inspector-row">
+    <td>
+        <div class="centered">
+            <button class="content" type="button">{{ display_row.row.assignment }}</button>
+        </div>
+    </td>
+    <td>
+        <div class="centered">
+            <img class="content" src="{{ display_row.row.real_image }}">
+        </div>
+    </td>
+    <td>
+        <div class="training-grid">
+            {% for training_preview in display_row.training_previews %}
+            <div class="training-item">
+                <div class="centered">
+                    <img class="content" src="{{ training_preview.image }}">
+                </div>
+                <div class="training-label">{{ training_preview.label }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </td>
+</tr>

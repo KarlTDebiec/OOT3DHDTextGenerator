@@ -1,0 +1,229 @@
+{# Copyright 2020-2026 Karl T Debiec. All rights reserved. This software may be modified
+and distributed under the terms of the BSD license. See the LICENSE file for details. #}
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <script src="https://unpkg.com/htmx.org@1.5.0"></script>
+    <style>
+        :root {
+            --cell-size: 3.25rem;
+            --cell-text-size: 1.5rem;
+            --cell-padding: 0.25rem;
+            --cell-radius: 0.375rem;
+            --border-width: 2px;
+        }
+
+        body {
+            margin: 0;
+            overflow-x: auto;
+            padding: 1rem;
+        }
+
+        button {
+            border-style: outset;
+            font-size: var(--cell-text-size);
+        }
+
+        .filters {
+            align-items: flex-start;
+            display: grid;
+            gap: 0.75rem;
+            grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+            margin-bottom: 1rem;
+        }
+
+        .filter-group {
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            padding: 0.5rem;
+        }
+
+        .filter-group label {
+            display: block;
+            margin: 0.15rem 0;
+        }
+
+        .summary {
+            align-items: center;
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        td, th {
+            border-bottom: 1px solid #e5e7eb;
+            padding: 0.4rem;
+            vertical-align: top;
+        }
+
+        img {
+            border-style: solid;
+            image-rendering: pixelated;
+        }
+
+        img.content {
+            padding: calc(var(--cell-padding) * 2.5);
+        }
+
+        .centered {
+            align-items: center;
+            aspect-ratio: 1;
+            display: flex;
+            justify-content: center;
+        }
+
+        .content {
+            border-radius: var(--cell-radius);
+            border-style: inset;
+            border-width: var(--border-width);
+            box-sizing: border-box;
+            font-size: var(--cell-text-size);
+            image-rendering: pixelated;
+            height: var(--cell-size);
+            margin: 1px;
+            padding: var(--cell-padding);
+            text-align: center;
+            width: var(--cell-size);
+        }
+
+        .training-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.25rem 0.5rem;
+        }
+
+        .training-item {
+            align-items: center;
+            display: inline-flex;
+            flex-direction: column;
+            max-width: 7rem;
+        }
+
+        .training-label {
+            font-size: 0.75rem;
+            text-align: center;
+            word-break: break-word;
+        }
+    </style>
+    <title>Char Inspector</title>
+</head>
+<body>
+<h1>Char Inspector</h1>
+<form id="filters-form"
+      class="filters"
+      hx-get="/rows"
+      hx-target="#rows-body"
+      hx-swap="innerHTML"
+      hx-vals='{"offset": 0, "limit": {{ page_size }}}'
+      hx-trigger="change">
+    <fieldset class="filter-group">
+        <legend>Font</legend>
+        {% for font, font_label in font_options %}
+        <label>
+            <input type="checkbox"
+                   name="font"
+                   value="{{ font }}"
+                   {% if font in selected_fonts %}checked{% endif %}>
+            {{ font_label }}
+        </label>
+        {% endfor %}
+    </fieldset>
+    <fieldset class="filter-group">
+        <legend>Size</legend>
+        {% for size in size_options %}
+        <label>
+            <input type="checkbox"
+                   name="size"
+                   value="{{ size }}"
+                   {% if size in selected_sizes %}checked{% endif %}>
+            {{ size }}
+        </label>
+        {% endfor %}
+    </fieldset>
+    <fieldset class="filter-group">
+        <legend>X offset</legend>
+        {% for x_offset in offset_options %}
+        <label>
+            <input type="checkbox"
+                   name="x_offset"
+                   value="{{ x_offset }}"
+                   {% if x_offset in selected_x_offsets %}checked{% endif %}>
+            {{ x_offset }}
+        </label>
+        {% endfor %}
+    </fieldset>
+    <fieldset class="filter-group">
+        <legend>Y offset</legend>
+        {% for y_offset in offset_options %}
+        <label>
+            <input type="checkbox"
+                   name="y_offset"
+                   value="{{ y_offset }}"
+                   {% if y_offset in selected_y_offsets %}checked{% endif %}>
+            {{ y_offset }}
+        </label>
+        {% endfor %}
+    </fieldset>
+    <fieldset class="filter-group">
+        <legend>Rotation</legend>
+        {% for rotation in rotation_options %}
+        <label>
+            <input type="checkbox"
+                   name="rotation"
+                   value="{{ rotation }}"
+                   {% if rotation in selected_rotations %}checked{% endif %}>
+            {{ rotation }}
+        </label>
+        {% endfor %}
+    </fieldset>
+</form>
+<div class="summary">
+    <span>Results: <strong id="results-count">{{ total_count }}</strong></span>
+    <span>Loaded: <strong id="results-loaded-count">{{ display_rows|length }}</strong></span>
+</div>
+<table>
+    <thead>
+    <tr>
+        <th>Assigned Character</th>
+        <th>Real Image</th>
+        <th>Training Images</th>
+    </tr>
+    </thead>
+    <tbody id="rows-body">
+    {% include 'rows.html' %}
+    </tbody>
+</table>
+<script>
+    function updateCounts() {
+        const resultsCount = document.getElementById("results-count");
+        const resultsLoadedCount = document.getElementById("results-loaded-count");
+        const rowsBody = document.getElementById("rows-body");
+        if (!resultsCount || !resultsLoadedCount || !rowsBody) {
+            return;
+        }
+        const loadedCount = rowsBody.querySelectorAll("tr.inspector-row").length;
+        const loadMoreRow = rowsBody.querySelector("tr.load-more-row");
+        const totalCount = loadMoreRow
+            ? Number(loadMoreRow.dataset.totalCount || loadedCount)
+            : loadedCount;
+        resultsCount.textContent = String(totalCount);
+        resultsLoadedCount.textContent = String(loadedCount);
+    }
+
+    const rowsBody = document.getElementById("rows-body");
+    if (rowsBody) {
+        const observer = new MutationObserver(() => {
+            updateCounts();
+        });
+        observer.observe(rowsBody, {childList: true});
+    }
+    updateCounts();
+</script>
+</body>
+</html>
