@@ -203,6 +203,18 @@ def test_blend_scores_extremes() -> None:
     np.testing.assert_allclose(prior_only, np.array([0.9, 0.1], dtype=np.float64))
 
 
+def test_blend_scores_promotes_common_candidate_before_global_top_prior() -> None:
+    """Test log-space blend can promote a common candidate over a rare top pick."""
+    score = np.log(np.array([0.6, 0.35, 0.05], dtype=np.float64))
+    priors = np.array(
+        [0.00000006201422, 0.010383148736476, 0.04094325317834], dtype=np.float64
+    )
+
+    blended = CharAssigner.blend_scores(score, priors, 0.1)
+
+    assert int(np.argmax(blended)) == 1
+
+
 def test_normalize_exclude_assigned_from_predictions() -> None:
     """Test checkbox parsing for exclude-assigned option."""
     assert CharAssigner.normalize_exclude_assigned_from_predictions(None) is False
@@ -213,7 +225,7 @@ def test_normalize_exclude_assigned_from_predictions() -> None:
 
 
 def test_update_character_predictions_excludes_assigned_labels() -> None:
-    """Test assigned labels are excluded from prediction candidates when requested."""
+    """Test exclusion removes assigned labels, except each row's own assignment."""
 
     class FakeAssigner:
         """Minimal object compatible with CharAssigner.update_character_predictions."""
@@ -245,6 +257,8 @@ def test_update_character_predictions_excludes_assigned_labels() -> None:
         prior_weight=0.0,
         exclude_assigned_from_predictions=True,
     )
+    assert assigner.characters[0].predictions is not None
+    assert assigner.characters[0].predictions[0] == known_characters[0]
     assert assigner.characters[1].predictions is not None
     assert assigner.characters[1].predictions[0] == known_characters[1]
 
@@ -301,3 +315,88 @@ def test_filter_characters_assigned_top_prediction_mismatch_only() -> None:
         known_characters[2],
         known_characters[3],
     ]
+
+
+def test_get_display_characters_reuses_cached_predictions_for_filter_changes() -> None:
+    """Test filter-only changes do not recompute predictions."""
+
+    class FakeAssigner:
+        """Minimal object compatible with CharAssigner.get_display_characters."""
+
+        characters = [
+            Character(
+                0,
+                np.zeros((16, 16), dtype=np.uint8),
+                None,
+                None,
+                np.log(np.array([0.8, 0.2], dtype=np.float64)),
+            )
+        ]
+        assignment_revision = 0
+        prediction_cache: dict[tuple[float, bool, int], list[list[str] | None]] = {}
+        active_prediction_cache_key: tuple[float, bool, int] | None = None
+
+        normalize_filters = staticmethod(CharAssigner.normalize_filters)
+        normalize_prior_weight_percent = staticmethod(
+            CharAssigner.normalize_prior_weight_percent
+        )
+        normalize_exclude_assigned_from_predictions = staticmethod(
+            CharAssigner.normalize_exclude_assigned_from_predictions
+        )
+        filter_characters = staticmethod(CharAssigner.filter_characters)
+        get_prediction_cache_key = CharAssigner.get_prediction_cache_key
+        get_predictions_snapshot = CharAssigner.get_predictions_snapshot
+        restore_predictions = CharAssigner.restore_predictions
+
+        def __init__(self) -> None:
+            """Initialize fake assigner state."""
+            self.update_calls = 0
+
+        def update_character_predictions(
+            self, prior_weight: float, *, exclude_assigned_from_predictions: bool
+        ) -> None:
+            """Track recomputation and set deterministic predictions."""
+            self.update_calls += 1
+            _ = exclude_assigned_from_predictions
+            if prior_weight == 0.0:
+                self.characters[0].predictions = [known_characters[0]]
+            else:
+                self.characters[0].predictions = [known_characters[1]]
+
+    assigner = FakeAssigner()
+
+    CharAssigner.get_display_characters(
+        cast("CharAssigner", assigner),
+        "visible",
+        "visible",
+        "0",
+        None,
+    )
+    assert assigner.update_calls == 1
+
+    CharAssigner.get_display_characters(
+        cast("CharAssigner", assigner),
+        "hidden",
+        "visible",
+        "0",
+        None,
+    )
+    assert assigner.update_calls == 1
+
+    CharAssigner.get_display_characters(
+        cast("CharAssigner", assigner),
+        "hidden",
+        "visible",
+        "10",
+        None,
+    )
+    assert assigner.update_calls == 2
+
+    CharAssigner.get_display_characters(
+        cast("CharAssigner", assigner),
+        "visible",
+        "visible",
+        "0",
+        None,
+    )
+    assert assigner.update_calls == 2

@@ -135,9 +135,7 @@ class CharAssigner:
             unassigned_scores,
             assigned_scores_by_bytes,
         )
-        self.update_character_predictions(
-            prior_weight=0.0, exclude_assigned_from_predictions=False
-        )
+        self.initialize_prediction_cache_state()
 
         self.app = Flask(__name__)
 
@@ -226,7 +224,7 @@ class CharAssigner:
     def blend_scores(
         model_score: np.ndarray, prior_probabilities: np.ndarray, prior_weight: float
     ) -> np.ndarray:
-        """Blend model and prior scores using a linear combination.
+        """Blend model and prior scores using weighted log-space interpolation.
 
         Arguments:
             model_score: raw model score vector (log probabilities)
@@ -237,12 +235,17 @@ class CharAssigner:
         """
         if model_score.size == 0:
             return model_score
-        model_probabilities = np.exp(model_score.astype(np.float64))
-        return (
+        model_log_probabilities = model_score.astype(np.float64)
+        clipped_prior_probabilities = np.clip(
+            prior_probabilities[: model_log_probabilities.shape[0]],
+            np.finfo(np.float64).tiny,
+            1.0,
+        )
+        prior_log_probabilities = np.log(clipped_prior_probabilities)
+        blended_log_probabilities = (
             1.0 - prior_weight
-        ) * model_probabilities + prior_weight * prior_probabilities[
-            : model_probabilities.shape[0]
-        ]
+        ) * model_log_probabilities + prior_weight * prior_log_probabilities
+        return np.exp(blended_log_probabilities)
 
     def update_character_predictions(
         self, prior_weight: float, *, exclude_assigned_from_predictions: bool
@@ -276,10 +279,64 @@ class CharAssigner:
             )
             if assigned_label_indexes:
                 blended = blended.copy()
-                for assigned_label_index in assigned_label_indexes:
+                effective_exclusions = set(assigned_label_indexes)
+                if character.assignment is not None:
+                    assignment_index = character_indexes.get(character.assignment)
+                    if assignment_index is not None:
+                        effective_exclusions.discard(assignment_index)
+                for assigned_label_index in effective_exclusions:
                     blended[assigned_label_index] = float("-inf")
             prediction_indexes = list(np.argsort(blended))[::-1]
             character.predictions = prediction_labels[prediction_indexes].tolist()[:10]
+
+    def initialize_prediction_cache_state(self) -> None:
+        """Initialize cached prediction state with default scoring parameters."""
+        self.assignment_revision = 0
+        self.prediction_cache: dict[
+            tuple[float, bool, int], list[list[str] | None]
+        ] = {}
+        self.active_prediction_cache_key: tuple[float, bool, int] | None = None
+
+        self.update_character_predictions(
+            prior_weight=0.0, exclude_assigned_from_predictions=False
+        )
+        initial_prediction_cache_key = self.get_prediction_cache_key(
+            prior_weight_percent=0.0, exclude_assigned_from_predictions=False
+        )
+        self.prediction_cache[initial_prediction_cache_key] = (
+            self.get_predictions_snapshot()
+        )
+        self.active_prediction_cache_key = initial_prediction_cache_key
+
+    def mark_assignments_changed(self) -> None:
+        """Invalidate prediction cache after assignment edits."""
+        self.assignment_revision += 1
+        self.prediction_cache.clear()
+        self.active_prediction_cache_key = None
+
+    def get_prediction_cache_key(
+        self, *, prior_weight_percent: float, exclude_assigned_from_predictions: bool
+    ) -> tuple[float, bool, int]:
+        """Get cache key for current scoring parameters and assignment revision."""
+        return (
+            prior_weight_percent,
+            exclude_assigned_from_predictions,
+            self.assignment_revision,
+        )
+
+    def get_predictions_snapshot(self) -> list[list[str] | None]:
+        """Get a copy of current predictions for all characters."""
+        return [
+            list(character.predictions) if character.predictions is not None else None
+            for character in self.characters
+        ]
+
+    def restore_predictions(self, predictions: list[list[str] | None]) -> None:
+        """Restore predictions for all characters from a snapshot."""
+        for character, saved_predictions in zip(self.characters, predictions):
+            character.predictions = (
+                list(saved_predictions) if saved_predictions is not None else None
+            )
 
     @staticmethod
     def sort_characters(characters: list[Character]) -> list[Character]:
@@ -418,10 +475,24 @@ class CharAssigner:
                 exclude_assigned_from_predictions
             )
         )
-        self.update_character_predictions(
-            normalized_prior_weight_percent / 100.0,
+        prediction_cache_key = self.get_prediction_cache_key(
+            prior_weight_percent=normalized_prior_weight_percent,
             exclude_assigned_from_predictions=normalized_exclude_assigned_from_predictions,
         )
+        if prediction_cache_key != self.active_prediction_cache_key:
+            if prediction_cache_key in self.prediction_cache:
+                self.restore_predictions(self.prediction_cache[prediction_cache_key])
+            else:
+                self.update_character_predictions(
+                    normalized_prior_weight_percent / 100.0,
+                    exclude_assigned_from_predictions=(
+                        normalized_exclude_assigned_from_predictions
+                    ),
+                )
+                self.prediction_cache[prediction_cache_key] = (
+                    self.get_predictions_snapshot()
+                )
+            self.active_prediction_cache_key = prediction_cache_key
         display_characters = self.filter_characters(
             self.characters,
             unassigned_filter=normalized_unassigned_filter,

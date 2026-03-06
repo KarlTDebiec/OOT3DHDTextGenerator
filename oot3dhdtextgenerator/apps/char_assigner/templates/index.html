@@ -154,6 +154,7 @@ and distributed under the terms of the BSD license. See the LICENSE file for det
            max="100"
            step="1"
            value="{{prior_weight_percent}}">
+    <span>Results: <strong id="results-count">{{ characters|length }}</strong></span>
 </form>
 <table>
     <thead>
@@ -179,5 +180,24 @@ and distributed under the terms of the BSD license. See the LICENSE file for det
     {% include 'characters_rows.html' %}
     </tbody>
 </table>
+<script>
+    function updateResultsCount() {
+        const resultsCount = document.getElementById("results-count");
+        const charactersBody = document.getElementById("characters-body");
+        if (!resultsCount || !charactersBody) {
+            return;
+        }
+        resultsCount.textContent = String(charactersBody.querySelectorAll("tr").length);
+    }
+
+    const charactersBody = document.getElementById("characters-body");
+    if (charactersBody) {
+        const observer = new MutationObserver(() => {
+            updateResultsCount();
+        });
+        observer.observe(charactersBody, {childList: true});
+    }
+    updateResultsCount();
+</script>
 </body>
 </html>

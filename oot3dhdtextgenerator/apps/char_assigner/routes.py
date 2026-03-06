@@ -67,6 +67,7 @@ def route(char_assigner):
                 char_assigner.dataset.assigned_csv_path,
                 char_assigner.dataset.unassigned_csv_path,
             )
+            char_assigner.mark_assignments_changed()
         (
             characters,
             _unassigned_filter,
