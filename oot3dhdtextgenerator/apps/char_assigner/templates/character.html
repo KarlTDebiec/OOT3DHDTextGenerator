@@ -37,7 +37,7 @@ and distributed under the terms of the BSD license. See the LICENSE file for det
     <td>
         <form class="centered" hx-post="/your-url" hx-put="true">
             <input type="hidden" name="assignment" value="{{prediction}}">
-            <button class="content"
+            <button class="content{% if character.assignment is not none and prediction == character.assignment %} prediction-match{% endif %}"
                     type="submit"
                     hx-put="/characters/{{character.id}}"
                     hx-include="#filters-form"
