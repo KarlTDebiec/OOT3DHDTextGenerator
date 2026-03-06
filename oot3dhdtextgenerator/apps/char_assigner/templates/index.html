@@ -122,6 +122,7 @@ and distributed under the terms of the BSD license. See the LICENSE file for det
       hx-get="/characters"
       hx-target="#characters-body"
       hx-swap="innerHTML"
+      hx-vals='{"offset": 0, "limit": {{ page_size }}}'
       hx-trigger="change">
     <label for="unassigned-filter">Unassigned</label>
     <select id="unassigned-filter"
@@ -154,7 +155,8 @@ and distributed under the terms of the BSD license. See the LICENSE file for det
            max="100"
            step="1"
            value="{{prior_weight_percent}}">
-    <span>Results: <strong id="results-count">{{ characters|length }}</strong></span>
+    <span>Results: <strong id="results-count">{{ total_count }}</strong></span>
+    <span>(Loaded: <strong id="results-loaded-count">{{ characters|length }}</strong>)</span>
 </form>
 <table>
     <thead>
@@ -183,11 +185,18 @@ and distributed under the terms of the BSD license. See the LICENSE file for det
 <script>
     function updateResultsCount() {
         const resultsCount = document.getElementById("results-count");
+        const resultsLoadedCount = document.getElementById("results-loaded-count");
         const charactersBody = document.getElementById("characters-body");
-        if (!resultsCount || !charactersBody) {
+        if (!resultsCount || !resultsLoadedCount || !charactersBody) {
             return;
         }
-        resultsCount.textContent = String(charactersBody.querySelectorAll("tr").length);
+        const loadedCount = charactersBody.querySelectorAll("tr.character-row").length;
+        const loadMoreRow = charactersBody.querySelector("tr.load-more-row");
+        const totalCount = loadMoreRow
+            ? Number(loadMoreRow.dataset.totalCount || loadedCount)
+            : loadedCount;
+        resultsCount.textContent = String(totalCount);
+        resultsLoadedCount.textContent = String(loadedCount);
     }
 
     const charactersBody = document.getElementById("characters-body");

@@ -27,6 +27,8 @@ from .routes import route
 class CharAssigner:
     """Character assigner."""
 
+    default_page_size = 200
+
     unassigned_filter_values = {
         "visible",
         "top_prediction_available_only",
@@ -500,6 +502,56 @@ class CharAssigner:
         )
         return (
             display_characters,
+            normalized_unassigned_filter,
+            normalized_assigned_filter,
+            normalized_prior_weight_percent,
+            normalized_exclude_assigned_from_predictions,
+        )
+
+    def get_display_characters_page(  # noqa: PLR0913
+        self,
+        unassigned_filter: str | None,
+        assigned_filter: str | None,
+        prior_weight_percent: str | None,
+        exclude_assigned_from_predictions: str | None,
+        *,
+        offset: int,
+        limit: int,
+    ) -> tuple[list[Character], int, bool, str, str, float, bool]:
+        """Get a page of display characters and normalized filter values.
+
+        Arguments:
+            unassigned_filter: unassigned visibility filter
+            assigned_filter: assigned visibility filter
+            prior_weight_percent: prior weight in percent units [0, 100]
+            exclude_assigned_from_predictions: checkbox value from request
+            offset: zero-based display offset
+            limit: number of results per page
+        Returns:
+            paged display characters, total count, whether more remain, and normalized
+            filter values
+        """
+        (
+            display_characters,
+            normalized_unassigned_filter,
+            normalized_assigned_filter,
+            normalized_prior_weight_percent,
+            normalized_exclude_assigned_from_predictions,
+        ) = self.get_display_characters(
+            unassigned_filter,
+            assigned_filter,
+            prior_weight_percent,
+            exclude_assigned_from_predictions,
+        )
+        total_count = len(display_characters)
+        page_start = min(max(0, offset), total_count)
+        page_end = min(total_count, page_start + max(1, limit))
+        page_characters = display_characters[page_start:page_end]
+        has_more = page_end < total_count
+        return (
+            page_characters,
+            total_count,
+            has_more,
             normalized_unassigned_filter,
             normalized_assigned_filter,
             normalized_prior_weight_percent,
