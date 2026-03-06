@@ -4,9 +4,13 @@
 
 from __future__ import annotations
 
+import random
+from collections.abc import Sized
 from logging import info
-from typing import TYPE_CHECKING
+from pathlib import Path
+from typing import cast
 
+import numpy as np
 import torch
 from pipescaler.core import Utility
 from torch.nn.functional import nll_loss
@@ -15,10 +19,7 @@ from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import DataLoader
 from torchvision.transforms import Compose, Normalize, ToTensor
 
-from oot3dhdtextgenerator.core import LearningDataset, Model
-
-if TYPE_CHECKING:
-    from pathlib import Path
+from oot3dhdtextgenerator.core import Model, TrainingDataset
 
 
 class ModelTrainer(Utility):
@@ -28,8 +29,8 @@ class ModelTrainer(Utility):
     def run(  # noqa: PLR0913
         cls,
         *,
-        train_input_path: Path,
-        test_input_path: Path,
+        train_input_dir_path: Path,
+        test_input_dir_path: Path,
         batch_size: int = 64,
         test_batch_size: int = 1000,
         epochs: int = 1,
@@ -45,8 +46,8 @@ class ModelTrainer(Utility):
         """Execute from command line.
 
         Arguments:
-            train_input_path: train data input file
-            test_input_path: test data input file
+            train_input_dir_path: train data input directory
+            test_input_dir_path: test data input directory
             batch_size: batch size for training
             test_batch_size: batch size for testing
             epochs: number of epochs to train
@@ -61,7 +62,10 @@ class ModelTrainer(Utility):
         """
         # Determine which device to use
         cuda_enabled = torch.cuda.is_available() and cuda_enabled
+        random.seed(seed)
         torch.manual_seed(seed)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(seed)
         if cuda_enabled:
             device = torch.device("cuda")
         elif torch.backends.mps.is_available() and mps_enabled:
@@ -69,20 +73,51 @@ class ModelTrainer(Utility):
         else:
             device = torch.device("cpu")
 
-        # Set up training and test settings
-        train_loader_kwargs = {"batch_size": batch_size}
-        test_loader_kwargs = {"batch_size": test_batch_size}
-        if cuda_enabled:
-            cuda_kwargs = {"num_workers": 1, "pin_memory": True, "shuffle": True}
-            train_loader_kwargs.update(cuda_kwargs)
-            test_loader_kwargs.update(cuda_kwargs)
-
         # Load training and test data
-        transform = Compose([ToTensor(), Normalize((0.1307,), (0.3081,))])
-        train_dataset = LearningDataset(train_input_path, transform=transform)
-        train_loader = DataLoader(train_dataset, **train_loader_kwargs)
-        test_dataset = LearningDataset(test_input_path, transform=transform)
-        test_loader = DataLoader(test_dataset, **test_loader_kwargs)
+        train_dataset = TrainingDataset(train_input_dir_path)
+        test_dataset = TrainingDataset(test_input_dir_path)
+        normalization_mean, normalization_std = cls.get_normalization_stats(
+            train_dataset
+        )
+        transform = Compose(
+            [ToTensor(), Normalize((normalization_mean,), (normalization_std,))]
+        )
+        train_dataset.transform = transform
+        test_dataset.transform = transform
+        info(
+            "Using normalization mean %.6f and std %.6f",
+            normalization_mean,
+            normalization_std,
+        )
+
+        if cuda_enabled:
+            train_loader = DataLoader(
+                train_dataset,
+                batch_size=batch_size,
+                shuffle=True,
+                num_workers=1,
+                pin_memory=True,
+            )
+            test_loader = DataLoader(
+                test_dataset,
+                batch_size=test_batch_size,
+                shuffle=False,
+                num_workers=1,
+                pin_memory=True,
+            )
+        else:
+            train_loader = DataLoader(
+                train_dataset,
+                batch_size=batch_size,
+                shuffle=True,
+                num_workers=1,
+            )
+            test_loader = DataLoader(
+                test_dataset,
+                batch_size=test_batch_size,
+                shuffle=False,
+                num_workers=1,
+            )
 
         # Configure model
         n_chars = len(set(train_dataset.specifications["character"]))
@@ -105,8 +140,29 @@ class ModelTrainer(Utility):
             scheduler.step()
 
         # Save model
-        torch.save(model.state_dict(), model_output_path)
-        info(f"{cls}: Model saved to {model_output_path}")
+        checkpoint = {
+            "state_dict": model.state_dict(),
+            "n_chars": n_chars,
+            "normalization": {"mean": normalization_mean, "std": normalization_std},
+        }
+        torch.save(checkpoint, model_output_path)
+        info(f"Model saved to {model_output_path}")
+
+    @staticmethod
+    def get_normalization_stats(dataset: TrainingDataset) -> tuple[float, float]:
+        """Calculate normalization statistics from the training dataset.
+
+        Arguments:
+            dataset: training dataset
+        Returns:
+            mean and standard deviation in [0, 1] scale
+        """
+        images = dataset.images.astype(np.float32) / 255.0
+        mean = float(images.mean())
+        std = float(images.std())
+        if std <= 0:
+            std = 1.0
+        return mean, std
 
     @staticmethod
     def test(model: Model, device: torch.device, loader: DataLoader) -> None:
@@ -120,6 +176,7 @@ class ModelTrainer(Utility):
         model.eval()
         test_loss = 0
         correct = 0
+        dataset_size = len(cast(Sized, loader.dataset))
         with torch.no_grad():
             for data, target in loader:
                 batch_data = data.to(device)
@@ -128,11 +185,11 @@ class ModelTrainer(Utility):
                 test_loss += nll_loss(output, batch_target, reduction="sum").item()
                 pred = output.argmax(dim=1, keepdim=True)
                 correct += pred.eq(batch_target.view_as(pred)).sum().item()
-        test_loss /= len(loader.dataset)
+        test_loss /= dataset_size
         info(
             f"Test set: Average loss: {test_loss:.4f}, "
-            f"Accuracy: {correct}/{len(loader.dataset)} "
-            f"({100.0 * correct / len(loader.dataset):.0f}%)\n"
+            f"Accuracy: {correct}/{dataset_size} "
+            f"({100.0 * correct / dataset_size:.0f}%)\n"
         )
 
     @staticmethod
@@ -158,6 +215,7 @@ class ModelTrainer(Utility):
             dry_run: whether to check a single pass
         """
         model.train()
+        dataset_size = len(cast(Sized, loader.dataset))
         for batch_idx, (data, target) in enumerate(loader):
             batch_data = data.to(device)
             batch_target = target.to(device)
@@ -169,7 +227,7 @@ class ModelTrainer(Utility):
             if batch_idx % log_interval == 0:
                 info(
                     f"Train epoch {epoch} "
-                    f"[{batch_idx * len(batch_data)}/{len(loader.dataset)} "
+                    f"[{batch_idx * len(batch_data)}/{dataset_size} "
                     f"({100.0 * batch_idx / len(loader):.0f}%)] "
                     f"Loss: {loss.item():.6f}"
                 )

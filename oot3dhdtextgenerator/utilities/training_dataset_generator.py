@@ -1,28 +1,26 @@
 #  Copyright 2020-2026 Karl T Debiec. All rights reserved. This software may be modified
 #  and distributed under the terms of the BSD license. See the LICENSE file for details.
-"""Learning dataset generator."""
+"""Training dataset generator."""
 
 from __future__ import annotations
 
 import time
 from itertools import product
 from logging import info
+from pathlib import Path
+from platform import system
 from random import sample
-from typing import TYPE_CHECKING
 
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 from pipescaler.core import Utility
 
-from oot3dhdtextgenerator.core import LearningDataset
+from oot3dhdtextgenerator.core import TrainingDataset
 from oot3dhdtextgenerator.data import hanzi_frequency
 
-if TYPE_CHECKING:
-    from pathlib import Path
 
-
-class LearningDatasetGenerator(Utility):
-    """Learning dataset generator."""
+class TrainingDatasetGenerator(Utility):
+    """Training dataset generator."""
 
     @classmethod
     def generate_character_images(
@@ -35,10 +33,8 @@ class LearningDatasetGenerator(Utility):
         Returns:
             images and specifications
         """
-        characters = hanzi_frequency["character"].values[:n_chars]
-        fonts = [
-            r"C:\Windows\Fonts\simhei.ttf",
-        ]
+        characters = [entry.character for entry in hanzi_frequency[:n_chars]]
+        fonts = cls.get_default_font_paths()
         sizes = [14, 15, 16]
         offsets = [-1, 0, 1]
         fills = [255]
@@ -64,7 +60,7 @@ class LearningDatasetGenerator(Utility):
                     rotations,
                 )
             ),
-            dtype=LearningDataset.specification_dtypes,
+            dtype=TrainingDataset.specification_dtypes,
         )
         n_images = len(specifications)
         info(f"Generating {n_images} images total")
@@ -92,16 +88,16 @@ class LearningDatasetGenerator(Utility):
         cls,
         n_chars: int,
         test_proportion: float,
-        train_output_path: Path,
-        test_output_path: Path,
+        train_output_dir_path: Path,
+        test_output_dir_path: Path,
     ) -> None:
         """Execute.
 
         Arguments:
             n_chars: number of unique characters to include in dataset
             test_proportion: proportion of dataset to be set aside for testing
-            train_output_path: train output file path
-            test_output_path: test output file path
+            train_output_dir_path: train output directory path
+            test_output_dir_path: test output directory path
         """
         images, specifications = cls.generate_character_images(n_chars)
         info(f"Generated {images.shape[0]} character images")
@@ -116,16 +112,65 @@ class LearningDatasetGenerator(Utility):
             f"{test_images.shape[0]} test images"
         )
 
-        LearningDataset.save_hdf5(train_images, train_specifications, train_output_path)
-        info(f"Saved {train_images.shape[0]} character images to {train_output_path}")
-        LearningDataset.save_hdf5(test_images, test_specifications, test_output_path)
-        info(f"Saved {test_images.shape[0]} character images to {test_output_path}")
+        TrainingDataset.save_dataset(
+            train_images, train_specifications, train_output_dir_path
+        )
+        info(
+            f"Saved {train_images.shape[0]} character images to {train_output_dir_path}"
+        )
+        TrainingDataset.save_dataset(
+            test_images, test_specifications, test_output_dir_path
+        )
+        info(f"Saved {test_images.shape[0]} character images to {test_output_dir_path}")
+
+    @staticmethod
+    def get_default_font_paths() -> list[str]:
+        """Resolve platform-appropriate font paths.
+
+        Returns:
+            existing font path strings
+        Raises:
+            FileNotFoundError: if no candidate font path exists
+        """
+        system_name = system()
+        if system_name == "Windows":
+            candidates = [
+                r"C:\Windows\Fonts\simhei.ttf",
+                r"C:\Windows\Fonts\msyh.ttc",
+                r"C:\Windows\Fonts\simsun.ttc",
+                r"C:\Windows\Fonts\arial.ttf",
+            ]
+        elif system_name == "Darwin":
+            candidates = [
+                "/System/Library/Fonts/PingFang.ttc",
+                "/System/Library/Fonts/STHeiti Medium.ttc",
+                "/System/Library/Fonts/STHeiti Light.ttc",
+                "/System/Library/Fonts/Hiragino Sans GB.ttc",
+            ]
+        else:
+            candidates = [
+                "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
+                "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+            ]
+
+        existing_candidates = [
+            candidate for candidate in candidates if Path(candidate).exists()
+        ]
+
+        if existing_candidates:
+            return existing_candidates
+
+        raise FileNotFoundError(
+            "No default font was found for this platform. "
+            "Pass an explicit font path in code."
+        )
 
     @staticmethod
     def generate_character_image(  # noqa: PLR0913
         char: str,
         *,
-        font: str = r"C:\Windows\Fonts\simhei.ttf",
+        font: str | None = None,
         size: int = 12,
         fill: int = 0,
         x_offset: int = 0,
@@ -145,24 +190,61 @@ class LearningDatasetGenerator(Utility):
         Returns:
             numpy array of character image
         """
-        # info(
-        #     f"Generating image of {char} with font {font}, size {size}, fill {fill}, "
-        #     f"x offset {x_offset}, y offset {y_offset}, and rotation {rotation}"
-        # )
+        if font is None:
+            font = TrainingDatasetGenerator.get_default_font_paths()[0]
+        font_type = ImageFont.truetype(font, size)
         image = Image.new("L", (16, 16), 0)
         draw = ImageDraw.Draw(image)
-        font_type = ImageFont.truetype(font, size)
         _, _, width, height = draw.textbbox((0, 0), char, font=font_type)
         xy = ((16 - width) / 2, (16 - height) / 2)
         draw.text(xy, char, font=font_type, fill=int(fill))
-        image = image.rotate(rotation)
+        image = image.rotate(rotation, fillcolor=0)
         array = np.array(image)
-        array = np.roll(array, (x_offset, y_offset), (0, 1))
-        # image = Image.fromarray(array)
-        # image.show()
-        # input()
+        array = TrainingDatasetGenerator._translate_array(array, x_offset, y_offset)
 
         return array
+
+    @staticmethod
+    def _translate_array(array: np.ndarray, x_offset: int, y_offset: int) -> np.ndarray:
+        """Translate a 2D array.
+
+        Arguments:
+            array: source image array
+            x_offset: horizontal translation in pixels, positive is right
+            y_offset: vertical translation in pixels, positive is down
+        Returns:
+            translated array with uncovered pixels filled with zero
+        Raises:
+            ValueError: if input array is not 2D
+            ValueError: if translation would move all pixels off-canvas
+        """
+        if array.ndim != 2:
+            raise ValueError(f"Expected a 2D array, got shape {array.shape}")
+        height, width = array.shape
+        if abs(x_offset) >= width or abs(y_offset) >= height:
+            raise ValueError(
+                "Offsets must keep at least one pixel on-canvas: "
+                f"x_offset={x_offset}, y_offset={y_offset}, "
+                f"array_shape={array.shape}"
+            )
+
+        dst_x_start = max(0, x_offset)
+        dst_x_end = min(width, width + x_offset)
+        dst_y_start = max(0, y_offset)
+        dst_y_end = min(height, height + y_offset)
+
+        src_x_start = max(0, -x_offset)
+        src_x_end = src_x_start + (dst_x_end - dst_x_start)
+        src_y_start = max(0, -y_offset)
+        src_y_end = src_y_start + (dst_y_end - dst_y_start)
+
+        translated = np.zeros_like(array)
+        translated[dst_y_start:dst_y_end, dst_x_start:dst_x_end] = array[
+            src_y_start:src_y_end,
+            src_x_start:src_x_end,
+        ]
+
+        return translated
 
     @staticmethod
     def split_train_and_test(

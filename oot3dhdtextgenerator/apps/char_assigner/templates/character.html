@@ -10,6 +10,9 @@ and distributed under the terms of the BSD license. See the LICENSE file for det
                    name="assignment"
                    value="{{character.assignment}}"
                    hx-put="/characters/{{character.id}}"
+                   hx-include="#filters-form"
+                   hx-target="#characters-body"
+                   hx-swap="innerHTML"
                    hx-trigger="blur">
             {% else %}
             <input class="content"
@@ -17,6 +20,9 @@ and distributed under the terms of the BSD license. See the LICENSE file for det
                    maxlength="1"
                    name="assignment"
                    hx-put="/characters/{{character.id}}"
+                   hx-include="#filters-form"
+                   hx-target="#characters-body"
+                   hx-swap="innerHTML"
                    hx-trigger="blur">
             {% endif %}
         </div>
@@ -34,6 +40,9 @@ and distributed under the terms of the BSD license. See the LICENSE file for det
             <button class="content"
                     type="submit"
                     hx-put="/characters/{{character.id}}"
+                    hx-include="#filters-form"
+                    hx-target="#characters-body"
+                    hx-swap="innerHTML"
                     hx-trigger="click">
                 {{prediction}}
             </button>

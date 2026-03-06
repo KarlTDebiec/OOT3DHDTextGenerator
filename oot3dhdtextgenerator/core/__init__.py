@@ -5,16 +5,16 @@
 This module may import from: common, data
 
 Hierarchy within module:
-* assignment_dataset / learning_dataset
+* assignment_dataset / training_dataset
 * model
 """
 
 from .assignment_dataset import AssignmentDataset
-from .learning_dataset import LearningDataset
 from .model import Model
+from .training_dataset import TrainingDataset
 
 __all__ = [
     "AssignmentDataset",
-    "LearningDataset",
+    "TrainingDataset",
     "Model",
 ]

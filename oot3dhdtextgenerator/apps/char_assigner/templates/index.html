@@ -6,10 +6,17 @@ and distributed under the terms of the BSD license. See the LICENSE file for det
           content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <script src="https://unpkg.com/htmx.org@1.5.0"></script>
     <style>
+        :root {
+            --cell-size: 3.25rem;
+            --cell-text-size: 1.5rem;
+            --cell-padding: 0.25rem;
+            --cell-radius: 0.375rem;
+            --border-width: 2px;
+        }
 
         button {
             border-style: outset;
-            font-size: 4vw;
+            font-size: var(--cell-text-size);
         }
 
         form {
@@ -17,34 +24,62 @@ and distributed under the terms of the BSD license. See the LICENSE file for det
             margin: 0;
         }
 
+        .filters {
+            align-items: center;
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .filters select {
+            font-size: 1rem;
+        }
+
+        .filters .checkbox-label {
+            align-items: center;
+            display: inline-flex;
+            gap: 0.3rem;
+        }
+
         img {
             border-style: solid;
             image-rendering: pixelated;
         }
 
+        img.content {
+            padding: calc(var(--cell-padding) * 2.5);
+        }
+
+        body {
+            margin: 0;
+            overflow-x: auto;
+            padding: 1rem;
+        }
+
         input {
             border-style: inset;
-            font-size: 4vw;
             text-align: center;
         }
 
         table {
             border-collapse: collapse;
+            margin: 0 auto;
+            max-width: 100%;
             margin-left: auto;
             margin-right: auto;
         }
 
         td {
-            padding-bottom: max(0.5vw, 5px);
+            padding-bottom: var(--cell-padding);
         }
 
         th {
-            max-width: 7.5vw;
+            max-width: var(--cell-size);
             overflow: hidden;
-            padding-bottom: max(0.5vw, 5px);
+            padding-bottom: var(--cell-padding);
             text-overflow: ellipsis;
             white-space: nowrap;
-            width: 7.5vw;
+            width: var(--cell-size);
         }
 
 
@@ -61,26 +96,70 @@ and distributed under the terms of the BSD license. See the LICENSE file for det
         }
 
         .content {
-            aspect-ratio: 1;
-            border-radius: max(0.4vw, 4px);
+            border-radius: var(--cell-radius);
             border-style: inset;
-            border-width: max(0.2vw, 2px);
-            font-size: 4vw;
-            margin: max(0.1vw, 1px);
-            padding: max(0.4vw, 4px);
+            border-width: var(--border-width);
+            box-sizing: border-box;
+            font-size: var(--cell-text-size);
+            height: var(--cell-size);
+            margin: 1px;
+            padding: var(--cell-padding);
             text-align: center;
-            width: 100%;
+            width: var(--cell-size);
+        }
+
+        .assignment-header {
+            max-width: var(--cell-size);
+            width: var(--cell-size);
         }
     </style>
     <title>Flask HTMX ALPINE App</title>
 </head>
 <body>
 <h1>Characters</h1>
+<form id="filters-form"
+      class="filters"
+      hx-get="/characters"
+      hx-target="#characters-body"
+      hx-swap="innerHTML"
+      hx-trigger="change">
+    <label for="unassigned-filter">Unassigned</label>
+    <select id="unassigned-filter"
+            name="unassigned_filter">
+        <option value="visible"{% if unassigned_filter == "visible" %} selected{% endif %}>Visible</option>
+        <option value="top_prediction_available_only"{% if unassigned_filter == "top_prediction_available_only" %} selected{% endif %}>Top prediction available only</option>
+        <option value="hidden"{% if unassigned_filter == "hidden" %} selected{% endif %}>Hidden</option>
+    </select>
+    <label for="assigned-filter">Assigned</label>
+    <select id="assigned-filter"
+            name="assigned_filter">
+        <option value="visible"{% if assigned_filter == "visible" %} selected{% endif %}>Visible</option>
+        <option value="conflicts_only"{% if assigned_filter == "conflicts_only" %} selected{% endif %}>Conflicts only</option>
+        <option value="top_prediction_mismatch_only"{% if assigned_filter == "top_prediction_mismatch_only" %} selected{% endif %}>Top prediction mismatch only</option>
+        <option value="hidden"{% if assigned_filter == "hidden" %} selected{% endif %}>Hidden</option>
+    </select>
+    <label class="checkbox-label" for="exclude-assigned-from-predictions">
+        <input id="exclude-assigned-from-predictions"
+               name="exclude_assigned_from_predictions"
+               type="checkbox"
+               value="1"
+               {% if exclude_assigned_from_predictions %}checked{% endif %}>
+        Exclude assigned characters from predictions
+    </label>
+    <label for="prior-weight-percent">Prior weight (%)</label>
+    <input id="prior-weight-percent"
+           name="prior_weight_percent"
+           type="number"
+           min="0"
+           max="100"
+           step="1"
+           value="{{prior_weight_percent}}">
+</form>
 <table>
     <thead>
     <tr>
-        <th rowspan="2">Assignment</th>
-        <th rowspan="2">Image</th>
+        <th class="assignment-header" rowspan="2">Assignment</th>
+        <th class="assignment-header" rowspan="2">Image</th>
         <th colspan="10">Prediction</th>
     </tr>
     <tr>
@@ -96,10 +175,8 @@ and distributed under the terms of the BSD license. See the LICENSE file for det
         <th>10</th>
     </tr>
     </thead>
-    <tbody hx-target="closest tr" hx-swap="outerHTML swap:0.1s">
-    {% for character in characters %}
-    {% include 'character.html' %}
-    {% endfor %}
+    <tbody id="characters-body">
+    {% include 'characters_rows.html' %}
     </tbody>
 </table>
 </body>
