@@ -28,7 +28,7 @@ def route(char_inspector):
             request.args.getlist("x_offset"),
             request.args.getlist("y_offset"),
             request.args.getlist("rotation"),
-            request.args.getlist("fill"),
+            default_to_all=not bool(request.args),
         )
         (
             display_rows,
@@ -39,9 +39,13 @@ def route(char_inspector):
             offset=0,
             limit=char_inspector.default_page_size,
         )
+        training_headers = char_inspector.get_training_headers(filters)
         return render_template(
             "index.html",
             display_rows=display_rows,
+            training_headers=training_headers,
+            training_column_count=len(training_headers),
+            total_columns=2 + len(training_headers),
             total_count=total_count,
             has_more=has_more,
             next_offset=len(display_rows),
@@ -55,8 +59,43 @@ def route(char_inspector):
             selected_y_offsets=filters.y_offsets,
             rotation_options=char_inspector.available_rotations,
             selected_rotations=filters.rotations,
-            fill_options=char_inspector.available_fills,
-            selected_fills=filters.fills,
+        )
+
+    @char_inspector.app.route("/table", methods=["GET"])
+    def table():
+        """Render full inspector table for filter changes."""
+        filters = char_inspector.normalize_filters(
+            request.args.getlist("font"),
+            request.args.getlist("size"),
+            request.args.getlist("x_offset"),
+            request.args.getlist("y_offset"),
+            request.args.getlist("rotation"),
+            default_to_all=False,
+        )
+        (
+            display_rows,
+            total_count,
+            has_more,
+        ) = char_inspector.get_display_rows_page(
+            filters,
+            offset=0,
+            limit=normalize_nonnegative_int(
+                request.args.get("limit"), char_inspector.default_page_size
+            ),
+        )
+        training_headers = char_inspector.get_training_headers(filters)
+        return render_template(
+            "table.html",
+            display_rows=display_rows,
+            training_headers=training_headers,
+            training_column_count=len(training_headers),
+            total_columns=2 + len(training_headers),
+            total_count=total_count,
+            has_more=has_more,
+            next_offset=len(display_rows),
+            page_size=normalize_nonnegative_int(
+                request.args.get("limit"), char_inspector.default_page_size
+            ),
         )
 
     @char_inspector.app.route("/rows", methods=["GET"])
@@ -68,7 +107,7 @@ def route(char_inspector):
             request.args.getlist("x_offset"),
             request.args.getlist("y_offset"),
             request.args.getlist("rotation"),
-            request.args.getlist("fill"),
+            default_to_all=False,
         )
         offset = normalize_nonnegative_int(request.args.get("offset"), 0)
         limit = normalize_nonnegative_int(
@@ -79,11 +118,14 @@ def route(char_inspector):
             offset=offset,
             limit=limit,
         )
+        training_headers = char_inspector.get_training_headers(filters)
         return render_template(
             "rows.html",
             display_rows=display_rows,
+            training_column_count=len(training_headers),
             total_count=total_count,
             has_more=has_more,
             next_offset=offset + len(display_rows),
             page_size=limit,
+            total_columns=2 + len(training_headers),
         )

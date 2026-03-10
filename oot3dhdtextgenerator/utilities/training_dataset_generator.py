@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import time
+from collections.abc import Sequence
 from itertools import product
 from logging import info
 from pathlib import Path
@@ -23,30 +24,47 @@ class TrainingDatasetGenerator(Utility):
     """Training dataset generator."""
 
     @classmethod
-    def generate_character_images(
-        cls, n_chars: int = 10
+    def generate_character_images(  # noqa: PLR0913
+        cls,
+        n_chars: int = 10,
+        *,
+        fonts: Sequence[str] | None = None,
+        sizes: Sequence[int] = (14, 15, 16),
+        x_offsets: Sequence[int] = (-1, 0, 1),
+        y_offsets: Sequence[int] = (-1, 0, 1),
+        rotations: Sequence[int] = (-5, 0, 5),
+        stroke_widths: Sequence[int] = (0, 1),
     ) -> tuple[np.ndarray, np.ndarray]:
         """Generate character images.
 
         Arguments:
             n_chars: number of unique characters to include in dataset
+            fonts: font paths to include; defaults to platform defaults if None
+            sizes: font sizes to include
+            x_offsets: horizontal offsets in pixels
+            y_offsets: vertical offsets in pixels
+            rotations: rotation values in degrees
+            stroke_widths: stroke widths to emulate bolder glyphs
         Returns:
             images and specifications
         """
         characters = [entry.character for entry in hanzi_frequency[:n_chars]]
-        fonts = cls.get_default_font_paths()
-        sizes = [14, 15, 16]
-        offsets = [-1, 0, 1]
-        fills = [255]
-        rotations = [-5, 0, 5]
+        fonts = list(fonts) if fonts is not None else cls.get_default_font_paths()
+        sizes = list(sizes)
+        x_offsets = list(x_offsets)
+        y_offsets = list(y_offsets)
+        rotations = list(rotations)
+        stroke_widths = list(stroke_widths)
         info(
             f"Generating images of "
             f"{n_chars} character{'s' if n_chars > 1 else ''} using "
             f"{len(fonts)} font{'s' if len(fonts) > 1 else ''}, "
             f"{len(sizes)} size{'s' if len(sizes) > 1 else ''}, "
-            f"{len(offsets)} offset{'s' if len(offsets) > 1 else ''}, "
-            f"{len(fills)} fill{'s' if len(fills) > 1 else ''}, and "
-            f"{len(rotations)} rotation{'s' if len(rotations) > 1 else ''}"
+            f"{len(x_offsets)} x offset{'s' if len(x_offsets) > 1 else ''}, "
+            f"{len(y_offsets)} y offset{'s' if len(y_offsets) > 1 else ''}, "
+            f"{len(rotations)} rotation{'s' if len(rotations) > 1 else ''}, and "
+            f"{len(stroke_widths)} stroke width"
+            f"{'s' if len(stroke_widths) > 1 else ''}"
         )
         specifications = np.array(
             list(
@@ -54,10 +72,11 @@ class TrainingDatasetGenerator(Utility):
                     characters,
                     fonts,
                     sizes,
-                    offsets,
-                    offsets,
-                    fills,
+                    x_offsets,
+                    y_offsets,
+                    [255],
                     rotations,
+                    stroke_widths,
                 )
             ),
             dtype=TrainingDataset.specification_dtypes,
@@ -75,6 +94,7 @@ class TrainingDatasetGenerator(Utility):
                 x_offset=specification["x_offset"],
                 y_offset=specification["y_offset"],
                 rotation=specification["rotation"],
+                stroke_width=specification["stroke_width"],
             )
             if i % 1000 == 0 and (current_time := time.time()) - last_update_time > 10:
                 info(f"{int(float(i + 1) / n_images * 100):3d}% complete")
@@ -84,12 +104,18 @@ class TrainingDatasetGenerator(Utility):
         return arrays, specifications
 
     @classmethod
-    def run(
+    def run(  # noqa: PLR0913
         cls,
         n_chars: int,
         test_proportion: float,
         train_output_dir_path: Path,
         test_output_dir_path: Path,
+        fonts: Sequence[str] | None = None,
+        sizes: Sequence[int] = (14, 15, 16),
+        x_offsets: Sequence[int] = (-1, 0, 1),
+        y_offsets: Sequence[int] = (-1, 0, 1),
+        rotations: Sequence[int] = (-5, 0, 5),
+        stroke_widths: Sequence[int] = (0, 1),
     ) -> None:
         """Execute.
 
@@ -98,8 +124,22 @@ class TrainingDatasetGenerator(Utility):
             test_proportion: proportion of dataset to be set aside for testing
             train_output_dir_path: train output directory path
             test_output_dir_path: test output directory path
+            fonts: font paths to include; defaults to platform defaults if None
+            sizes: font sizes to include
+            x_offsets: horizontal offsets in pixels
+            y_offsets: vertical offsets in pixels
+            rotations: rotation values in degrees
+            stroke_widths: stroke widths to emulate bolder glyphs
         """
-        images, specifications = cls.generate_character_images(n_chars)
+        images, specifications = cls.generate_character_images(
+            n_chars,
+            fonts=fonts,
+            sizes=sizes,
+            x_offsets=x_offsets,
+            y_offsets=y_offsets,
+            rotations=rotations,
+            stroke_widths=stroke_widths,
+        )
         info(f"Generated {images.shape[0]} character images")
         (
             train_images,
@@ -176,6 +216,7 @@ class TrainingDatasetGenerator(Utility):
         x_offset: int = 0,
         y_offset: int = 0,
         rotation: int = 0,
+        stroke_width: int = 0,
     ) -> np.ndarray:
         """Generate a character image.
 
@@ -187,6 +228,7 @@ class TrainingDatasetGenerator(Utility):
             x_offset: horizontal offset
             y_offset: vertical offset
             rotation: rotation in degrees
+            stroke_width: text stroke width in pixels
         Returns:
             numpy array of character image
         """
@@ -197,7 +239,14 @@ class TrainingDatasetGenerator(Utility):
         draw = ImageDraw.Draw(image)
         _, _, width, height = draw.textbbox((0, 0), char, font=font_type)
         xy = ((16 - width) / 2, (16 - height) / 2)
-        draw.text(xy, char, font=font_type, fill=int(fill))
+        draw.text(
+            xy,
+            char,
+            font=font_type,
+            fill=int(fill),
+            stroke_width=max(0, int(stroke_width)),
+            stroke_fill=int(fill),
+        )
         image = image.rotate(rotation, fillcolor=0)
         array = np.array(image)
         array = TrainingDatasetGenerator._translate_array(array, x_offset, y_offset)

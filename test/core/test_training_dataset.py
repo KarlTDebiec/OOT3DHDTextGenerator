@@ -20,8 +20,8 @@ def _build_specifications() -> np.ndarray:
     """
     return np.array(
         [
-            ("你", "font_a.ttf", 14, -1, 0, 255, 0.0),
-            ("好", "font_b.ttf", 16, 1, -1, 255, 5.0),
+            ("你", "font_a.ttf", 14, -1, 0, 255, 0.0, 0),
+            ("好", "font_b.ttf", 16, 1, -1, 255, 5.0, 1),
         ],
         dtype=TrainingDataset.specification_dtypes,
     )

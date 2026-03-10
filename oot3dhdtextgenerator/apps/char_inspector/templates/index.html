@@ -44,22 +44,15 @@ and distributed under the terms of the BSD license. See the LICENSE file for det
             margin: 0.15rem 0;
         }
 
-        .summary {
-            align-items: center;
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 1rem;
-        }
-
         table {
             border-collapse: collapse;
-            width: 100%;
+            margin: 0 auto;
+            max-width: 100%;
         }
 
         td, th {
-            border-bottom: 1px solid #e5e7eb;
-            padding: 0.4rem;
-            vertical-align: top;
+            padding: 0;
+            vertical-align: middle;
         }
 
         img {
@@ -92,24 +85,25 @@ and distributed under the terms of the BSD license. See the LICENSE file for det
             width: var(--cell-size);
         }
 
-        .training-grid {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.25rem 0.5rem;
+        td {
+            padding-bottom: calc(var(--cell-padding) * 1.5);
         }
 
-        .training-item {
-            align-items: center;
-            display: inline-flex;
-            flex-direction: column;
-            max-width: 7rem;
+        th {
+            font-size: 0.85rem;
+            max-width: var(--cell-size);
+            overflow: hidden;
+            padding-bottom: calc(var(--cell-padding) * 1.5);
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            width: var(--cell-size);
         }
 
-        .training-label {
-            font-size: 0.75rem;
-            text-align: center;
-            word-break: break-word;
+        .wide-header {
+            max-width: calc(var(--cell-size) * 1.25);
+            width: calc(var(--cell-size) * 1.25);
         }
+
     </style>
     <title>Char Inspector</title>
 </head>
@@ -117,8 +111,8 @@ and distributed under the terms of the BSD license. See the LICENSE file for det
 <h1>Char Inspector</h1>
 <form id="filters-form"
       class="filters"
-      hx-get="/rows"
-      hx-target="#rows-body"
+      hx-get="/table"
+      hx-target="#inspector-table"
       hx-swap="innerHTML"
       hx-vals='{"offset": 0, "limit": {{ page_size }}}'
       hx-trigger="change">
@@ -183,47 +177,8 @@ and distributed under the terms of the BSD license. See the LICENSE file for det
         {% endfor %}
     </fieldset>
 </form>
-<div class="summary">
-    <span>Results: <strong id="results-count">{{ total_count }}</strong></span>
-    <span>Loaded: <strong id="results-loaded-count">{{ display_rows|length }}</strong></span>
+<div id="inspector-table">
+    {% include 'table.html' %}
 </div>
-<table>
-    <thead>
-    <tr>
-        <th>Assigned Character</th>
-        <th>Real Image</th>
-        <th>Training Images</th>
-    </tr>
-    </thead>
-    <tbody id="rows-body">
-    {% include 'rows.html' %}
-    </tbody>
-</table>
-<script>
-    function updateCounts() {
-        const resultsCount = document.getElementById("results-count");
-        const resultsLoadedCount = document.getElementById("results-loaded-count");
-        const rowsBody = document.getElementById("rows-body");
-        if (!resultsCount || !resultsLoadedCount || !rowsBody) {
-            return;
-        }
-        const loadedCount = rowsBody.querySelectorAll("tr.inspector-row").length;
-        const loadMoreRow = rowsBody.querySelector("tr.load-more-row");
-        const totalCount = loadMoreRow
-            ? Number(loadMoreRow.dataset.totalCount || loadedCount)
-            : loadedCount;
-        resultsCount.textContent = String(totalCount);
-        resultsLoadedCount.textContent = String(loadedCount);
-    }
-
-    const rowsBody = document.getElementById("rows-body");
-    if (rowsBody) {
-        const observer = new MutationObserver(() => {
-            updateCounts();
-        });
-        observer.observe(rowsBody, {childList: true});
-    }
-    updateCounts();
-</script>
 </body>
 </html>

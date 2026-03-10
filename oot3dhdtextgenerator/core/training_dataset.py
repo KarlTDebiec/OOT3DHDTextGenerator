@@ -34,6 +34,7 @@ class TrainingDataset(VisionDataset):
         ("y_offset", "int8"),
         ("fill", "uint8"),
         ("rotation", "float32"),
+        ("stroke_width", "uint8"),
     ]
     """Specification dtypes"""
 
@@ -104,7 +105,7 @@ class TrainingDataset(VisionDataset):
     @classmethod
     def _parse_specification_row(
         cls, row: dict[str, str], csv_path: Path, row_number: int
-    ) -> tuple[str, str, int, int, int, int, float]:
+    ) -> tuple[str, str, int, int, int, int, float, int]:
         """Parse one specification CSV row.
 
         Arguments:
@@ -121,6 +122,7 @@ class TrainingDataset(VisionDataset):
         y_offset = row.get("y_offset")
         fill = row.get("fill")
         rotation = row.get("rotation")
+        stroke_width = row.get("stroke_width")
 
         if (
             character is None
@@ -148,6 +150,7 @@ class TrainingDataset(VisionDataset):
                 int(y_offset),
                 int(fill),
                 float(rotation),
+                int(stroke_width) if stroke_width is not None else 0,
             )
         except ValueError as exc:
             raise ValueError(
@@ -197,7 +200,7 @@ class TrainingDataset(VisionDataset):
             reader = DictReader(infile)
             cls._validate_required_columns(
                 reader.fieldnames,
-                set(cls.specification_fieldnames()),
+                set(cls.specification_fieldnames()) - {"stroke_width"},
                 specifications_csv_path,
             )
             specification_rows = [
@@ -272,5 +275,6 @@ class TrainingDataset(VisionDataset):
                         "y_offset": int(row["y_offset"]),
                         "fill": int(row["fill"]),
                         "rotation": float(row["rotation"]),
+                        "stroke_width": int(row["stroke_width"]),
                     }
                 )

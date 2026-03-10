@@ -151,33 +151,50 @@ class CharInspector:
         x_offsets: list[str],
         y_offsets: list[str],
         rotations: list[str],
-        fills: list[str],
+        *,
+        default_to_all: bool,
     ) -> InspectorFilters:
         """Normalize filter selections to supported option values."""
-        normalized_fonts = self.normalize_selected_strings(fonts, self.available_fonts)
-        normalized_sizes = self.normalize_selected_ints(sizes, self.available_sizes)
+        normalized_fonts = self.normalize_selected_strings(
+            fonts,
+            self.available_fonts,
+            default_to_all=default_to_all,
+        )
+        normalized_sizes = self.normalize_selected_ints(
+            sizes,
+            self.available_sizes,
+            default_to_all=default_to_all,
+        )
         normalized_x_offsets = self.normalize_selected_ints(
-            x_offsets, self.available_offsets
+            x_offsets,
+            self.available_offsets,
+            default_to_all=default_to_all,
         )
         normalized_y_offsets = self.normalize_selected_ints(
-            y_offsets, self.available_offsets
+            y_offsets,
+            self.available_offsets,
+            default_to_all=default_to_all,
         )
         normalized_rotations = self.normalize_selected_ints(
-            rotations, self.available_rotations
+            rotations,
+            self.available_rotations,
+            default_to_all=default_to_all,
         )
-        normalized_fills = self.normalize_selected_ints(fills, self.available_fills)
         return InspectorFilters(
             fonts=normalized_fonts,
             sizes=normalized_sizes,
             x_offsets=normalized_x_offsets,
             y_offsets=normalized_y_offsets,
             rotations=normalized_rotations,
-            fills=normalized_fills,
+            fills=self.available_fills,
         )
 
     @staticmethod
     def normalize_selected_strings(
-        selected_values: list[str], available_values: tuple[str, ...]
+        selected_values: list[str],
+        available_values: tuple[str, ...],
+        *,
+        default_to_all: bool,
     ) -> tuple[str, ...]:
         """Normalize selected string values to non-empty supported subset."""
         selected_value_set = {
@@ -189,11 +206,16 @@ class CharInspector:
             return tuple(
                 value for value in available_values if value in selected_value_set
             )
-        return available_values
+        if default_to_all:
+            return available_values
+        return tuple()
 
     @staticmethod
     def normalize_selected_ints(
-        selected_values: list[str], available_values: tuple[int, ...]
+        selected_values: list[str],
+        available_values: tuple[int, ...],
+        *,
+        default_to_all: bool,
     ) -> tuple[int, ...]:
         """Normalize selected int values to non-empty supported subset."""
         parsed_values: set[int] = set()
@@ -206,7 +228,9 @@ class CharInspector:
                 parsed_values.add(parsed_value)
         if parsed_values:
             return tuple(value for value in available_values if value in parsed_values)
-        return available_values
+        if default_to_all:
+            return available_values
+        return tuple()
 
     def get_display_rows_page(
         self,
@@ -272,9 +296,32 @@ class CharInspector:
                 )
                 image = self.array_to_data_url(synthetic_array)
                 self.synthetic_image_cache[cache_key] = image
-            label = (
-                f"{Path(font).stem} | sz {size} | x {x_offset:+d} | y {y_offset:+d}"
-                f" | rot {rotation:+d}"
-            )
+            label = self.format_training_label(font, size, x_offset, y_offset, rotation)
             previews.append(TrainingImagePreview(image=image, label=label))
         return tuple(previews)
+
+    def get_training_headers(self, filters: InspectorFilters) -> tuple[str, ...]:
+        """Get ordered training-image column headers for selected filters."""
+        headers: list[str] = []
+        for font, size, x_offset, y_offset, rotation, _fill in product(
+            filters.fonts,
+            filters.sizes,
+            filters.x_offsets,
+            filters.y_offsets,
+            filters.rotations,
+            filters.fills,
+        ):
+            headers.append(
+                self.format_training_label(font, size, x_offset, y_offset, rotation)
+            )
+        return tuple(headers)
+
+    @staticmethod
+    def format_training_label(
+        font: str, size: int, x_offset: int, y_offset: int, rotation: int
+    ) -> str:
+        """Format a training-image variant label."""
+        return (
+            f"{Path(font).stem} | sz {size} | x {x_offset:+d} | y {y_offset:+d}"
+            f" | rot {rotation:+d}"
+        )

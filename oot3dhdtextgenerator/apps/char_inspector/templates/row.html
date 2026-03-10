@@ -11,16 +11,16 @@ and distributed under the terms of the BSD license. See the LICENSE file for det
             <img class="content" src="{{ display_row.row.real_image }}">
         </div>
     </td>
+    {% for column_index in range(training_column_count) %}
     <td>
-        <div class="training-grid">
-            {% for training_preview in display_row.training_previews %}
-            <div class="training-item">
-                <div class="centered">
-                    <img class="content" src="{{ training_preview.image }}">
-                </div>
-                <div class="training-label">{{ training_preview.label }}</div>
+        {% if column_index < display_row.training_previews|length %}
+        {% set training_preview = display_row.training_previews[column_index] %}
+            <div class="centered">
+                <img class="content"
+                     src="{{ training_preview.image }}"
+                     alt="{{ training_preview.label }}">
             </div>
-            {% endfor %}
-        </div>
+        {% endif %}
     </td>
+    {% endfor %}
 </tr>

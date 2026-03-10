@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 from argparse import ArgumentParser
+from pathlib import Path
 from typing import Any, override
 
 from pipescaler.core.cli import UtilityCli
@@ -15,12 +16,15 @@ from oot3dhdtextgenerator.common.argument_parsing import (
     get_arg_groups_by_name,
     int_arg,
 )
-from oot3dhdtextgenerator.common.validation import val_output_dir_path, val_output_path
+from oot3dhdtextgenerator.common.csv import parse_csv_int_list, parse_csv_str_list
+from oot3dhdtextgenerator.common.validation import (
+    val_input_path,
+    val_output_dir_path,
+    val_output_path,
+)
 from oot3dhdtextgenerator.core import TrainingDataset
 from oot3dhdtextgenerator.data import oot3d_data_path
 from oot3dhdtextgenerator.utilities import TrainingDatasetGenerator
-
-# TODO: Expose settings for image font, sizes, offsets, fills, and rotations
 
 
 class TrainingDatasetGeneratorCli(UtilityCli):
@@ -60,6 +64,43 @@ class TrainingDatasetGeneratorCli(UtilityCli):
             type=float_arg(min_value=0, max_value=1),
             help="proportion of dataset to be set aside for testing "
             "(default: %(default)f)",
+        )
+        arg_groups["operation arguments"].add_argument(
+            "--fonts",
+            type=str,
+            default="",
+            help="comma-separated font file paths; empty uses platform defaults",
+        )
+        arg_groups["operation arguments"].add_argument(
+            "--sizes",
+            type=str,
+            default="14,15,16",
+            help="comma-separated font sizes (default: %(default)s)",
+        )
+        arg_groups["operation arguments"].add_argument(
+            "--x-offsets",
+            type=str,
+            default="-1,0,1",
+            help="comma-separated x offsets (default: %(default)s)",
+        )
+        arg_groups["operation arguments"].add_argument(
+            "--y-offsets",
+            type=str,
+            default="-1,0,1",
+            help="comma-separated y offsets (default: %(default)s)",
+        )
+        arg_groups["operation arguments"].add_argument(
+            "--rotations",
+            type=str,
+            default="-5,0,5",
+            help="comma-separated rotations in degrees (default: %(default)s)",
+        )
+        arg_groups["operation arguments"].add_argument(
+            "--stroke-widths",
+            type=str,
+            default="0,1",
+            help="comma-separated stroke widths for synthetic boldness "
+            "(default: %(default)s)",
         )
 
         # Output arguments
@@ -130,6 +171,27 @@ class TrainingDatasetGeneratorCli(UtilityCli):
             kwargs["test_output_dir_path"]
             / TrainingDataset.specifications_csv_file_name,
             exist_ok=kwargs["overwrite"],
+        )
+        fonts = parse_csv_str_list(kwargs.get("fonts"))
+        kwargs["fonts"] = (
+            [str(Path(val_input_path(font_path))) for font_path in fonts]
+            if fonts
+            else None
+        )
+        kwargs["sizes"] = parse_csv_int_list(
+            kwargs.get("sizes", "14,15,16"), name="--sizes"
+        )
+        kwargs["x_offsets"] = parse_csv_int_list(
+            kwargs.get("x_offsets", "-1,0,1"), name="--x-offsets"
+        )
+        kwargs["y_offsets"] = parse_csv_int_list(
+            kwargs.get("y_offsets", "-1,0,1"), name="--y-offsets"
+        )
+        kwargs["rotations"] = parse_csv_int_list(
+            kwargs.get("rotations", "-5,0,5"), name="--rotations"
+        )
+        kwargs["stroke_widths"] = parse_csv_int_list(
+            kwargs.get("stroke_widths", "0,1"), name="--stroke-widths"
         )
         kwargs.pop("overwrite")
         utility_cls.run(**kwargs)
