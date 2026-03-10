@@ -36,31 +36,24 @@ and distributed under the terms of the BSD license. See the LICENSE file for det
                 }
 
                 :is(input[type="text"], button, img) {
+                    border-color: ButtonBorder;
                     border-radius: var(--cell-radius);
+                    border-style: solid;
                     border-width: var(--border-width);
                     box-sizing: border-box;
                     font-size: var(--cell-text-size);
                     height: var(--cell-size);
-                    margin: 1px auto;
+                    text-align: center;
                     width: var(--cell-size);
                 }
 
-                input[type="text"] {
-                    text-align: center;
-                }
-
                 img {
-                    border-style: solid;
                     image-rendering: pixelated;
-                    padding: calc(var(--cell-padding) * 2.5);
+                    padding: calc(var(--cell-padding) * 3.0);
                 }
 
                 .prediction-match {
-                    border-color: #22c55e;
-                }
-
-                tr.load-more-row td {
-                    padding-top: calc(var(--cell-padding) * 2);
+                    border-color: #22cc55;
                 }
             }
         }
