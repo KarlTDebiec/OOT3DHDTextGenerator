@@ -4,7 +4,7 @@ and distributed under the terms of the BSD license. See the LICENSE file for det
     <meta charset="utf-8">
     <meta name="viewport"
           content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <script src="https://unpkg.com/htmx.org@1.5.0"></script>
+    <script src="https://unpkg.com/htmx.org@2.0.8"></script>
     <style>
         :root {
             --cell-size: 3.25rem;
@@ -14,107 +14,55 @@ and distributed under the terms of the BSD license. See the LICENSE file for det
             --border-width: 2px;
         }
 
-        button {
-            border-style: outset;
-            font-size: var(--cell-text-size);
-        }
-
-        form {
-            border-style: none;
-            margin: 0;
-        }
-
-        .filters {
-            align-items: center;
-            display: flex;
-            gap: 0.5rem;
-            margin-bottom: 1rem;
-        }
-
-        .filters select {
-            font-size: 1rem;
-        }
-
-        .filters .checkbox-label {
-            align-items: center;
-            display: inline-flex;
-            gap: 0.3rem;
-        }
-
-        img {
-            border-style: solid;
-            image-rendering: pixelated;
-        }
-
-        img.content {
-            padding: calc(var(--cell-padding) * 2.5);
-        }
-
         body {
-            margin: 0;
-            overflow-x: auto;
-            padding: 1rem;
-        }
+            > table {
+                margin-left: auto;
+                margin-right: auto;
 
-        input {
-            border-style: inset;
-            text-align: center;
-        }
+                th {
+                    max-width: var(--cell-size);
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    width: var(--cell-size);
+                }
 
-        table {
-            border-collapse: collapse;
-            margin: 0 auto;
-            max-width: 100%;
-            margin-left: auto;
-            margin-right: auto;
-        }
+                tr.htmx-swapping td {
+                    opacity: 0;
+                    transition: opacity 0.5s ease-out;
+                }
 
-        td {
-            padding-bottom: var(--cell-padding);
-        }
+                form {
+                    margin: 0;
+                }
 
-        th {
-            max-width: var(--cell-size);
-            overflow: hidden;
-            padding-bottom: var(--cell-padding);
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            width: var(--cell-size);
-        }
+                :is(input[type="text"], button, img) {
+                    border-radius: var(--cell-radius);
+                    border-width: var(--border-width);
+                    box-sizing: border-box;
+                    font-size: var(--cell-text-size);
+                    height: var(--cell-size);
+                    margin: 1px auto;
+                    width: var(--cell-size);
+                }
 
+                input[type="text"] {
+                    text-align: center;
+                }
 
-        tr.htmx-swapping td {
-            opacity: 0;
-            transition: opacity 0.5s ease-out;
-        }
+                img {
+                    border-style: solid;
+                    image-rendering: pixelated;
+                    padding: calc(var(--cell-padding) * 2.5);
+                }
 
-        .centered {
-            align-items: center;
-            aspect-ratio: 1;
-            display: flex;
-            justify-content: center;
-        }
+                .prediction-match {
+                    border-color: #22c55e;
+                }
 
-        .content {
-            border-radius: var(--cell-radius);
-            border-style: inset;
-            border-width: var(--border-width);
-            box-sizing: border-box;
-            font-size: var(--cell-text-size);
-            height: var(--cell-size);
-            margin: 1px;
-            padding: var(--cell-padding);
-            text-align: center;
-            width: var(--cell-size);
-        }
-
-        .prediction-match {
-            border-color: #22c55e;
-        }
-
-        .assignment-header {
-            max-width: var(--cell-size);
-            width: var(--cell-size);
+                tr.load-more-row td {
+                    padding-top: calc(var(--cell-padding) * 2);
+                }
+            }
         }
     </style>
     <title>Char Assigner</title>
@@ -122,35 +70,30 @@ and distributed under the terms of the BSD license. See the LICENSE file for det
 <body>
 <h1>Characters</h1>
 <form id="filters-form"
-      class="filters"
       hx-get="/characters"
       hx-target="#characters-body"
       hx-swap="innerHTML"
       hx-vals='{"offset": 0, "limit": {{ page_size }}}'
       hx-trigger="change">
     <label for="unassigned-filter">Unassigned</label>
-    <select id="unassigned-filter"
-            name="unassigned_filter">
+    <select id="unassigned-filter" name="unassigned_filter">
         <option value="visible"{% if unassigned_filter == "visible" %} selected{% endif %}>Visible</option>
         <option value="top_prediction_available_only"{% if unassigned_filter == "top_prediction_available_only" %} selected{% endif %}>Top prediction available only</option>
         <option value="hidden"{% if unassigned_filter == "hidden" %} selected{% endif %}>Hidden</option>
     </select>
     <label for="assigned-filter">Assigned</label>
-    <select id="assigned-filter"
-            name="assigned_filter">
+    <select id="assigned-filter" name="assigned_filter">
         <option value="visible"{% if assigned_filter == "visible" %} selected{% endif %}>Visible</option>
         <option value="conflicts_only"{% if assigned_filter == "conflicts_only" %} selected{% endif %}>Conflicts only</option>
         <option value="top_prediction_mismatch_only"{% if assigned_filter == "top_prediction_mismatch_only" %} selected{% endif %}>Top prediction mismatch only</option>
         <option value="hidden"{% if assigned_filter == "hidden" %} selected{% endif %}>Hidden</option>
     </select>
-    <label class="checkbox-label" for="exclude-assigned-from-predictions">
-        <input id="exclude-assigned-from-predictions"
-               name="exclude_assigned_from_predictions"
-               type="checkbox"
-               value="1"
-               {% if exclude_assigned_from_predictions %}checked{% endif %}>
-        Exclude assigned characters from predictions
-    </label>
+    <label for="exclude-assigned-from-predictions">Exclude assigned characters from predictions</label>
+    <input id="exclude-assigned-from-predictions"
+           name="exclude_assigned_from_predictions"
+           type="checkbox"
+           value="1"
+           {% if exclude_assigned_from_predictions %}checked{% endif %}>
     <label for="prior-weight-percent">Prior weight (%)</label>
     <input id="prior-weight-percent"
            name="prior_weight_percent"
@@ -165,8 +108,8 @@ and distributed under the terms of the BSD license. See the LICENSE file for det
 <table>
     <thead>
     <tr>
-        <th class="assignment-header" rowspan="2">Assignment</th>
-        <th class="assignment-header" rowspan="2">Image</th>
+        <th rowspan="2">Assignment</th>
+        <th rowspan="2">Image</th>
         <th colspan="10">Prediction</th>
     </tr>
     <tr>
