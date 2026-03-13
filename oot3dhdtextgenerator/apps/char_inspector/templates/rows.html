@@ -6,7 +6,7 @@ and distributed under the terms of the BSD license. See the LICENSE file for det
 <tr class="load-more-row"
     data-total-count="{{ total_count }}"
     {% if not has_more %}
-    style="display: none;"
+    hidden
     {% endif %}
     {% if has_more %}
     hx-get="/rows?offset={{ next_offset }}&limit={{ page_size }}"
@@ -15,7 +15,7 @@ and distributed under the terms of the BSD license. See the LICENSE file for det
     hx-swap="outerHTML"
     hx-trigger="revealed"
     {% endif %}>
-    <td colspan="{{ total_columns }}" style="text-align: center;">
+    <td colspan="{{ total_columns }}">
         {% if has_more %}
         Loading more...
         {% endif %}

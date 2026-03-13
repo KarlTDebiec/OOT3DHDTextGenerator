@@ -15,108 +15,95 @@ and distributed under the terms of the BSD license. See the LICENSE file for det
         }
 
         body {
-            margin: 0;
-            overflow-x: auto;
-            padding: 1rem;
-        }
+            > form {
+                align-items: flex-start;
+                display: grid;
+                gap: 0.75rem;
+                grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+                margin-bottom: 1rem;
 
-        button {
-            border-style: outset;
-            font-size: var(--cell-text-size);
-        }
+                fieldset {
+                    border: 1px solid #d1d5db;
+                    border-radius: 0.375rem;
+                    padding: 0.5rem;
 
-        .filters {
-            align-items: flex-start;
-            display: grid;
-            gap: 0.75rem;
-            grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
-            margin-bottom: 1rem;
-        }
+                    label {
+                        display: block;
+                        margin: 0.15rem 0;
+                    }
+                }
+            }
 
-        .filter-group {
-            border: 1px solid #d1d5db;
-            border-radius: 0.375rem;
-            padding: 0.5rem;
-        }
+            > #inspector-table > table {
+                border-collapse: collapse;
+                margin-left: auto;
+                margin-right: auto;
+                max-width: 100%;
 
-        .filter-group label {
-            display: block;
-            margin: 0.15rem 0;
-        }
+                td,
+                th {
+                    padding: 0;
+                    vertical-align: middle;
+                }
 
-        table {
-            border-collapse: collapse;
-            margin: 0 auto;
-            max-width: 100%;
-        }
+                td {
+                    padding-bottom: calc(var(--cell-padding) * 1.5);
+                    text-align: center;
+                }
 
-        td, th {
-            padding: 0;
-            vertical-align: middle;
-        }
+                th {
+                    font-size: 0.85rem;
+                    max-width: var(--cell-size);
+                    overflow: hidden;
+                    padding-bottom: calc(var(--cell-padding) * 1.5);
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                    width: var(--cell-size);
+                }
 
-        img {
-            border-style: solid;
-            image-rendering: pixelated;
-        }
+                th:nth-child(-n + 2) {
+                    max-width: calc(var(--cell-size) * 1.25);
+                    width: calc(var(--cell-size) * 1.25);
+                }
 
-        img.content {
-            padding: calc(var(--cell-padding) * 2.5);
-        }
+                :is(button, img) {
+                    border-radius: var(--cell-radius);
+                    border-width: var(--border-width);
+                    box-sizing: border-box;
+                    font-size: var(--cell-text-size);
+                    height: var(--cell-size);
+                    image-rendering: pixelated;
+                    margin: 1px auto;
+                    width: var(--cell-size);
+                }
 
-        .centered {
-            align-items: center;
-            aspect-ratio: 1;
-            display: flex;
-            justify-content: center;
-        }
+                button {
+                    border-style: outset;
+                    padding: var(--cell-padding);
+                }
 
-        .content {
-            border-radius: var(--cell-radius);
-            border-style: inset;
-            border-width: var(--border-width);
-            box-sizing: border-box;
-            font-size: var(--cell-text-size);
-            image-rendering: pixelated;
-            height: var(--cell-size);
-            margin: 1px;
-            padding: var(--cell-padding);
-            text-align: center;
-            width: var(--cell-size);
-        }
+                img {
+                    border-style: solid;
+                    padding: calc(var(--cell-padding) * 2.5);
+                }
 
-        td {
-            padding-bottom: calc(var(--cell-padding) * 1.5);
+                tr.load-more-row td {
+                    padding-top: calc(var(--cell-padding) * 2);
+                }
+            }
         }
-
-        th {
-            font-size: 0.85rem;
-            max-width: var(--cell-size);
-            overflow: hidden;
-            padding-bottom: calc(var(--cell-padding) * 1.5);
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            width: var(--cell-size);
-        }
-
-        .wide-header {
-            max-width: calc(var(--cell-size) * 1.25);
-            width: calc(var(--cell-size) * 1.25);
-        }
-
     </style>
     <title>Char Inspector</title>
 </head>
 <body>
 <h1>Char Inspector</h1>
 <form id="filters-form"
-      class="filters"
       hx-get="/table"
       hx-target="#inspector-table"
       hx-swap="innerHTML"
       hx-vals='{"offset": 0, "limit": {{ page_size }}}'
       hx-trigger="change">
-    <fieldset class="filter-group">
+    <fieldset>
         <legend>Font</legend>
         {% for font, font_label in font_options %}
         <label>
@@ -128,7 +115,7 @@ and distributed under the terms of the BSD license. See the LICENSE file for det
         </label>
         {% endfor %}
     </fieldset>
-    <fieldset class="filter-group">
+    <fieldset>
         <legend>Size</legend>
         {% for size in size_options %}
         <label>
@@ -140,7 +127,7 @@ and distributed under the terms of the BSD license. See the LICENSE file for det
         </label>
         {% endfor %}
     </fieldset>
-    <fieldset class="filter-group">
+    <fieldset>
         <legend>X offset</legend>
         {% for x_offset in offset_options %}
         <label>
@@ -152,7 +139,7 @@ and distributed under the terms of the BSD license. See the LICENSE file for det
         </label>
         {% endfor %}
     </fieldset>
-    <fieldset class="filter-group">
+    <fieldset>
         <legend>Y offset</legend>
         {% for y_offset in offset_options %}
         <label>
@@ -164,7 +151,7 @@ and distributed under the terms of the BSD license. See the LICENSE file for det
         </label>
         {% endfor %}
     </fieldset>
-    <fieldset class="filter-group">
+    <fieldset>
         <legend>Rotation</legend>
         {% for rotation in rotation_options %}
         <label>

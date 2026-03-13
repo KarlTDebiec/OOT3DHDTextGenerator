@@ -2,24 +2,17 @@
 and distributed under the terms of the BSD license. See the LICENSE file for details. #}
 <tr class="inspector-row">
     <td>
-        <div class="centered">
-            <button class="content" type="button">{{ display_row.row.assignment }}</button>
-        </div>
+        <button type="button">{{ display_row.row.assignment }}</button>
     </td>
     <td>
-        <div class="centered">
-            <img class="content" src="{{ display_row.row.real_image }}">
-        </div>
+        <img src="{{ display_row.row.real_image }}">
     </td>
     {% for column_index in range(training_column_count) %}
     <td>
         {% if column_index < display_row.training_previews|length %}
         {% set training_preview = display_row.training_previews[column_index] %}
-            <div class="centered">
-                <img class="content"
-                     src="{{ training_preview.image }}"
-                     alt="{{ training_preview.label }}">
-            </div>
+        <img src="{{ training_preview.image }}"
+             alt="{{ training_preview.label }}">
         {% endif %}
     </td>
     {% endfor %}
