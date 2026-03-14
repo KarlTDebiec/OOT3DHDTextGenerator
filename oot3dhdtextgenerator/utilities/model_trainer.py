@@ -85,9 +85,8 @@ class ModelTrainer(Utility):
         train_dataset.transform = transform
         test_dataset.transform = transform
         info(
-            "Using normalization mean %.6f and std %.6f",
-            normalization_mean,
-            normalization_std,
+            f"Using normalization mean {normalization_mean:.6f} "
+            f"and std {normalization_std:.6f}"
         )
 
         if cuda_enabled:

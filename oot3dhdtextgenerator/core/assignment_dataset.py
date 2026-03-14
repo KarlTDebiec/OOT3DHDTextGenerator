@@ -393,7 +393,5 @@ class AssignmentDataset(VisionDataset):
         replace(unassigned_temp_path, unassigned_csv_path)
 
         info(
-            "Saved AssignmentDataset to %s and %s",
-            assigned_csv_path,
-            unassigned_csv_path,
+            f"Saved AssignmentDataset to {assigned_csv_path} and {unassigned_csv_path}"
         )

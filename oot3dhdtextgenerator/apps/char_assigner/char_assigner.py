@@ -87,12 +87,8 @@ class CharAssigner:
 
         if checkpoint_n_chars is not None and checkpoint_n_chars != n_chars:
             warning(
-                (
-                    "Model checkpoint n_chars (%d) differs from CLI n_chars (%d); "
-                    "using checkpoint value"
-                ),
-                checkpoint_n_chars,
-                n_chars,
+                f"Model checkpoint n_chars ({checkpoint_n_chars}) differs from CLI "
+                f"n_chars ({n_chars}); using checkpoint value"
             )
             n_chars = int(checkpoint_n_chars)
 
