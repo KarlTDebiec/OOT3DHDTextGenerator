@@ -3,21 +3,16 @@ and distributed under the terms of the BSD license. See the LICENSE file for det
 {% for character in characters %}
 {% include 'character.html' %}
 {% endfor %}
+{% if has_more %}
 <tr class="load-more-row"
     data-total-count="{{ total_count }}"
-    {% if not has_more %}
-    hidden
-    {% endif %}
-    {% if has_more %}
     hx-get="/characters?offset={{ next_offset }}&limit={{ page_size }}"
     hx-include="#filters-form"
     hx-target="this"
     hx-swap="outerHTML"
-    hx-trigger="revealed"
-    {% endif %}>
+    hx-trigger="revealed">
     <td colspan="12">
-        {% if has_more %}
         Loading more...
-        {% endif %}
     </td>
 </tr>
+{% endif %}

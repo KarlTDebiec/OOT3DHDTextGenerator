@@ -123,6 +123,7 @@ and distributed under the terms of the BSD license. See the LICENSE file for det
     </tbody>
 </table>
 <script>
+    /** Update the displayed loaded and total result counts. */
     function updateResultsCount() {
         const resultsCount = document.getElementById("results-count");
         const resultsLoadedCount = document.getElementById("results-loaded-count");
@@ -130,7 +131,9 @@ and distributed under the terms of the BSD license. See the LICENSE file for det
         if (!resultsCount || !resultsLoadedCount || !charactersBody) {
             return;
         }
-        const loadedCount = charactersBody.querySelectorAll("tr.character-row").length;
+        const loadedCount = Array.from(charactersBody.querySelectorAll("tr")).filter(
+            (row) => !row.classList.contains("load-more-row"),
+        ).length;
         const loadMoreRow = charactersBody.querySelector("tr.load-more-row");
         const totalCount = loadMoreRow
             ? Number(loadMoreRow.dataset.totalCount || loadedCount)
