@@ -1,7 +1,55 @@
 {# Copyright 2020-2026 Karl T Debiec. All rights reserved. This software may be modified
 and distributed under the terms of the BSD license. See the LICENSE file for details. #}
 {% for character in characters %}
-{% include 'character.html' %}
+<tr>
+    <td>
+        {% if character.assignment is not none %}
+        <input type="text"
+               maxlength="1"
+               name="assignment"
+               value="{{character.assignment}}"
+               hx-put="/characters/{{character.id}}"
+               hx-include="#filters-form"
+               hx-target="#characters-body"
+               hx-swap="innerHTML"
+               hx-trigger="blur">
+        {% else %}
+        <input type="text"
+               maxlength="1"
+               name="assignment"
+               hx-put="/characters/{{character.id}}"
+               hx-include="#filters-form"
+               hx-target="#characters-body"
+               hx-swap="innerHTML"
+               hx-trigger="blur">
+        {% endif %}
+    </td>
+    <td>
+        <img src="{{character.image}}">
+    </td>
+    {% if character.predictions is not none %}
+    {% for prediction in character.predictions %}
+    <td>
+        <form>
+            <input type="hidden" name="assignment" value="{{prediction}}">
+            <button{% if character.assignment is not none and prediction == character.assignment %} class="prediction-match"{% endif %}
+                    type="submit"
+                    hx-put="/characters/{{character.id}}"
+                    hx-include="#filters-form"
+                    hx-target="#characters-body"
+                    hx-swap="innerHTML"
+                    hx-trigger="click">
+                {{prediction}}
+            </button>
+        </form>
+    </td>
+    {% endfor %}
+    {% else %}
+    {% for _ in range(10) %}
+    <td></td>
+    {% endfor %}
+    {% endif %}
+</tr>
 {% endfor %}
 {% if has_more %}
 <tr class="load-more-row"
