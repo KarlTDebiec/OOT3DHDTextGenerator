@@ -27,7 +27,7 @@ from .routes import route
 class CharAssigner:
     """Character assigner."""
 
-    default_page_size = 200
+    default_page_size = 100
 
     unassigned_filter_values = {
         "visible",
