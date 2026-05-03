@@ -6,11 +6,12 @@ from __future__ import annotations
 
 from collections.abc import Collection, Iterable
 from logging import getLogger
+from os import PathLike
 from os.path import defpath, expanduser, expandvars
 from pathlib import Path
 from platform import system
 from shutil import which
-from typing import Any, overload
+from typing import Any, TypeAliasType, get_args, overload
 
 from .exception import (
     ArgumentConflictError,
@@ -26,6 +27,7 @@ __all__ = [
     "val_input_dir_path",
     "val_input_path",
     "val_int",
+    "val_literal",
     "val_output_dir_path",
     "val_output_path",
     "val_str",
@@ -41,10 +43,10 @@ def val_executable(
 
     Arguments:
         name: executable name
-        supported_platforms: platforms that support executable;
+        supported_platforms: Platforms that support executable;
           default: "Darwin", "Linux", "Windows"
     Returns:
-        absolute path of executable
+        Absolute path of executable
     Raises:
         ExecutableNotFoundError: if executable is not found in path
         UnsupportedPlatformError: if executable is not supported on current platform
@@ -67,12 +69,14 @@ def val_executable(
 
 @overload
 def val_float(
-    value: float,
+    value: float | int | str,
     *,
     n_values: int | None = None,
     min_value: float | None = None,
     max_value: float | None = None,
 ) -> float: ...
+
+
 @overload
 def val_float(
     value: Iterable[Any],
@@ -81,8 +85,10 @@ def val_float(
     min_value: float | None = None,
     max_value: float | None = None,
 ) -> list[float]: ...
+
+
 def val_float(
-    value: float | Iterable[Any],
+    value: float | int | str | Iterable[Any],
     *,
     n_values: int | None = None,
     min_value: float | None = None,
@@ -91,12 +97,12 @@ def val_float(
     """Validate one or more floats.
 
     Arguments:
-        value: single value or iterable of values to validate
-        n_values: number of values expected, if applicable
-        min_value: minimum value of float, if applicable
-        max_value: maximum value of float, if applicable
+        value: Single value or iterable of values to validate
+        n_values: Number of values expected, if applicable
+        min_value: Minimum value of float, if applicable
+        max_value: Maximum value of float, if applicable
     Returns:
-        single float or list of floats depending on input
+        Single float or list of floats depending on input
     Raises:
         ArgumentConflictError: If min_value is greater than max_value
         TypeError: If a value may not be cast to a float
@@ -106,7 +112,13 @@ def val_float(
         raise ArgumentConflictError("min_value must be less than max_value")
 
     def _val_float(value_to_validate: Any) -> float:
-        """Validate a single value as a float."""
+        """Validate a single value as a float.
+
+        Arguments:
+            value_to_validate: value to validate
+        Returns:
+            value as a float
+        """
         try:
             validated_value = float(value_to_validate)
         except ValueError as exc:
@@ -139,29 +151,35 @@ def val_float(
 
 
 @overload
-def val_input_dir_path(value: Path | str) -> Path: ...
+def val_input_dir_path(value: Path | str | PathLike[Any]) -> Path: ...
+
+
 @overload
-def val_input_dir_path(value: Iterable[Path | str]) -> list[Path]: ...
-def val_input_dir_path(value: Path | str | Iterable[Path | str]) -> Path | list[Path]:
+def val_input_dir_path(value: Iterable[Path | str | PathLike[Any]]) -> list[Path]: ...
+
+
+def val_input_dir_path(
+    value: Path | str | PathLike[Any] | Iterable[Path | str | PathLike[Any]],
+) -> Path | list[Path]:
     """Validate input directory path(s) and make them absolute.
 
     Arguments:
-        value: path or paths to input directories
+        value: Path or paths to input directories
     Returns:
-        validated path or paths
+        Validated path or paths
     Raises:
         DirectoryNotFoundError: If any path does not exist
         NotADirectoryError: If any path is not a directory
         TypeError: If any value cannot be cast to Path
     """
 
-    def _val_input_dir(value_to_validate: Path | str) -> Path:
+    def _val_input_dir(value_to_validate: Path | str | PathLike[Any]) -> Path:
         """Validate a path.
 
         Arguments:
-            value_to_validate: path to validate
+            value_to_validate: Path to validate
         Returns:
-            validated path
+            Validated path
         Raises:
             DirectoryNotFoundError: If path does not exist
             NotADirectoryError: If path is not a directory
@@ -187,7 +205,7 @@ def val_input_dir_path(value: Path | str | Iterable[Path | str]) -> Path | list[
         return validated_value
 
     # Handle non-iterables and iterables we don't want to iterate over
-    if isinstance(value, Path | str) or not isinstance(value, Iterable):
+    if isinstance(value, Path | str | PathLike) or not isinstance(value, Iterable):
         return _val_input_dir(value)
 
     # Handle iterables
@@ -195,29 +213,35 @@ def val_input_dir_path(value: Path | str | Iterable[Path | str]) -> Path | list[
 
 
 @overload
-def val_input_path(value: Path | str) -> Path: ...
+def val_input_path(value: Path | str | PathLike[Any]) -> Path: ...
+
+
 @overload
-def val_input_path(value: Iterable[Path | str]) -> list[Path]: ...
-def val_input_path(value: Path | str | Iterable[Path | str]) -> Path | list[Path]:
+def val_input_path(value: Iterable[Path | str | PathLike[Any]]) -> list[Path]: ...
+
+
+def val_input_path(
+    value: Path | str | PathLike[Any] | Iterable[Path | str | PathLike[Any]],
+) -> Path | list[Path]:
     """Validate input file path(s) and make them absolute.
 
     Arguments:
-        value: path or paths to input files
+        value: Path or paths to input files
     Returns:
-        validated path or paths
+        Validated path or paths
     Raises:
         FileNotFoundError: If any file does not exist
         NotAFileError: If any path is not a file
         TypeError: If any value cannot be cast to Path
     """
 
-    def _val_input_path(value_to_validate: Path | str) -> Path:
+    def _val_input_path(value_to_validate: Path | str | PathLike[Any]) -> Path:
         """Validate a path.
 
         Arguments:
-            value_to_validate: path to validate
+            value_to_validate: Path to validate
         Returns:
-            validated path
+            Validated path
         Raises:
             FileNotFoundError: If path does not exist
             NotAFileError: If path is not a file
@@ -239,7 +263,7 @@ def val_input_path(value: Path | str | Iterable[Path | str]) -> Path | list[Path
         return validated_value
 
     # Handle non-iterables and iterables we don't want to iterate over
-    if isinstance(value, Path | str) or not isinstance(value, Iterable):
+    if isinstance(value, Path | str | PathLike) or not isinstance(value, Iterable):
         return _val_input_path(value)
 
     # Handle iterables
@@ -248,13 +272,15 @@ def val_input_path(value: Path | str | Iterable[Path | str]) -> Path | list[Path
 
 @overload
 def val_int(
-    value: int,
+    value: float | int | str,
     *,
     n_values: int | None = None,
     min_value: int | None = None,
     max_value: int | None = None,
     acceptable_values: Collection[int] | None = None,
 ) -> int: ...
+
+
 @overload
 def val_int(
     value: Iterable[Any],
@@ -264,8 +290,10 @@ def val_int(
     max_value: int | None = None,
     acceptable_values: Collection[int] | None = None,
 ) -> list[int]: ...
+
+
 def val_int(
-    value: int | Iterable[Any],
+    value: float | int | str | Iterable[Any],
     *,
     n_values: int | None = None,
     min_value: int | None = None,
@@ -275,13 +303,13 @@ def val_int(
     """Validate one or more ints.
 
     Arguments:
-        value: single value or iterable of values to validate
-        n_values: number of values expected, if applicable
-        min_value: minimum value of int, if applicable
-        max_value: maximum value of int, if applicable
-        acceptable_values: acceptable int values, if applicable
+        value: Single value or iterable of values to validate
+        n_values: Number of values expected, if applicable
+        min_value: Minimum value of int, if applicable
+        max_value: Maximum value of int, if applicable
+        acceptable_values: Acceptable int values, if applicable
     Returns:
-        single int or list of ints depending on input
+        Single int or list of ints depending on input
     Raises:
         ArgumentConflictError: If min_value is greater than max_value
         TypeError: If a value may not be cast to an int
@@ -294,9 +322,9 @@ def val_int(
         """Validate a single value as an int.
 
         Arguments:
-            value_to_validate: value to validate
+            value_to_validate: Value to validate
         Returns:
-            value as an int
+            Value as an int
         """
         try:
             validated_value = int(value_to_validate)
@@ -332,28 +360,59 @@ def val_int(
 
 
 @overload
-def val_output_dir_path(value: Path | str) -> Path: ...
+def val_output_dir_path(
+    value: Path | str | PathLike[Any], create: bool = True
+) -> Path: ...
+
+
 @overload
-def val_output_dir_path(value: Iterable[Path | str]) -> list[Path]: ...
-def val_output_dir_path(value: Path | str | Iterable[Path | str]) -> Path | list[Path]:
+def val_output_dir_path(
+    value: Iterable[Path | str | PathLike[Any]], create: bool = True
+) -> list[Path]: ...
+
+
+def val_output_dir_path(
+    value: Path | str | PathLike[Any] | Iterable[Path | str | PathLike[Any]],
+    create: bool = True,
+) -> Path | list[Path]:
     """Validate output directory path(s), make them absolute, and create them if needed.
 
     Arguments:
-        value: path or paths to output directories
+        value: Path or paths to output directories
+        create: whether missing directories should be created
     Returns:
-        validated path or paths
+        Validated path or paths
     Raises:
         NotADirectoryError: If any path is not a directory
         TypeError: If any value cannot be cast to Path
     """
 
-    def _val_output_dir_path(value_to_validate: Path | str) -> Path:
+    def _get_nearest_existing_ancestor_dir_path(path: Path) -> Path:
+        """Get nearest existing ancestor of a path.
+
+        Arguments:
+            path: path to inspect
+        Returns:
+            nearest existing ancestor path
+        Raises:
+            DirectoryNotFoundError: if no existing ancestor is found
+        """
+        current_path = path.parent
+        while not current_path.exists():
+            if current_path == current_path.parent:
+                raise DirectoryNotFoundError(
+                    f"No existing ancestor directory found for {path}"
+                )
+            current_path = current_path.parent
+        return current_path
+
+    def _val_output_dir_path(value_to_validate: Path | str | PathLike[Any]) -> Path:
         """Validate a path.
 
         Arguments:
-            value_to_validate: path to validate
+            value_to_validate: Path to validate
         Returns:
-            validated path
+            Validated path
         Raises:
             FileExistsError: If path already exists
             NotADirectoryError: If path is not a directory
@@ -369,15 +428,23 @@ def val_output_dir_path(value: Path | str | Iterable[Path | str]) -> Path | list
                 f"{type(value_to_validate)}, cannot be cast to Path"
             ) from exc
         if not validated_value.exists():
-            validated_value.mkdir(parents=True)
-            logger.info(f"Created directory {validated_value}")
+            nearest_existing_ancestor_dir_path = (
+                _get_nearest_existing_ancestor_dir_path(validated_value)
+            )
+            if not nearest_existing_ancestor_dir_path.is_dir():
+                raise NotADirectoryError(
+                    f"{nearest_existing_ancestor_dir_path} is not a directory"
+                )
+            if create:
+                validated_value.mkdir(parents=True)
+                logger.info(f"Created directory {validated_value}")
             return validated_value
         if not validated_value.is_dir():
             raise NotADirectoryError(f"{validated_value} is not a directory")
         return validated_value
 
     # Handle non-iterables and iterables we don't want to iterate over
-    if isinstance(value, Path | str) or not isinstance(value, Iterable):
+    if isinstance(value, Path | str | PathLike) or not isinstance(value, Iterable):
         return _val_output_dir_path(value)
 
     # Handle iterables
@@ -385,36 +452,44 @@ def val_output_dir_path(value: Path | str | Iterable[Path | str]) -> Path | list
 
 
 @overload
-def val_output_path(value: Path | str, exist_ok: bool = False) -> Path: ...
+def val_output_path(
+    value: Path | str | PathLike[Any], exist_ok: bool = False
+) -> Path: ...
+
+
 @overload
 def val_output_path(
-    value: Iterable[Path | str], exist_ok: bool = False
+    value: Iterable[Path | str | PathLike[Any]], exist_ok: bool = False
 ) -> list[Path]: ...
+
+
 def val_output_path(
-    value: Path | str | Iterable[Path | str], exist_ok: bool = False
+    value: Path | str | PathLike[Any] | Iterable[Path | str | PathLike[Any]],
+    exist_ok: bool = False,
 ) -> Path | list[Path]:
     """Validate output file path(s) and make them absolute.
 
     Arguments:
-        value: path or paths to output files
-        exist_ok: whether to allow output files to already exist
+        value: Path or paths to output files
+        exist_ok: Whether to allow output files to already exist
     Returns:
-        validated path or paths
+        Validated path or paths
     Raises:
         FileExistsError: If the file exists and exist_ok is False
         NotAFileError: If a path exists and is not a file
         TypeError: If any value cannot be cast to a Path
     """
 
-    def _val_output_path(value_to_validate: Path | str) -> Path:
+    def _val_output_path(value_to_validate: Path | str | PathLike[Any]) -> Path:
         """Validate a path.
 
         Arguments:
-            value_to_validate: path to validate
+            value_to_validate: Path to validate
         Returns:
-            validated path
+            Validated path
         Raises:
             FileExistsError: If file exists and exist_ok is False
+            NotAFileError: If path exists and is not a file
             TypeError: If value cannot be cast to a Path
         """
         try:
@@ -426,7 +501,10 @@ def val_output_path(
                 f"{value_to_validate} is of type "
                 f"{type(value_to_validate)}, cannot be cast to Path"
             ) from exc
-        if validated_value.exists() and not exist_ok:
+        exists = validated_value.exists()
+        if exists and not validated_value.is_file():
+            raise NotAFileError(f"{validated_value} is not a file")
+        if exists and not exist_ok:
             raise FileExistsError(f"Output file {validated_value} already exists")
         if not validated_value.parent.exists():
             validated_value.parent.mkdir(parents=True)
@@ -434,21 +512,48 @@ def val_output_path(
         return validated_value
 
     # Handle non-iterables and iterables we don't want to iterate over
-    if isinstance(value, Path | str) or not isinstance(value, Iterable):
+    if isinstance(value, Path | str | PathLike) or not isinstance(value, Iterable):
         return _val_output_path(value)
 
     # Handle iterables
     return [_val_output_path(value_to_validate) for value_to_validate in value]
 
 
-def val_str(value: Any, options: Iterable[str]) -> str:
-    """Validate a str.
+def val_literal[LiteralValue](value: LiteralValue, literal_type: Any) -> LiteralValue:
+    """Validate a value against a Literal type or type alias.
 
     Arguments:
         value: input value to validate
-        options: acceptable string values, if applicable
+        literal_type: Literal type or type alias with Literal value options
     Returns:
-        value as a str
+        value if it is one of the Literal options
+    Raises:
+        ArgumentConflictError: If literal_type does not resolve to Literal options
+        ValueError: If value is not one of the provided Literal options
+    """
+    literal_value = (
+        literal_type.__value__
+        if isinstance(literal_type, TypeAliasType)
+        else literal_type
+    )
+    options = get_args(literal_value)
+    if not options:
+        raise ArgumentConflictError(
+            f"'{literal_type}' does not contain Literal options"
+        ) from None
+    if value not in options:
+        raise ValueError(f"'{value}' is not one of options '{options}'") from None
+    return value
+
+
+def val_str(value: Any, options: Iterable[Any]) -> str:
+    """Validate a str.
+
+    Arguments:
+        value: Input value to validate
+        options: Acceptable string values, if applicable
+    Returns:
+        Value as a str
     Raises:
         ArgumentConflictError: If an option cannot be cast to a string
         TypeError: If value may not be cast to a str
