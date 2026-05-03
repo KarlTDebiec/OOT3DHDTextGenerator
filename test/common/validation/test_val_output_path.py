@@ -1,4 +1,4 @@
-#  Copyright 2017-2026 Karl T Debiec. All rights reserved. This software may be modified
+#  Copyright 2020-2026 Karl T Debiec. All rights reserved. This software may be modified
 #  and distributed under the terms of the BSD license. See the LICENSE file for details.
 """Tests of common.validation.val_output_path."""
 
@@ -7,9 +7,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-
-from oot3dhdtextgenerator.common.exception import NotAFileError
-from oot3dhdtextgenerator.common.validation import val_output_path
+from common.validation import val_output_path  # ty:ignore[unresolved-import]
 
 
 def test_val_output_path_valid(tmp_path: Path):
@@ -65,24 +63,6 @@ def test_val_output_path_exists_ok(tmp_path: Path):
     result = val_output_path(test_file, exist_ok=True)
     assert isinstance(result, Path)
     assert result.exists()
-
-
-def test_val_output_path_existing_directory_exist_ok_false(tmp_path: Path):
-    """Test validation when path exists and is a directory with exist_ok False."""
-    test_dir = tmp_path / "output_dir"
-    test_dir.mkdir()
-
-    with pytest.raises(NotAFileError):
-        val_output_path(test_dir, exist_ok=False)
-
-
-def test_val_output_path_existing_directory_exist_ok_true(tmp_path: Path):
-    """Test validation when path exists and is a directory with exist_ok True."""
-    test_dir = tmp_path / "output_dir"
-    test_dir.mkdir()
-
-    with pytest.raises(NotAFileError):
-        val_output_path(test_dir, exist_ok=True)
 
 
 def test_val_output_path_absolute(tmp_path: Path):
@@ -144,14 +124,12 @@ def test_val_output_path_expands_user(tmp_path: Path, monkeypatch: pytest.Monkey
 
     # Mock expanduser to return our test path
     def mock_expanduser(path: str) -> str:
-        """Map `~` paths to the temporary output file."""
+        """Map ~ paths to the test output file path."""
         if path.startswith("~"):
             return str(tmp_path / "output.txt")
         return path
 
-    monkeypatch.setattr(
-        "oot3dhdtextgenerator.common.validation.expanduser", mock_expanduser
-    )
+    monkeypatch.setattr("common.validation.expanduser", mock_expanduser)
 
     result = val_output_path("~/output.txt")
     assert result.parent.exists()

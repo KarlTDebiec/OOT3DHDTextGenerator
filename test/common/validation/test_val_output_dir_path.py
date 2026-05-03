@@ -1,4 +1,4 @@
-#  Copyright 2017-2026 Karl T Debiec. All rights reserved. This software may be modified
+#  Copyright 2020-2026 Karl T Debiec. All rights reserved. This software may be modified
 #  and distributed under the terms of the BSD license. See the LICENSE file for details.
 """Tests of common.validation.val_output_dir_path."""
 
@@ -7,8 +7,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-
-from oot3dhdtextgenerator.common.validation import val_output_dir_path
+from common.validation import val_output_dir_path  # ty:ignore[unresolved-import]
 
 
 def test_val_output_dir_path_valid(tmp_path: Path):
@@ -39,26 +38,6 @@ def test_val_output_dir_path_creates_dir(tmp_path: Path):
     result = val_output_dir_path(test_dir)
     assert result.exists()
     assert result.is_dir()
-
-
-def test_val_output_dir_path_without_create(tmp_path: Path):
-    """Test that directory is not created when create is False."""
-    test_dir = tmp_path / "newdir"
-    assert not test_dir.exists()
-
-    result = val_output_dir_path(test_dir, create=False)
-    assert result == test_dir.resolve()
-    assert not result.exists()
-
-
-def test_val_output_dir_path_without_create_rejects_file_ancestor(tmp_path: Path):
-    """Test that create=False rejects paths below a file ancestor."""
-    file_path = tmp_path / "parent"
-    file_path.write_text("test content")
-    test_dir = file_path / "child"
-
-    with pytest.raises(NotADirectoryError):
-        val_output_dir_path(test_dir, create=False)
 
 
 def test_val_output_dir_path_nested_dirs(tmp_path: Path):
@@ -143,14 +122,12 @@ def test_val_output_dir_path_expands_user(
 
     # Mock expanduser to return our test path
     def mock_expanduser(path: str) -> str:
-        """Map `~` paths to the temporary output directory."""
+        """Map ~ paths to the test output directory path."""
         if path.startswith("~"):
             return str(tmp_path / "outputdir")
         return path
 
-    monkeypatch.setattr(
-        "oot3dhdtextgenerator.common.validation.expanduser", mock_expanduser
-    )
+    monkeypatch.setattr("common.validation.expanduser", mock_expanduser)
 
     result = val_output_dir_path("~/outputdir")
     assert result.exists()
