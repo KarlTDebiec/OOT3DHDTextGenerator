@@ -1,0 +1,23 @@
+{# Copyright 2020-2026 Karl T Debiec. All rights reserved. This software may be modified
+and distributed under the terms of the BSD license. See the LICENSE file for details. #}
+{% for display_row in display_rows %}
+{% include 'row.html' %}
+{% endfor %}
+<tr class="load-more-row"
+    data-total-count="{{ total_count }}"
+    {% if not has_more %}
+    hidden
+    {% endif %}
+    {% if has_more %}
+    hx-get="/rows?offset={{ next_offset }}&limit={{ page_size }}"
+    hx-include="#filters-form"
+    hx-target="this"
+    hx-swap="outerHTML"
+    hx-trigger="revealed"
+    {% endif %}>
+    <td colspan="{{ total_columns }}">
+        {% if has_more %}
+        Loading more...
+        {% endif %}
+    </td>
+</tr>

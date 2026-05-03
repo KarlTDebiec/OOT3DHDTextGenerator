@@ -5,18 +5,18 @@
 This module may import from: common, core, data, image
 
 Hierarchy within module:
-* learning_dataset_generator
+* training_dataset_generator
 * model_trainer
 """
 
 from __future__ import annotations
 
-from .learning_dataset_generator import (
-    LearningDatasetGenerator,
-)
 from .model_trainer import ModelTrainer
+from .training_dataset_generator import (
+    TrainingDatasetGenerator,
+)
 
 __all__ = [
-    "LearningDatasetGenerator",
+    "TrainingDatasetGenerator",
     "ModelTrainer",
 ]

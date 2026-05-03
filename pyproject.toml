@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.13,<3.14"
 dependencies = [
     "flask>=3.1.2",
-    "h5py>=3.14.0",
+    "numpy>=2.2.6",
     "Pillow>=12.1.0",
     "torch>=2.10.0",
     "torchinfo>=1.8.0",

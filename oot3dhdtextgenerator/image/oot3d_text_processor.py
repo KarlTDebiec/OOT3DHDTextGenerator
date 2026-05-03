@@ -18,7 +18,6 @@ from oot3dhdtextgenerator.common.validation import (
     val_input_path,
     val_int,
     val_output_dir_path,
-    val_output_path,
 )
 from oot3dhdtextgenerator.core import AssignmentDataset
 
@@ -31,7 +30,7 @@ class OOT3DHDTextProcessor(ImageProcessor):
 
     def __init__(  # noqa: PLR0913
         self,
-        assignment_path: Path | str,
+        assignment_dir_path: Path | str,
         font: Path | str | None = None,
         size: int = 48,
         offset: tuple[int, int] = (0, 0),
@@ -41,7 +40,7 @@ class OOT3DHDTextProcessor(ImageProcessor):
         """Initialize.
 
         Arguments:
-            assignment_path: path to assignment dataset file
+            assignment_dir_path: path to assignment dataset CSV directory
             font: path to font file, or None to auto-select by platform
             size: font size in pixels
             offset: x and Y draw offset in output image
@@ -50,8 +49,8 @@ class OOT3DHDTextProcessor(ImageProcessor):
         """
         super().__init__(**kwargs)
 
-        self.assignment_path = val_output_path(assignment_path, exist_ok=True)
-        self.assignment_dataset = AssignmentDataset(self.assignment_path)
+        self.assignment_dir_path = val_output_dir_path(assignment_dir_path)
+        self.assignment_dataset = AssignmentDataset(self.assignment_dir_path)
 
         font_path = self._resolve_font_path(font)
         self.font = ImageFont.truetype(str(font_path), val_int(size, min_value=1))
@@ -78,7 +77,10 @@ class OOT3DHDTextProcessor(ImageProcessor):
 
     def __repr__(self) -> str:
         """Representation."""
-        return f"{self.__class__.__name__}(assignment_path={self.assignment_path!r})"
+        return (
+            f"{self.__class__.__name__}("
+            f"assignment_dir_path={self.assignment_dir_path!r})"
+        )
 
     def create_image(self, input_image: Image.Image, characters: str) -> Image.Image:
         """Create image from characters.
@@ -217,13 +219,14 @@ class OOT3DHDTextProcessor(ImageProcessor):
             warning(f"{self}: Wrote unknown-character debug tiles to {out_dir}")
 
     def save_assignment_dataset(self):
-        """Save assignment dataset to HDF5 file."""
-        self.assignment_dataset.save_hdf5(
+        """Save assignment dataset to CSV files."""
+        self.assignment_dataset.save_csv(
             self.assignment_dataset.assigned_char_bytes,
             self.assignment_dataset.unassigned_char_bytes,
-            self.assignment_path,
+            self.assignment_dataset.assigned_csv_path,
+            self.assignment_dataset.unassigned_csv_path,
         )
-        info(f"Saved assignments to {self.assignment_path}")
+        info(f"Saved assignments to {self.assignment_dir_path}")
 
     @classmethod
     def help_markdown(cls) -> str:

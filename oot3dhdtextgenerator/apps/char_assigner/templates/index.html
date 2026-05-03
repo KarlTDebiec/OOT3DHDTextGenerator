@@ -1,81 +1,103 @@
-{# Copyright 2020-2025 Karl T Debiec. All rights reserved. This software may be modified
+{# Copyright 2020-2026 Karl T Debiec. All rights reserved. This software may be modified
 and distributed under the terms of the BSD license. See the LICENSE file for details. #}
 <head>
     <meta charset="utf-8">
     <meta name="viewport"
           content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <script src="https://unpkg.com/htmx.org@1.5.0"></script>
+    <script src="https://unpkg.com/htmx.org@2.0.8"></script>
     <style>
-
-        button {
-            border-style: outset;
-            font-size: 4vw;
+        :root {
+            --cell-size: 3.25rem;
+            --cell-text-size: 1.5rem;
+            --cell-padding: 0.25rem;
+            --cell-radius: 0.375rem;
+            --border-width: 2px;
         }
 
-        form {
-            border-style: none;
-            margin: 0;
-        }
+        body {
+            > table {
+                margin-left: auto;
+                margin-right: auto;
 
-        img {
-            border-style: solid;
-            image-rendering: pixelated;
-        }
+                th {
+                    max-width: var(--cell-size);
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    width: var(--cell-size);
+                }
 
-        input {
-            border-style: inset;
-            font-size: 4vw;
-            text-align: center;
-        }
+                tr.htmx-swapping td {
+                    opacity: 0;
+                    transition: opacity 0.5s ease-out;
+                }
 
-        table {
-            border-collapse: collapse;
-            margin-left: auto;
-            margin-right: auto;
-        }
+                form {
+                    margin: 0;
+                }
 
-        td {
-            padding-bottom: max(0.5vw, 5px);
-        }
+                :is(input[type="text"], button, img) {
+                    border-color: ButtonBorder;
+                    border-radius: var(--cell-radius);
+                    border-style: solid;
+                    border-width: var(--border-width);
+                    box-sizing: border-box;
+                    font-size: var(--cell-text-size);
+                    height: var(--cell-size);
+                    text-align: center;
+                    width: var(--cell-size);
+                }
 
-        th {
-            max-width: 7.5vw;
-            overflow: hidden;
-            padding-bottom: max(0.5vw, 5px);
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            width: 7.5vw;
-        }
+                img {
+                    image-rendering: pixelated;
+                    padding: calc(var(--cell-padding) * 3.0);
+                }
 
-
-        tr.htmx-swapping td {
-            opacity: 0;
-            transition: opacity 0.5s ease-out;
-        }
-
-        .centered {
-            align-items: center;
-            aspect-ratio: 1;
-            display: flex;
-            justify-content: center;
-        }
-
-        .content {
-            aspect-ratio: 1;
-            border-radius: max(0.4vw, 4px);
-            border-style: inset;
-            border-width: max(0.2vw, 2px);
-            font-size: 4vw;
-            margin: max(0.1vw, 1px);
-            padding: max(0.4vw, 4px);
-            text-align: center;
-            width: 100%;
+                .prediction-match {
+                    border-color: #22cc55;
+                }
+            }
         }
     </style>
-    <title>Flask HTMX ALPINE App</title>
+    <title>Char Assigner</title>
 </head>
 <body>
 <h1>Characters</h1>
+<form id="filters-form"
+      hx-get="/characters"
+      hx-target="#characters-body"
+      hx-swap="innerHTML"
+      hx-vals='{"offset": 0, "limit": {{ page_size }}}'
+      hx-trigger="change">
+    <label for="unassigned-filter">Unassigned</label>
+    <select id="unassigned-filter" name="unassigned_filter">
+        <option value="visible"{% if unassigned_filter == "visible" %} selected{% endif %}>Visible</option>
+        <option value="top_prediction_available_only"{% if unassigned_filter == "top_prediction_available_only" %} selected{% endif %}>Top prediction available only</option>
+        <option value="hidden"{% if unassigned_filter == "hidden" %} selected{% endif %}>Hidden</option>
+    </select>
+    <label for="assigned-filter">Assigned</label>
+    <select id="assigned-filter" name="assigned_filter">
+        <option value="visible"{% if assigned_filter == "visible" %} selected{% endif %}>Visible</option>
+        <option value="conflicts_only"{% if assigned_filter == "conflicts_only" %} selected{% endif %}>Conflicts only</option>
+        <option value="top_prediction_mismatch_only"{% if assigned_filter == "top_prediction_mismatch_only" %} selected{% endif %}>Top prediction mismatch only</option>
+        <option value="hidden"{% if assigned_filter == "hidden" %} selected{% endif %}>Hidden</option>
+    </select>
+    <label for="exclude-assigned-from-predictions">Exclude assigned characters from predictions</label>
+    <input id="exclude-assigned-from-predictions"
+           name="exclude_assigned_from_predictions"
+           type="checkbox"
+           value="1"
+           {% if exclude_assigned_from_predictions %}checked{% endif %}>
+    <label for="prior-weight-percent">Prior weight (%)</label>
+    <input id="prior-weight-percent"
+           name="prior_weight_percent"
+           type="number"
+           min="0"
+           max="100"
+           step="1"
+           value="{{prior_weight_percent}}">
+    <span>Results: <strong id="results-count">{{ total_count }}</strong></span>
+    <span>(Loaded: <strong id="results-loaded-count">{{ characters|length }}</strong>)</span>
+</form>
 <table>
     <thead>
     <tr>
@@ -96,11 +118,38 @@ and distributed under the terms of the BSD license. See the LICENSE file for det
         <th>10</th>
     </tr>
     </thead>
-    <tbody hx-target="closest tr" hx-swap="outerHTML swap:0.1s">
-    {% for character in characters %}
-    {% include 'character.html' %}
-    {% endfor %}
+    <tbody id="characters-body">
+    {% include 'characters_rows.html' %}
     </tbody>
 </table>
+<script>
+    /** Update the displayed loaded and total result counts. */
+    function updateResultsCount() {
+        const resultsCount = document.getElementById("results-count");
+        const resultsLoadedCount = document.getElementById("results-loaded-count");
+        const charactersBody = document.getElementById("characters-body");
+        if (!resultsCount || !resultsLoadedCount || !charactersBody) {
+            return;
+        }
+        const loadedCount = Array.from(charactersBody.querySelectorAll("tr")).filter(
+            (row) => !row.classList.contains("load-more-row"),
+        ).length;
+        const loadMoreRow = charactersBody.querySelector("tr.load-more-row");
+        const totalCount = loadMoreRow
+            ? Number(loadMoreRow.dataset.totalCount || loadedCount)
+            : loadedCount;
+        resultsCount.textContent = String(totalCount);
+        resultsLoadedCount.textContent = String(loadedCount);
+    }
+
+    const charactersBody = document.getElementById("characters-body");
+    if (charactersBody) {
+        const observer = new MutationObserver(() => {
+            updateResultsCount();
+        });
+        observer.observe(charactersBody, {childList: true});
+    }
+    updateResultsCount();
+</script>
 </body>
 </html>

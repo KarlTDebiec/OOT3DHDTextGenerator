@@ -31,6 +31,8 @@
 * Include `from __future__ import annotations`, unless the file is empty.
 * Include type annotations for all function and method signatures, with the following exception:
     * If a function always returns `None`, omit the return type annotation.
+* Use f-strings for ordinary Python string interpolation.
+  * `.format(...)` may be used when the variables are supplied in a dict.
 * In `__init__.py` files, only import classes from the module, not functions or variables.
 * Use the `logging` module rather than `print` for any user-facing output in scripts or
   libraries.
