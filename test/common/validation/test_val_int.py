@@ -1,12 +1,13 @@
-#  Copyright 2020-2026 Karl T Debiec. All rights reserved. This software may be modified
+#  Copyright 2017-2026 Karl T Debiec. All rights reserved. This software may be modified
 #  and distributed under the terms of the BSD license. See the LICENSE file for details.
 """Tests of common.validation.val_int."""
 
 from __future__ import annotations
 
 import pytest
-from common.exception import ArgumentConflictError  # ty:ignore[unresolved-import]
-from common.validation import val_int  # ty:ignore[unresolved-import]
+
+from oot3dhdtextgenerator.common.exception import ArgumentConflictError
+from oot3dhdtextgenerator.common.validation import val_int
 
 
 def test_val_int_single_valid():
@@ -33,7 +34,7 @@ def test_val_int_single_from_string():
 def test_val_int_single_invalid_type():
     """Test validation with invalid type."""
     with pytest.raises(TypeError):
-        val_int(None)
+        val_int(None)  # ty: ignore[no-matching-overload]
     with pytest.raises(TypeError):
         val_int("invalid_string")
 

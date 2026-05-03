@@ -1,21 +1,13 @@
-#  Copyright 2020-2026 Karl T Debiec. All rights reserved. This software may be modified
+#  Copyright 2017-2026 Karl T Debiec. All rights reserved. This software may be modified
 #  and distributed under the terms of the BSD license. See the LICENSE file for details.
 """CSV parsing utilities."""
 
 from __future__ import annotations
 
-
-def parse_csv_str_list(values: str | None) -> list[str]:
-    """Parse a comma-separated string list.
-
-    Arguments:
-        values: comma-separated string values
-    Returns:
-        list of parsed strings with whitespace stripped and empty entries removed
-    """
-    if values is None or values.strip() == "":
-        return []
-    return [item.strip() for item in values.split(",") if item.strip()]
+__all__ = [
+    "parse_csv_int_list",
+    "parse_csv_str_list",
+]
 
 
 def parse_csv_int_list(values: str, *, name: str) -> list[int]:
@@ -39,3 +31,16 @@ def parse_csv_int_list(values: str, *, name: str) -> list[int]:
     if not parsed_values:
         raise ValueError(f"{name} must include at least one integer")
     return parsed_values
+
+
+def parse_csv_str_list(values: str | None) -> list[str]:
+    """Parse a comma-separated string list.
+
+    Arguments:
+        values: comma-separated string values
+    Returns:
+        list of parsed strings with whitespace stripped and empty entries removed
+    """
+    if values is None or values.strip() == "":
+        return []
+    return [item.strip() for item in values.split(",") if item.strip()]
