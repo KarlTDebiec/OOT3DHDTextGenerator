@@ -1,4 +1,4 @@
-#  Copyright 2017-2026 Karl T Debiec. All rights reserved. This software may be modified
+#  Copyright 2020-2026 Karl T Debiec. All rights reserved. This software may be modified
 #  and distributed under the terms of the BSD license. See the LICENSE file for details.
 """Tests of common.file.rename_preexisting_output_path."""
 
@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from oot3dhdtextgenerator.common.file import rename_preexisting_output_path
+from common.file import rename_preexisting_output_path  # ty:ignore[unresolved-import]
 
 
 def test_rename_preexisting_output_path_no_existing_file(tmp_path: Path):

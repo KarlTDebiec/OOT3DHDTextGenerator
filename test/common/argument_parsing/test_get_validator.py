@@ -1,4 +1,4 @@
-#  Copyright 2017-2026 Karl T Debiec. All rights reserved. This software may be modified
+#  Copyright 2020-2026 Karl T Debiec. All rights reserved. This software may be modified
 #  and distributed under the terms of the BSD license. See the LICENSE file for details.
 """Tests of common.argument_parsing.get_validator."""
 
@@ -7,8 +7,7 @@ from __future__ import annotations
 from argparse import ArgumentTypeError
 
 import pytest
-
-from oot3dhdtextgenerator.common.argument_parsing import get_validator
+from common.argument_parsing import get_validator  # ty:ignore[unresolved-import]
 
 
 def test_get_validator_basic():

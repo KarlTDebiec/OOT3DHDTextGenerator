@@ -1,4 +1,4 @@
-#  Copyright 2017-2026 Karl T Debiec. All rights reserved. This software may be modified
+#  Copyright 2020-2026 Karl T Debiec. All rights reserved. This software may be modified
 #  and distributed under the terms of the BSD license. See the LICENSE file for details.
 """Tests of common.command_line_interface."""
 
@@ -7,50 +7,19 @@ from __future__ import annotations
 from argparse import ArgumentParser
 from logging import getLogger
 from pathlib import Path
-from typing import ClassVar, TypedDict, Unpack
+from typing import TypedDict, Unpack
 from unittest.mock import patch
 
 import pytest
-
-from oot3dhdtextgenerator.common.command_line_interface import (
+from common.command_line_interface import (  # ty:ignore[unresolved-import]
     CommandLineInterface,
 )
-from oot3dhdtextgenerator.common.testing import run_cli_with_args
 
 
 class CliTestKwargs(TypedDict, total=False):
     """Keyword arguments for TestCli _main method."""
 
     pass
-
-
-class ArgsCaptureCliKwargs(TypedDict, total=False):
-    """Keyword arguments for ArgsCaptureCli _main method."""
-
-    name: str
-
-
-class ArgsCaptureCli(CommandLineInterface):
-    """Test CLI that captures parsed string arguments."""
-
-    captured: ClassVar[dict[str, str]] = {}
-    """Most recently captured keyword arguments."""
-
-    @classmethod
-    def add_arguments_to_argparser(cls, parser: ArgumentParser):
-        """Add arguments to a nascent argument parser.
-
-        Arguments:
-            parser: nascent argument parser
-        """
-        super().add_arguments_to_argparser(parser)
-        parser.add_argument("--name", type=str, required=True)
-
-    @classmethod
-    def _main(cls, **kwargs: Unpack[ArgsCaptureCliKwargs]):
-        """Execute test CLI."""
-        if (name := kwargs.get("name")) is not None:
-            cls.captured["name"] = name
 
 
 class TestCli(CommandLineInterface):
@@ -111,9 +80,7 @@ def test_description_no_docstring():
     """Test description() with no docstring."""
 
     class NoDocCli(CommandLineInterface):
-        """Placeholder class for testing behavior when `__doc__` is unset."""
-
-        __doc__ = None
+        """ """  # noqa: D419
 
         @classmethod
         def _main(cls, **kwargs: Unpack[CliTestKwargs]):
@@ -184,13 +151,8 @@ def test_argparser_with_subparsers():
 
 def test_log_command_line():
     """Test log_command_line() logs the command line."""
-    with patch(
-        "oot3dhdtextgenerator.common.command_line_interface.argv",
-        ["script.py", "arg1", "arg2"],
-    ):
-        with patch(
-            "oot3dhdtextgenerator.common.command_line_interface.logger.info"
-        ) as mock_info:
+    with patch("common.command_line_interface.argv", ["script.py", "arg1", "arg2"]):
+        with patch("common.command_line_interface.logger.info") as mock_info:
             TestCli.log_command_line()
             mock_info.assert_called_once()
             call_args = mock_info.call_args[0][0]
@@ -245,10 +207,3 @@ def test_abstract_main():
     with pytest.raises(TypeError):
         # Cannot instantiate ABC without implementing abstract method
         CommandLineInterface()
-
-
-def test_run_cli_with_args_quoted_values():
-    """Test that run_cli_with_args preserves quoted arguments as single values."""
-    ArgsCaptureCli.captured.clear()
-    run_cli_with_args(ArgsCaptureCli, '--name "value with spaces"')
-    assert ArgsCaptureCli.captured.get("name") == "value with spaces"

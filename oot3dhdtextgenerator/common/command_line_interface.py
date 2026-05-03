@@ -16,15 +16,17 @@ from inspect import cleandoc
 from logging import FileHandler, Formatter, getLogger
 from pathlib import Path
 from sys import argv
-from typing import Any
+from typing import TypedDict, Unpack
 
 from .logs import DEFAULT_LOG_FORMAT, configure_logging
 
-__all__ = [
-    "CommandLineInterface",
-]
-
 logger = getLogger(__name__)
+
+
+class CLIKwargs(TypedDict, total=False):
+    """Keyword arguments for command-line interface _main methods."""
+
+    pass
 
 
 class CommandLineInterface(ABC):
@@ -35,7 +37,7 @@ class CommandLineInterface(ABC):
         """Add arguments to a nascent argument parser.
 
         Arguments:
-            parser: Nascent argument parser
+            parser: nascent argument parser
         """
         verbosity = parser.add_mutually_exclusive_group()
         verbosity.add_argument(
@@ -73,10 +75,10 @@ class CommandLineInterface(ABC):
         """Construct argument parser.
 
         Arguments:
-            subparsers: Subparsers group to which a new subparser will be added; if
+            subparsers: subparsers group to which a new subparser will be added; if
               None, a new ArgumentParser will be created
         Returns:
-            Argument parser
+            argument parser
         """
         if not subparsers:
             parser = ArgumentParser(
@@ -117,9 +119,9 @@ class CommandLineInterface(ABC):
         configure_logging(verbosity)
 
         # File logging
-        log_file = kwargs.pop("log_file")
-        if log_file:
-            log_file_path = Path(log_file).resolve()
+        log_file_path = kwargs.pop("log_file")
+        if log_file_path:
+            log_file_path = Path(log_file_path).resolve()
             file_handler = FileHandler(log_file_path)
             file_handler.setLevel(getLogger().level)
             formatter = Formatter(DEFAULT_LOG_FORMAT)
@@ -146,6 +148,6 @@ class CommandLineInterface(ABC):
 
     @classmethod
     @abstractmethod
-    def _main(cls, **kwargs: Any):
+    def _main(cls, **kwargs: Unpack[CLIKwargs]):
         """Execute with provided keyword arguments."""
         raise NotImplementedError()

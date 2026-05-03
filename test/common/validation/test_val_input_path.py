@@ -1,4 +1,4 @@
-#  Copyright 2017-2026 Karl T Debiec. All rights reserved. This software may be modified
+#  Copyright 2020-2026 Karl T Debiec. All rights reserved. This software may be modified
 #  and distributed under the terms of the BSD license. See the LICENSE file for details.
 """Tests of common.validation.val_input_path."""
 
@@ -7,9 +7,8 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-
-from oot3dhdtextgenerator.common.exception import NotAFileError
-from oot3dhdtextgenerator.common.validation import val_input_path
+from common.exception import NotAFileError  # ty:ignore[unresolved-import]
+from common.validation import val_input_path  # ty:ignore[unresolved-import]
 
 
 def test_val_input_path_valid(tmp_path: Path):
@@ -136,14 +135,12 @@ def test_val_input_path_expands_user(tmp_path: Path, monkeypatch: pytest.MonkeyP
 
     # Mock expanduser to return our test path
     def mock_expanduser(path: str) -> str:
-        """Map `~` paths to the temporary test file."""
+        """Map ~ paths to the test file for validation."""
         if path.startswith("~"):
             return str(test_file)
         return path
 
-    monkeypatch.setattr(
-        "oot3dhdtextgenerator.common.validation.expanduser", mock_expanduser
-    )
+    monkeypatch.setattr("common.validation.expanduser", mock_expanduser)
 
     result = val_input_path("~/test.txt")
     assert result.exists()

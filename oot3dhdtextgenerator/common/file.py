@@ -26,15 +26,15 @@ def get_temp_directory_path() -> Generator[Path]:
     """Provide path to a temporary directory and remove it once no longer needed.
 
     Returns:
-        Path to temporary directory
+        path to temporary directory
     """
-    temp_directory_path = None
+    temp_dir_path = None
     try:
-        temp_directory_path = Path(mkdtemp()).resolve()
-        yield temp_directory_path
+        temp_dir_path = Path(mkdtemp()).resolve()
+        yield temp_dir_path
     finally:
-        if temp_directory_path:
-            rmtree(temp_directory_path)
+        if temp_dir_path:
+            rmtree(temp_dir_path)
 
 
 @contextmanager
@@ -42,9 +42,9 @@ def get_temp_file_path(suffix: str | None = None) -> Generator[Path]:
     """Provide path to a temporary file and remove it once no longer needed.
 
     Arguments:
-        suffix: Suffix of named temporary file
+        suffix: suffix of named temporary file
     Returns:
-        Path to temporary file
+        path to temporary file
     """
     temp_file_path = None
     try:
@@ -68,7 +68,7 @@ def rename_preexisting_output_path(output_path: Path):
     """Check if a proposed output file exists, and if so rename the existing file.
 
     Arguments:
-        output_path: Path to proposed output file
+        output_path: path to proposed output file
     """
     output_path = output_path.resolve()
     if output_path.exists():
