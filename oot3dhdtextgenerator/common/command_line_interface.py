@@ -20,6 +20,11 @@ from typing import TypedDict, Unpack
 
 from .logs import DEFAULT_LOG_FORMAT, configure_logging
 
+__all__ = [
+    "CLIKwargs",
+    "CommandLineInterface",
+]
+
 logger = getLogger(__name__)
 
 
@@ -37,7 +42,7 @@ class CommandLineInterface(ABC):
         """Add arguments to a nascent argument parser.
 
         Arguments:
-            parser: nascent argument parser
+            parser: Nascent argument parser
         """
         verbosity = parser.add_mutually_exclusive_group()
         verbosity.add_argument(
@@ -75,10 +80,10 @@ class CommandLineInterface(ABC):
         """Construct argument parser.
 
         Arguments:
-            subparsers: subparsers group to which a new subparser will be added; if
+            subparsers: Subparsers group to which a new subparser will be added; if
               None, a new ArgumentParser will be created
         Returns:
-            argument parser
+            Argument parser
         """
         if not subparsers:
             parser = ArgumentParser(
@@ -119,9 +124,9 @@ class CommandLineInterface(ABC):
         configure_logging(verbosity)
 
         # File logging
-        log_file_path = kwargs.pop("log_file")
-        if log_file_path:
-            log_file_path = Path(log_file_path).resolve()
+        log_file = kwargs.pop("log_file")
+        if log_file:
+            log_file_path = Path(log_file).resolve()
             file_handler = FileHandler(log_file_path)
             file_handler.setLevel(getLogger().level)
             formatter = Formatter(DEFAULT_LOG_FORMAT)
